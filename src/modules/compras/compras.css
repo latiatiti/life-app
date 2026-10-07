@@ -1,0 +1,23 @@
+/* Estilos del módulo Compras (usa los tokens de styles.css). */
+.com-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.com-chip { font-size: 0.85rem; padding: 6px 12px; border: 1px solid var(--line); cursor: pointer; }
+.com-sub { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.com-img { border-radius: 6px; object-fit: contain; background: #fff; flex-shrink: 0; }
+.com-resultados { max-height: 50vh; overflow-y: auto; }
+
+.com-tabla-caja { overflow-x: auto; margin: 0 -4px; }
+.com-tabla { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.com-tabla th { text-align: left; font-weight: 550; color: var(--ink-2); padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.com-tabla td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.com-tabla td small { display: block; }
+.com-tabla th.num, .com-tabla td.num { text-align: right; white-space: nowrap; }
+.com-tabla tbody tr { cursor: pointer; }
+.com-tabla tbody tr:hover { background: var(--surface-2); }
+.com-mejor { color: var(--good-text); font-weight: 650; }
+.com-oferta { color: var(--warning-text); font-size: 0.7rem; }
+
+.com-bloque.com-actual { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.com-bloque.com-hecho { opacity: 0.6; }
+.com-tildado strong { text-decoration: line-through; color: var(--ink-2); }
+.com-precio { width: 96px; flex-shrink: 0; text-align: right; }
+.com-rel { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }

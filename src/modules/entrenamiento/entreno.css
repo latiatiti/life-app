@@ -1,0 +1,37 @@
+/* Estilos propios del módulo de entrenamiento (usa los tokens de styles.css). */
+
+.ent-vol { display: flex; flex-direction: column; gap: 8px; }
+.ent-leyenda { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.75rem; color: var(--ink-2); margin-bottom: 4px; }
+.ent-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.ent-leyenda i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.ent-franja-muestra { background: var(--accent-soft); border: 1px dashed var(--border); }
+.ent-vol-fila { display: grid; grid-template-columns: 92px 1fr 64px; align-items: center; gap: 8px; font-size: 0.85rem; }
+.ent-vol-etq { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ent-vol-pista { position: relative; height: 18px; }
+.ent-franja { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-left: 1px dashed var(--border); border-right: 1px dashed var(--border); }
+.ent-barra { position: absolute; left: 0; height: 6px; top: 2px; border-radius: 0 4px 4px 0; background: var(--accent); }
+.ent-barra.gris { top: 10px; background: var(--muted); opacity: 0.7; }
+.ent-vol-num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ent-vol-num small { color: var(--muted); font-weight: 400; font-size: 0.7rem; }
+.ent-barras { display: block; max-height: 160px; }
+
+.ent-comp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.ent-comp > div { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; font-size: 0.85rem; }
+.ent-comp b { display: block; font-size: 0.7rem; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 2px; }
+.ent-sube { color: var(--good-text); }
+.ent-baja { color: var(--critical-text); }
+.ent-record { color: var(--xp); font-weight: 700; }
+.ent-series { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.ent-series span { font-size: 0.78rem; padding: 2px 8px; border-radius: 99px; background: var(--surface-2); font-variant-numeric: tabular-nums; }
+.ent-series span.cal { opacity: 0.6; font-style: italic; }
+.ent-check { display: flex; flex-direction: column; gap: 6px; }
+.ent-check .segmentado button { padding: 7px 2px; }
+.ent-acciones-ej { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ent-editor-ej { border-top: 1px solid var(--line); padding: 10px 0; display: flex; flex-direction: column; gap: 8px; }
+.ent-editor-ej .fila-campos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ent-editor-ej input { min-height: 36px; padding: 6px 8px; }
+.ent-mini-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 6px; }
+.ent-mini-campos label { display: flex; flex-direction: column; gap: 2px; font-size: 0.7rem; color: var(--ink-2); }
+.ent-mini-campos input { min-height: 34px; padding: 4px 6px; }
+.ent-pre { white-space: pre-wrap; font-size: 0.75rem; background: var(--surface-2); padding: 10px; border-radius: 8px; max-height: 260px; overflow: auto; }
+.ent-buscador-lista { max-height: 50vh; overflow: auto; }
