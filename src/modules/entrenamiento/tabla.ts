@@ -1,4 +1,4 @@
-import { BIBLIOTECA, infoEjercicio } from './biblioteca';
+import { infoEjercicio, todos } from './biblioteca';
 import { CICLO_BASE, type Ciclo, type SemanaCiclo } from './ciclo';
 import { e, type DiaPlan, type EjercicioPlan } from './modelo';
 
@@ -28,7 +28,7 @@ export function resolverNombre(texto: string): string {
   if (!t) return t;
   if (infoEjercicio(t)) return infoEjercicio(t)!.nombre;
   const palabras = sinTildes(t).split(/\s+/).filter((p) => p.length > 1);
-  const candidatos = BIBLIOTECA.filter((x) => {
+  const candidatos = todos().filter((x) => {
     const n = sinTildes(x.nombre);
     return palabras.every((p) => n.includes(p));
   }).sort((a, b) => Number(b.compuesto) - Number(a.compuesto) || a.nombre.length - b.nombre.length);
@@ -124,7 +124,12 @@ export function leerTabla(texto: string): RutinaLeida {
     }
     if (/^ejercicio/i.test(celdas[0])) continue; // fila de títulos
     if (!dias.length) dias.push({ id: 'A', nombre: 'Día A', ejercicios: [] });
-    dias[dias.length - 1].ejercicios.push(leerFilaEjercicio(celdas));
+    // Columna opcional "var: Variante 1 / Variante 2" con hasta 5 ejercicios para rotar.
+    const iVar = celdas.findIndex((c) => /^var(iantes)?\s*:/i.test(c));
+    const variantes = iVar >= 0 ? celdas[iVar].replace(/^[^:]*:/, '').split('/').map((v) => resolverNombre(v.trim())).filter(Boolean).slice(0, 5) : [];
+    if (iVar >= 0) celdas.splice(iVar, 1);
+    const fila = leerFilaEjercicio(celdas);
+    dias[dias.length - 1].ejercicios.push(variantes.length ? { ...fila, variantes } : fila);
   }
   const conEj = dias.filter((d) => d.ejercicios.length);
   if (!conEj.length) throw new Error('No encontré ejercicios. Cada día empieza con "A: Nombre del día" y abajo un ejercicio por línea.');
@@ -137,11 +142,13 @@ export function rutinaATabla(dias: DiaPlan[], nombre: string, notas = '', ciclo?
   if (ciclo?.objetivo) l.push(`OBJETIVO: ${ciclo.objetivo}`);
   l.push(`CICLO: ${(ciclo?.semanas?.length ? ciclo.semanas : CICLO_BASE).map(semanaATexto).join(' | ')}`);
   for (const n of notas.split('\n').filter(Boolean)) l.push(`NOTAS: ${n}`);
-  l.push('# ejercicio | series x reps | descanso s | RPE | salto kg | nota');
+  l.push('# ejercicio | series x reps | descanso s | RPE | salto kg | nota | var: variante 1 / variante 2 (opcional)');
   for (const d of dias) {
     l.push(`${d.id}: ${d.nombre}`);
     for (const x of d.ejercicios) {
-      l.push([x.nombre, `${x.series}x${x.repsMin}${x.repsMax !== x.repsMin ? `-${x.repsMax}` : ''}`, x.descanso, x.rpe, x.salto, x.nota ?? ''].join(' | ').replace(/ \| $/, ''));
+      const cols = [x.nombre, `${x.series}x${x.repsMin}${x.repsMax !== x.repsMin ? `-${x.repsMax}` : ''}`, x.descanso, x.rpe, x.salto, x.nota ?? ''];
+      if (x.variantes?.length) cols.push(`var: ${x.variantes.join(' / ')}`);
+      l.push(cols.join(' | ').replace(/ \| $/, ''));
     }
   }
   return l.join('\n');

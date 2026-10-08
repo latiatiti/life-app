@@ -3,12 +3,13 @@ import type { Modulo, Senal } from '../../core/types';
 import { Icono } from '../../ui/ui';
 import { leerEnCurso } from './Entrenando';
 import { necesitaDescarga } from './analisis';
-import { entrenoHoy, progresoEjercicio, proximoDia, tendencia, useRutina, useSeries, useSesiones } from './modelo';
+import { entrenoHoy, progresoEjercicio, proximoDia, tendencia, useBiblioteca, useRutina, useSeries, useSesiones } from './modelo';
 import { PantallaHistorial, PantallaHoy, PantallaProgreso } from './Pantallas';
 import { PantallaPreparador } from './Preparador';
 import { PantallaRutina } from './Rutina';
 
 function useSenalesEntreno(): Senal[] {
+  useBiblioteca();
   const { filas: sesiones, cargado } = useSesiones();
   const { filas: series } = useSeries();
   const { dias, estado, ciclo } = useRutina();

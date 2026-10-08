@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { infoEjercicio } from './biblioteca';
+import { infoEjercicio, queSentir, zonasDe } from './biblioteca';
+import { MapaMuscular, textoZonas } from './MapaMuscular';
 
 /** Botones grandes − valor + para anotar con el pulgar. El número también se puede tocar y escribir. */
 export function Stepper({ etiqueta, valor, onCambio, paso = 1, min = 0, sufijo, decimales = false }: {
@@ -151,12 +152,12 @@ function Movimiento({ fotos, nombre }: { fotos: [string, string]; nombre: string
   );
 }
 
-export function ImagenEjercicio({ nombre }: { nombre: string }) {
+function FotosEjercicio({ nombre }: { nombre: string }) {
   const [abierta, setAbierta] = useState(false);
   const [ia, setIa] = useState(false);
   const [estado, setEstado] = useState<'cargando' | 'ok' | 'error'>('cargando');
   const fotos = fotosEjercicio(nombre);
-  if (!abierta) return <button type="button" className="btn chico" onClick={() => setAbierta(true)}>▶ Ver cómo se hace</button>;
+  if (!abierta) return <button type="button" className="btn chico" onClick={() => setAbierta(true)}>▶ Ver fotos del movimiento</button>;
   return (
     <figure className="ent-imagen">
       {fotos && !ia ? <Movimiento key={nombre} fotos={fotos} nombre={nombre} /> : (
@@ -172,5 +173,23 @@ export function ImagenEjercicio({ nombre }: { nombre: string }) {
         <button type="button" className="btn-link" onClick={() => setAbierta(false)}>Ocultar</button>
       </figcaption>
     </figure>
+  );
+}
+
+/** Qué músculo trabaja: figura con mapa de calor, qué sentir y, si querés, las fotos del movimiento. */
+export function ImagenEjercicio({ nombre }: { nombre: string }) {
+  const zonas = zonasDe(nombre);
+  const hay = Object.keys(zonas).length > 0;
+  return (
+    <div className="pila" style={{ gap: 8 }}>
+      <div className="ent-guia">
+        {hay ? <MapaMuscular valores={zonas} chico /> : null}
+        <div className="pila" style={{ gap: 4 }}>
+          {hay ? <p className="nota">{textoZonas(zonas)}</p> : <p className="nota">Este ejercicio no tiene mapa: cargalo en Rutina → Mis ejercicios.</p>}
+          {queSentir(nombre) && <p>🎯 {queSentir(nombre)}</p>}
+        </div>
+      </div>
+      <FotosEjercicio nombre={nombre} />
+    </div>
   );
 }

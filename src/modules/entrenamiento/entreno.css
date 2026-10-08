@@ -116,3 +116,18 @@
 .ent-mov { position: relative; display: block; width: 100%; max-width: 480px; aspect-ratio: 3 / 2; padding: 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface-2); cursor: pointer; }
 .ent-mov img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 0.35s ease; }
 .ent-mov-etq { position: absolute; left: 8px; bottom: 8px; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: rgba(10, 10, 18, 0.75); color: var(--ink); }
+
+/* ---------- Mapa muscular: silueta negra sobre blanco con mapa de calor ---------- */
+.mm { background: #fff; border-radius: 14px; padding: 10px 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+.mm-figuras { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; justify-items: center; }
+.mm-fig { width: 100%; max-width: 170px; height: auto; display: block; }
+.mm-leyenda { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.7rem; color: #444; font-weight: 600; }
+.mm-leyenda i { width: 90px; height: 8px; border-radius: 99px; display: inline-block; }
+.mm-chico { padding: 2px; border-radius: 8px; }
+.mm-chico .mm-figuras { gap: 0; }
+.mm-mini { width: 54px; flex-shrink: 0; }
+.mm-mini .mm-fig text { display: none; }
+.ent-guia { display: grid; grid-template-columns: minmax(0, 220px) 1fr; gap: 12px; align-items: start; }
+.ent-guia p { margin: 0; }
+@media (max-width: 560px) { .ent-guia { grid-template-columns: 1fr; } }
+.ent-variantes-rapidas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }

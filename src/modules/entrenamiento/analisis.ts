@@ -254,7 +254,8 @@ export function informeEntrenador(sesiones: Sesion[], series: Serie[], dias: Dia
   l.push('Analizá mi progreso, adherencia y fatiga, y armá el próximo ciclo de 4 semanas (sobrecarga progresiva y descarga).');
   l.push('Devolvé la rutina en un bloque de código con el formato de tabla de LIFE, sin JSON:');
   l.push('RUTINA: nombre / OBJETIVO: una línea / CICLO: Adaptación rpe-1 | Carga | Sobrecarga s+1 | Descarga s50% rpe6 c85 / NOTAS: por qué cambiaste lo que cambiaste');
-  l.push('Después, por cada día una línea "A: Nombre del día" y un ejercicio por línea: ejercicio | series x reps | descanso s | RPE | salto kg | nota');
+  l.push('Después, por cada día una línea "A: Nombre del día" y un ejercicio por línea: ejercicio | series x reps | descanso s | RPE | salto kg | nota | var: hasta 5 variantes separadas por /');
+  l.push('Si usás ejercicios que no están en la app, agregá OTRO bloque ```json {"ejercicios":[{"nombre","zonas":{"pecho":1,"triceps":0.5},"equipo","compuesto","salto","sentir","variantes":[]}]} (zonas: pecho, deltoide_ant, deltoide_lat, deltoide_post, trapecio, dorsales, lumbar, biceps, triceps, antebrazo, abdominales, oblicuos, gluteos, cuadriceps, aductores, isquios, gemelos; 1 = principal, 0.5 = ayuda).');
   l.push('(s = series, rpe = esfuerzo, c = % del peso). Usá nombres de ejercicios comunes en castellano.');
   return l.join('\n');
 }
@@ -285,7 +286,8 @@ export function leerRutinaJson(texto: string): { nombre: string; notas: string; 
         const xx = x as Record<string, unknown>;
         if (!xx.nombre) throw new Error(`Hay un ejercicio sin nombre en el día ${i + 1}.`);
         const base = e(String(xx.nombre), num(xx.series, 3), num(xx.repsMin, 8), num(xx.repsMax, 12), num(xx.descanso, 90), num(xx.rpe, 8), xx.salto != null ? num(xx.salto, 2.5) : undefined);
-        return xx.nota ? { ...base, nota: String(xx.nota) } : base;
+        const conNota = xx.nota ? { ...base, nota: String(xx.nota) } : base;
+        return Array.isArray(xx.variantes) ? { ...conNota, variantes: xx.variantes.map(String).slice(0, 5) } : conNota;
       }),
     };
   });

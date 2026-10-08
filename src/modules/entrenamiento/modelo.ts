@@ -1,6 +1,6 @@
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { hoy } from '../../core/format';
-import { infoEjercicio } from './biblioteca';
+import { fijarPropios, infoEjercicio, type EjercicioBase } from './biblioteca';
 import { CICLO_BASE, estadoCiclo, lunesDe, pesoInicial, redondearCarga, type Ciclo, type EstadoCiclo, type Perfil, type SemanaCiclo } from './ciclo';
 
 /* ---------- Rutina: días con ejercicios. La base viene en código; la usuaria (o Claude) la puede editar ---------- */
@@ -18,6 +18,8 @@ export interface EjercicioPlan {
   salto: number;
   /** Indicación de técnica o comentario del entrenador. */
   nota?: string;
+  /** Hasta 5 ejercicios para rotar en este lugar de la rutina. */
+  variantes?: string[];
 }
 
 export interface DiaPlan {
@@ -111,10 +113,31 @@ export interface Serie extends Fila {
   tipo?: 'efectiva' | 'calentamiento';
 }
 
-export const TE = { sesiones: 'ent_sesiones', series: 'ent_series', rutinas: 'ent_rutinas' } as const;
+export const TE = { sesiones: 'ent_sesiones', series: 'ent_series', rutinas: 'ent_rutinas', ejercicios: 'ent_ejercicios' } as const;
 export const useSesiones = () => useTabla<Sesion>(TE.sesiones);
 export const useSeries = () => useTabla<Serie>(TE.series);
 export const useRutinas = () => useTabla<Rutina>(TE.rutinas);
+
+/** Ejercicio cargado por la usuaria (o pegado de Claude): mismo formato que la biblioteca. */
+export interface EjercicioPropio extends Fila, Omit<EjercicioBase, 'propio'> {}
+
+/** Lee los ejercicios propios y los suma a la biblioteca. Llamarlo arriba de cada pantalla que use ejercicios. */
+export function useBiblioteca() {
+  const { filas, cargado } = useTabla<EjercicioPropio>(TE.ejercicios);
+  fijarPropios(filas);
+  return { propios: filas, cargado };
+}
+
+/** Crea o actualiza (por nombre) un ejercicio propio. */
+export async function guardarEjercicio(x: Omit<EjercicioBase, 'propio'>, existentes: EjercicioPropio[]) {
+  const datos = {
+    nombre: x.nombre.trim(), grupo: x.grupo, secundarios: x.secundarios, equipo: x.equipo, compuesto: x.compuesto,
+    salto: x.salto, zonas: x.zonas ?? {}, sentir: x.sentir ?? '', variantes: (x.variantes ?? []).slice(0, 5),
+  };
+  const ya = existentes.find((e) => e.nombre.toLowerCase() === datos.nombre.toLowerCase());
+  if (ya) await modificar<EjercicioPropio>(TE.ejercicios, ya.id, datos);
+  else await crear<EjercicioPropio>(TE.ejercicios, datos);
+}
 
 export interface RutinaActiva {
   dias: DiaPlan[];

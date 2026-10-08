@@ -3,8 +3,11 @@ import { fechaCorta, hoy, sumarDias } from '../../core/format';
 import { Campo, Tarjeta } from '../../ui/ui';
 import { informeEntrenador, leerRutinaJson, progresoPorFecha, rangoSeries, seriesPorGrupo } from './analisis';
 import { CICLO_BASE, describirSemana, lunesDe, proponerCiclo, type Ciclo, type Nivel, type Perfil } from './ciclo';
-import { empezarCiclo, guardarRutina, useRutina, useSeries, useSesiones, type DiaPlan } from './modelo';
+import { empezarCiclo, guardarEjercicio, guardarRutina, useBiblioteca, useRutina, useSeries, useSesiones, type DiaPlan } from './modelo';
 import { BarraCiclo } from './Pantallas';
+import { fijarPropios, type EjercicioBase } from './biblioteca';
+import { leerEjerciciosJson } from './Ejercicios';
+import { MapaMuscular, textoZonas } from './MapaMuscular';
 import { esJson, leerTabla, PRESETS, rutinaATabla, type RutinaLeida } from './tabla';
 
 async function copiar(texto: string) {
@@ -66,6 +69,8 @@ export function PantallaPreparador() {
   const [vista, setVista] = useState<RutinaLeida | null>(null);
   const [preset, setPreset] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const { propios } = useBiblioteca();
+  const [ejsPegados, setEjsPegados] = useState<Array<Omit<EjercicioBase, 'propio'>>>([]);
 
   const nombre = fila?.nombre ?? 'Rutina base';
   const tablaActual = rutinaATabla(dias, nombre, fila?.notas ?? '', ciclo);
@@ -158,13 +163,33 @@ export function PantallaPreparador() {
           placeholder={'RUTINA: Mi rutina\nCICLO: Adaptación rpe-1 | Carga | Sobrecarga s+1 | Descarga s50% rpe6 c85\nA: Pecho y bíceps\nPress de banca con barra | 4x6-10 | 150 | 8'} />
         <div className="acciones" style={{ marginTop: 8 }}>
           <button className="btn" disabled={!pegado.trim()} onClick={() => {
+            const { ejercicios, resto } = separarEjercicios(pegado);
+            setEjsPegados(ejercicios);
+            // Para que la rutina reconozca los ejercicios nuevos aunque todavía no estén guardados.
+            if (ejercicios.length) fijarPropios([...propios, ...ejercicios]);
             try {
-              if (esJson(pegado)) { const j = leerRutinaJson(pegado); setVista({ ...j, ciclo: { semanas: CICLO_BASE } }); } else setVista(leerTabla(pegado));
+              if (!resto.trim() && ejercicios.length) { setVista(null); setError(''); return; }
+              if (esJson(resto)) { const j = leerRutinaJson(resto); setVista({ ...j, ciclo: { semanas: CICLO_BASE } }); } else setVista(leerTabla(resto));
               setError('');
-            } catch (x) { setError((x as Error).message); setVista(null); }
+            } catch (x) { setVista(null); setError(ejercicios.length ? '' : (x as Error).message); }
           }}>Revisar</button>
         </div>
         {error && <p className="ent-baja">{error}</p>}
+        {ejsPegados.length > 0 && (
+          <div className="pila" style={{ gap: 6, marginTop: 8 }}>
+            <p className="subtitulo" style={{ margin: 0 }}>{ejsPegados.length === 1 ? '1 ejercicio nuevo' : `${ejsPegados.length} ejercicios nuevos`}</p>
+            {ejsPegados.map((x) => (
+              <div key={x.nombre} className="ent-guia">
+                <MapaMuscular valores={x.zonas ?? {}} chico leyenda={false} />
+                <div><strong>{x.nombre}</strong><p className="nota">{textoZonas(x.zonas ?? {})}</p>{x.variantes?.length ? <p className="nota">Variantes: {x.variantes.join(', ')}</p> : null}</div>
+              </div>
+            ))}
+            <button className="btn btn-primario" onClick={async () => {
+              for (const x of ejsPegados) await guardarEjercicio(x, propios);
+              setMsg(`Guardé ${ejsPegados.length} ejercicio(s) en Mis ejercicios.`); setEjsPegados([]);
+            }}>Guardar en Mis ejercicios</button>
+          </div>
+        )}
         {vista && <VistaRutina r={vista} accion={
           <div className="acciones">
             <button className="btn btn-primario crece" onClick={() => activar(vista, lunesDe(hoy()))}>Empezar ciclo nuevo este lunes</button>
@@ -203,4 +228,20 @@ ejercicio | series x reps | descanso s | RPE | salto kg | nota
       )}
     </div>
   );
+}
+
+/** Saca los bloques ```json {"ejercicios": …}``` del texto pegado; el resto es la rutina. */
+function separarEjercicios(texto: string): { ejercicios: Array<Omit<EjercicioBase, 'propio'>>; resto: string } {
+  const ejercicios: Array<Omit<EjercicioBase, 'propio'>> = [];
+  let resto = texto;
+  for (const m of texto.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)) {
+    if (!/"ejercicios"\s*:/.test(m[1])) continue;
+    const xs = leerEjerciciosJson(m[1]);
+    if (xs.length) { ejercicios.push(...xs); resto = resto.replace(m[0], ''); }
+  }
+  if (!ejercicios.length && /^\s*\{\s*"ejercicios"/.test(texto)) {
+    const xs = leerEjerciciosJson(texto);
+    if (xs.length) return { ejercicios: xs, resto: '' };
+  }
+  return { ejercicios, resto };
 }

@@ -3,8 +3,8 @@ import { escribirStorage, leerStorage } from '../../core/config';
 import { fechaCorta, hoy } from '../../core/format';
 import { Campo, Modal, Tarjeta } from '../../ui/ui';
 import { compararSemana, evaluarPreparacion, objetivoHoy, type Preparacion } from './analisis';
-import { infoEjercicio } from './biblioteca';
-import { guardarSesion, pesoSugerido, ultimaVez, useRutina, useSeries, type DiaPlan, type Sesion } from './modelo';
+import { infoEjercicio, variantesDe } from './biblioteca';
+import { guardarSesion, pesoSugerido, ultimaVez, useBiblioteca, useRutina, useSeries, type DiaPlan, type Sesion } from './modelo';
 import { Delta, ResumenEntreno } from './Resumen';
 import { SelectorEjercicio } from './Rutina';
 import { describirSemana, type SemanaCiclo } from './ciclo';
@@ -87,6 +87,7 @@ function Chequeo({ onListo }: { onListo: (p: Preparacion) => void }) {
 /* ---------- Pantalla principal del modo entrenando ---------- */
 
 export function Entrenando({ onSalir }: { onSalir: () => void }) {
+  useBiblioteca();
   const { filas: series } = useSeries();
   const { dias, perfil } = useRutina();
   const [st, setSt] = useState<EnCurso | null>(leerEnCurso);
@@ -369,13 +370,23 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
       )}
 
       <Modal titulo="Cambiar ejercicio (solo hoy)" abierto={cambiar} onCerrar={() => setCambiar(false)}>
-        {cambiar && ej && (
-          <SelectorEjercicio grupoInicial={info?.grupo} onElegir={(nombre) => {
+        {cambiar && ej && (() => {
+          const elegir = (nombre: string) => {
             const nuevo = { ...ej, nombre, salto: infoEjercicio(nombre)?.salto ?? ej.salto };
             actualizar({ ...st, plan: { ...plan, ejercicios: plan.ejercicios.map((x, i) => (i === st.ej ? nuevo : x)) } });
             setCambiar(false);
-          }} />
-        )}
+          };
+          return (
+            <>
+              <p className="subtitulo" style={{ margin: 0 }}>Variantes</p>
+              <div className="ent-variantes-rapidas">
+                {variantesDe(ej.nombre, ej.variantes).map((v) => <button key={v} className="btn chico" onClick={() => elegir(v)}>{v}</button>)}
+              </div>
+              <p className="subtitulo" style={{ margin: 0 }}>O cualquier otro</p>
+              <SelectorEjercicio grupoInicial={info?.grupo} onElegir={elegir} />
+            </>
+          );
+        })()}
       </Modal>
     </div>
   );

@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Campo, Icono, Modal, Tarjeta } from '../../ui/ui';
-import { BIBLIOTECA, GRUPOS, infoEjercicio, nombreGrupo, type Grupo } from './biblioteca';
-import { e, guardarRutina, RUTINA_BASE, useRutina, type DiaPlan, type EjercicioPlan } from './modelo';
+import { GRUPOS, infoEjercicio, nombreGrupo, todos, zonasDe, type Grupo } from './biblioteca';
+import { EditorVariantes, FormEjercicio, MisEjercicios } from './Ejercicios';
+import { MapaMuscular } from './MapaMuscular';
+import { e, guardarRutina, RUTINA_BASE, useBiblioteca, useRutina, type DiaPlan, type EjercicioPlan } from './modelo';
 
 /** Buscador de la biblioteca, filtrable por grupo; también deja escribir un ejercicio propio. */
 export function SelectorEjercicio({ grupoInicial, onElegir }: { grupoInicial?: Grupo; onElegir: (nombre: string) => void }) {
   const [q, setQ] = useState('');
   const [grupo, setGrupo] = useState<Grupo | ''>(grupoInicial ?? '');
+  const [nuevo, setNuevo] = useState(false);
+  useBiblioteca();
   const t = q.trim().toLowerCase();
-  const lista = BIBLIOTECA.filter((x) => (!grupo || x.grupo === grupo || x.secundarios.includes(grupo)) && (!t || x.nombre.toLowerCase().includes(t)))
+  if (nuevo) return <FormEjercicio inicial={q.trim() ? { nombre: q.trim(), grupo: grupo || 'pecho', secundarios: [], equipo: 'mancuernas', compuesto: false, salto: 2.5, zonas: {} } : null} onListo={onElegir} />;
+  const lista = todos().filter((x) => (!grupo || x.grupo === grupo || x.secundarios.includes(grupo)) && (!t || x.nombre.toLowerCase().includes(t)))
     .sort((a, b) => Number(b.grupo === grupo) - Number(a.grupo === grupo));
   return (
     <div className="form">
@@ -25,17 +30,16 @@ export function SelectorEjercicio({ grupoInicial, onElegir }: { grupoInicial?: G
         {lista.map((x) => (
           <li key={x.nombre}>
             <button type="button" className="lista-item btn-icono" style={{ textAlign: 'left', color: 'var(--ink)' }} onClick={() => onElegir(x.nombre)}>
+              <div className="mm-mini"><MapaMuscular valores={zonasDe(x.nombre)} chico leyenda={false} /></div>
               <div className="crece">
-                <strong>{x.nombre}</strong>
+                <strong>{x.nombre}{x.propio ? ' ★' : ''}</strong>
                 <small className="nota">{nombreGrupo(x.grupo)}{x.secundarios.length ? ` + ${x.secundarios.map(nombreGrupo).join(', ')}` : ''} · {x.equipo}{x.compuesto ? ' · compuesto' : ''}</small>
               </div>
             </button>
           </li>
         ))}
       </ul>
-      {t && !lista.some((x) => x.nombre.toLowerCase() === t) && (
-        <button type="button" className="btn" onClick={() => onElegir(q.trim())}>{Icono.mas} Usar “{q.trim()}” (ejercicio propio)</button>
-      )}
+      <button type="button" className="btn" onClick={() => setNuevo(true)}>{Icono.mas} {t && !lista.some((x) => x.nombre.toLowerCase() === t) ? `Cargar “${q.trim()}” como ejercicio nuevo` : 'Cargar un ejercicio nuevo'}</button>
     </div>
   );
 }
@@ -57,9 +61,10 @@ function EditorEjercicio({ ej, onCambio, onSubir, onBajar, onQuitar, onCambiarPo
   return (
     <div className="ent-editor-ej">
       <div className="barra-acciones">
+        <div className="mm-mini"><MapaMuscular valores={zonasDe(ej.nombre)} chico leyenda={false} /></div>
         <div className="crece" style={{ minWidth: 0 }}>
           <strong>{ej.nombre}</strong>
-          <small className="nota">{info ? nombreGrupo(info.grupo) : 'Ejercicio propio (no suma a ningún grupo)'}</small>
+          <small className="nota">{info ? nombreGrupo(info.grupo) : 'Sin mapa: cargalo en "Mis ejercicios"'}</small>
         </div>
         <div style={{ display: 'flex' }}>
           <button className="btn-icono" aria-label="Subir" disabled={!onSubir} onClick={onSubir}>↑</button>
@@ -77,11 +82,16 @@ function EditorEjercicio({ ej, onCambio, onSubir, onBajar, onQuitar, onCambiarPo
         <label>Salto (kg)<input inputMode="decimal" value={ej.salto} onChange={n('salto')} /></label>
       </div>
       <input value={ej.nota ?? ''} onChange={(ev) => onCambio({ ...ej, nota: ev.target.value })} placeholder="Nota de técnica (opcional)" />
+      <details>
+        <summary className="nota">Variantes para rotar ({ej.variantes?.length ?? 0}/5)</summary>
+        <EditorVariantes nombre={ej.nombre} valor={ej.variantes ?? []} onCambio={(v) => onCambio({ ...ej, variantes: v })} />
+      </details>
     </div>
   );
 }
 
 export function PantallaRutina() {
+  useBiblioteca();
   const { dias, fila, cargado } = useRutina();
   const [borrador, setBorrador] = useState<DiaPlan[]>(dias);
   const [sucio, setSucio] = useState(false);
@@ -162,6 +172,7 @@ export function PantallaRutina() {
             }} />
         )}
       </Modal>
+      <MisEjercicios />
     </div>
   );
 }

@@ -6,10 +6,12 @@ import { compararSemana, necesitaDescarga, pct, semanas } from './analisis';
 import { empezarEntreno, Entrenando, leerEnCurso } from './Entrenando';
 import { BarrasSemanas, Linea, VolumenGrupos } from './Graficos';
 import {
-  pesoSugerido, progresoEjercicio, proximoDia, TE, tendencia, useRutina, useSeries, useSesiones, type Sesion,
+  pesoSugerido, progresoEjercicio, proximoDia, TE, tendencia, useBiblioteca, useRutina, useSeries, useSesiones, type Serie, type Sesion,
 } from './modelo';
 import { Delta, ResumenEntreno } from './Resumen';
 import './entreno.css';
+import { zonasDe, type Zona } from './biblioteca';
+import { MapaMuscular, textoZonas } from './MapaMuscular';
 import { ajustarDia, describirSemana } from './ciclo';
 import { inicioSemana } from './analisis';
 
@@ -63,7 +65,20 @@ export function BarraCiclo() {
   );
 }
 
+/** Series efectivas de esta semana por zona (pesadas por el mapa de cada ejercicio), escaladas a 15 = 1. */
+function mapaSemana(series: Serie[]): Partial<Record<Zona, number>> {
+  const lunes = inicioSemana(hoy());
+  const r: Partial<Record<Zona, number>> = {};
+  for (const s of series) {
+    if (s.fecha < lunes || s.tipo === 'calentamiento') continue;
+    for (const [z, v] of Object.entries(zonasDe(s.ejercicio)) as Array<[Zona, number]>) r[z] = (r[z] ?? 0) + v;
+  }
+  for (const z of Object.keys(r) as Zona[]) r[z] = Math.min(1, (r[z] ?? 0) / 15);
+  return r;
+}
+
 export function PantallaHoy() {
+  useBiblioteca();
   const { filas: sesiones } = useSesiones();
   const { filas: series } = useSeries();
   const { dias, perfil, semana } = useRutina();
@@ -126,6 +141,7 @@ export function PantallaHoy() {
 type Medida = 'tonelaje' | 'series' | 'carga';
 
 export function PantallaProgreso() {
+  useBiblioteca();
   const { filas: sesiones } = useSesiones();
   const { filas: series } = useSeries();
   const { dias } = useRutina();
@@ -161,6 +177,10 @@ export function PantallaProgreso() {
   const cambio = pct(esta[medida], pasada[medida]);
   return (
     <div className="pila">
+      <Tarjeta titulo="Mapa de la semana">
+        <MapaMuscular valores={mapaSemana(series)} />
+        <p className="nota" style={{ margin: '8px 0 0' }}>Rojo = músculo con 15 series o más esta semana; amarillo = poco trabajo; gris = nada. {textoZonas(mapaSemana(series))}</p>
+      </Tarjeta>
       <Tarjeta titulo="Series por músculo">
         <VolumenGrupos esta={esta.porGrupo} pasada={pasada.porGrupo} />
         <p className="nota" style={{ margin: '8px 0 0' }}>Para ganar masa, la evidencia apunta a unas 10–20 series efectivas por músculo por semana (menos en brazos y gemelos, que trabajan de rebote). El músculo principal suma 1 serie y los que ayudan, media.</p>
