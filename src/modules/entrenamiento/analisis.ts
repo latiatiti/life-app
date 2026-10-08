@@ -1,5 +1,6 @@
 import { desdeISO, diasEntre, hoy, sumarDias } from '../../core/format';
 import { GRUPOS, infoEjercicio, nombreGrupo, type Grupo } from './biblioteca';
+import { describirSemana, estadoCiclo, type Ciclo, type Perfil } from './ciclo';
 import { e, efectivas, progresoEjercicio, ultimaVez, unoRM, type DiaPlan, type EjercicioPlan, type Serie, type Sesion } from './modelo';
 
 /* ---------- Semanas (de lunes a domingo) ---------- */
@@ -196,13 +197,22 @@ export const pct = (actual: number, previo: number) => (previo > 0 ? ((actual - 
 
 const kg = (n: number) => `${Math.round(n * 10) / 10}`;
 
-export function informeEntrenador(sesiones: Sesion[], series: Serie[], dias: DiaPlan[], notasRutina = '', ref = hoy()): string {
+export const progresoPorFecha = progresoEjercicio;
+
+export function informeEntrenador(sesiones: Sesion[], series: Serie[], dias: DiaPlan[], notasRutina = '', ref = hoy(),
+  extra: { ciclo?: Ciclo | null; inicio?: string | null; perfil?: Perfil | null } = {}): string {
   const desde = sumarDias(ref, -28);
   const recientes = [...sesiones].filter((s) => s.fecha >= desde).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const l: string[] = [];
   l.push(`# Informe de entrenamiento (${ref})`);
   l.push('Objetivo: ganar masa muscular. Gimnasio de pesas, ~3 días por semana. Sin wearables.');
   l.push('Pesos en kg. RPE 1–10 (10 = al fallo). Preparación: sueño en horas, energía y dolor muscular de 1 a 5.');
+  if (extra.perfil) l.push(`Perfil: ${extra.perfil.peso_kg} kg, nivel ${extra.perfil.nivel}${extra.perfil.sexo ? `, ${extra.perfil.sexo === 'f' ? 'mujer' : 'varón'}` : ''}.`);
+  const est = estadoCiclo(extra.ciclo, extra.inicio, ref);
+  if (extra.ciclo && est) {
+    l.push(`Ciclo${extra.ciclo.numero ? ` ${extra.ciclo.numero}` : ''} desde ${extra.inicio}: ${est.terminado ? 'terminado' : `semana ${est.indice + 1} de ${est.total}`}. Semanas: ${extra.ciclo.semanas.map((s, i) => `S${i + 1} ${s.nombre} (${describirSemana(s)})`).join('; ')}.`);
+    if (extra.ciclo.objetivo) l.push(`Objetivo del ciclo: ${extra.ciclo.objetivo}`);
+  }
   l.push('');
   l.push('## Rutina actual');
   if (notasRutina) l.push(notasRutina);
@@ -241,7 +251,12 @@ export function informeEntrenador(sesiones: Sesion[], series: Serie[], dias: Dia
   if (ult) l.push(`\nÚltimo entreno hace ${diasEntre(ult.fecha, ref)} días.`);
   l.push('');
   l.push('## Pedido');
-  l.push('Analizá mi progreso y fatiga. Si conviene cambiar la rutina, devolvémela en el formato JSON de LIFE (bloque ```json con "nombre", "notas" y "dias": [{ "id", "nombre", "ejercicios": [{ "nombre", "series", "repsMin", "repsMax", "descanso" (segundos), "rpe", "salto" (kg), "nota" }] }]) para pegarla en la app.');
+  l.push('Analizá mi progreso, adherencia y fatiga, y armá el próximo ciclo de 4 semanas (sobrecarga progresiva y descarga).');
+  l.push('Devolvé la rutina en un bloque de código con el formato de tabla de LIFE, sin JSON:');
+  l.push('RUTINA: nombre / OBJETIVO: una línea / CICLO: Adaptación rpe-1 | Carga | Sobrecarga s+1 | Descarga s50% rpe6 c85 / NOTAS: por qué cambiaste lo que cambiaste');
+  l.push('Después, por cada día una línea "A: Nombre del día" y un ejercicio por línea: ejercicio | series x reps | descanso s | RPE | salto kg | nota | var: hasta 5 variantes separadas por /');
+  l.push('Si usás ejercicios que no están en la app, agregá OTRO bloque ```json {"ejercicios":[{"nombre","zonas":{"pecho":1,"triceps":0.5},"equipo","compuesto","salto","sentir","variantes":[]}]} (zonas: pecho, deltoide_ant, deltoide_lat, deltoide_post, trapecio, dorsales, lumbar, biceps, triceps, antebrazo, abdominales, oblicuos, gluteos, cuadriceps, aductores, isquios, gemelos; 1 = principal, 0.5 = ayuda).');
+  l.push('(s = series, rpe = esfuerzo, c = % del peso). Usá nombres de ejercicios comunes en castellano.');
   return l.join('\n');
 }
 
@@ -271,7 +286,8 @@ export function leerRutinaJson(texto: string): { nombre: string; notas: string; 
         const xx = x as Record<string, unknown>;
         if (!xx.nombre) throw new Error(`Hay un ejercicio sin nombre en el día ${i + 1}.`);
         const base = e(String(xx.nombre), num(xx.series, 3), num(xx.repsMin, 8), num(xx.repsMax, 12), num(xx.descanso, 90), num(xx.rpe, 8), xx.salto != null ? num(xx.salto, 2.5) : undefined);
-        return xx.nota ? { ...base, nota: String(xx.nota) } : base;
+        const conNota = xx.nota ? { ...base, nota: String(xx.nota) } : base;
+        return Array.isArray(xx.variantes) ? { ...conNota, variantes: xx.variantes.map(String).slice(0, 5) } : conNota;
       }),
     };
   });

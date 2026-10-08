@@ -27,7 +27,7 @@ export const chipsSeries = (xs: Serie[]) => (
 /** Resultado de un entreno: totales, cada ejercicio contra la vez anterior, récords y qué hacer la próxima. */
 export function ResumenEntreno({ sesion }: { sesion: Sesion }) {
   const { filas: series } = useSeries();
-  const { dias } = useRutina();
+  const { dias, perfil } = useRutina();
   const r = resumirSesion(sesion, series);
   const plan = dias.find((d) => d.id === sesion.dia);
   const prep = evaluarPreparacion(sesion);
@@ -49,7 +49,7 @@ export function ResumenEntreno({ sesion }: { sesion: Sesion }) {
 
       {r.ejercicios.map((x) => {
         const ej = plan?.ejercicios.find((p) => p.nombre === x.nombre);
-        const prox = ej ? pesoSugerido(series, ej) : null;
+        const prox = ej ? pesoSugerido(series, ej, perfil) : null;
         return (
           <Tarjeta key={x.nombre} titulo={x.nombre} accion={x.record ? <span className="chip chip-on">🏆 Récord</span> : undefined}>
             {chipsSeries(x.series)}

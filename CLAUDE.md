@@ -20,8 +20,8 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Rutas por hash: `#/economia` (+ `/movimientos`, `/ingresos`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock` (+ `/lista`), `#/compras` (+ `/comprando`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
 - `src/modules/ajustes/semilla.ts`: botón "Cargar mi configuración" con los datos reales de la usuaria (ingresos, fijos, básicos, platos). Idempotente por nombre.
 
-## Tablas (`supabase/schema.sql` + `supabase/entreno-v2.sql`, correr en ese orden)
-- `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
+## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql`, en ese orden)
+- `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
 - Compras (`supabase/compras.sql`, aplicado en la nube): `com_supers` (bloques jsonb = orden de pasillos de ese súper), `com_items` (catálogo propio; precios jsonb = último precio online por cadena; producto_id enlaza al stock), `com_precios` (historial: online/ticket/manual), `com_compras` (estimado vs total del ticket, items jsonb).
 - Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
 - Toda tabla nueva: con `user_id` y política RLS, igual que las existentes.
@@ -40,6 +40,17 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Compras: precios online vía la función de Supabase `precios` (`supabase/functions/precios`, proxy a los catálogos VTEX públicos de Carrefour, Vea y Jumbo; busca por texto o por código de barras). La app la llama con la anon key del proyecto Life (en `compras/modelo.ts`). Son precios web de referencia; el real sale del ticket.
 - Stock → Compras: "Falta en casa" suma faltantes a la lista. Compras → Stock/Economía: cerrar la compra suma al stock lo enlazado, guarda el precio real de cada cosa y crea el gasto (categoría Súper).
 - Modo compra: estado en localStorage (`life.compras.encurso`), bloques en el orden guardado del súper (▲▼ lo reordena), "en este pasillo también" sugiere lo que comprás seguido o falta en casa.
+
+## Preparador y ciclos (2026-10-06)
+- `ent_rutinas` guarda cada ciclo como una fila: `inicio` (lunes) + `ciclo` jsonb {semanas, objetivo, perfil, numero}. Solo una `activa`; las viejas quedan como historial (`empezarCiclo` en `modelo.ts`). SQL: `supabase/entreno-ciclos.sql` (aplicado).
+- `ciclo.ts`: semanas del ciclo (s+1, s50%, rpe-1, rpe6, c85), `ajustarDia`, peso inicial por perfil (`pesoInicial`), propuesta automática del próximo ciclo (`proponerCiclo`: cambia ejercicios estancados, ajusta series por rango de volumen, no sube volumen si la adherencia < 70 %).
+- `tabla.ts`: formato de tabla compacto para rutinas (lo que se le pide a Claude) + presets. Acepta nombres abreviados.
+- `Preparador.tsx` (pestaña Preparador, ruta `#/entrenamiento/entrenador`): ciclo, propuesta, perfil, presets, informe para Claude y pegar tabla/JSON.
+- Modo entrenando: steppers − / + (reps arranca en el mínimo o en lo de la última vez), RPE preelegido, botón fijo abajo para confirmar, encabezado fijo, notas rápidas. `Controles.tsx`: fotos inicio/final de Free Exercise DB (dominio público, CDN jsDelivr) alternadas como mini "reel" + imagen IA opcional (Pollinations, experimental).
+- Mapa muscular (2026-10-08): `MapaMuscular.tsx` dibuja frente y espalda (silueta negra sobre blanco, mitad derecha espejada) con 17 zonas (`Zona` en `biblioteca.ts`) pintadas de amarillo (ayuda) a rojo (principal). `zonasDe(nombre)` usa el mapa propio del ejercicio, el fino de fábrica (`FINO`) o el del grupo; `queSentir()` da la pista de técnica. Se ve en el modo entrenando (reemplaza las fotos, que quedan como "Ver fotos"), en el selector, en el editor de rutina y en Progreso ("Mapa de la semana": series por zona, 15 = rojo).
+- Ejercicios propios: tabla `ent_ejercicios` (`supabase/entreno-ejercicios.sql`), `useBiblioteca()` los suma a la biblioteca (`fijarPropios` + `todos()`); llamarlo arriba de cada pantalla que use ejercicios. Se cargan tocando la figura (Rutina → Mis ejercicios, o "Cargar un ejercicio nuevo" en el selector) o pegando `{"ejercicios":[{nombre, zonas:{pecho:1,…}, equipo, compuesto, salto, sentir, variantes}]}` en el Preparador.
+- Variantes: hasta 5 por ejercicio (en el ejercicio o en el lugar de la rutina, `EjercicioPlan.variantes`; en la tabla, columna `var: A / B`). `variantesDe()` completa con las más parecidas por zonas. En el modo entrenando aparecen primero en "Cambiar por otro".
+- Datos de prueba: Ajustes → Cargar/Borrar historial de prueba (`public/historial-prueba.json`, generado con `scripts/gen-historial.mjs`; ids `cafe0000-…`).
 
 ## Hoja de ruta (plan aprobado el 2026-10-05, ver doc del plan en la memoria del proyecto)
 1. ✅ Puesta a punto + versión base de Entreno, Stock y Comida conectados (falta: la usuaria crea Supabase y Netlify y publicamos).

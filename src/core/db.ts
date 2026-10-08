@@ -17,6 +17,8 @@ export interface Almacen {
   tipo: 'local' | 'nube';
   listar<T extends Fila>(tabla: string): Promise<T[]>;
   insertar<T extends Fila>(tabla: string, fila: T): Promise<T>;
+  /** Inserta muchas filas de una vez (importar respaldos sin esperar fila por fila). */
+  insertarVarios(tabla: string, filas: Fila[]): Promise<void>;
   actualizar<T extends Fila>(tabla: string, id: string, cambios: Partial<T>): Promise<void>;
   borrar(tabla: string, id: string): Promise<void>;
 }
@@ -54,6 +56,10 @@ class AlmacenLocal implements Almacen {
     this.escribir(tabla, [...this.leer(tabla), nueva]);
     return nueva;
   }
+  async insertarVarios(tabla: string, filas: Fila[]) {
+    const ahora = new Date().toISOString();
+    this.escribir(tabla, [...this.leer(tabla), ...filas.map((f) => ({ ...f, created_at: f.created_at ?? ahora }))]);
+  }
   async actualizar<T extends Fila>(tabla: string, id: string, cambios: Partial<T>) {
     this.escribir(
       tabla,
@@ -83,6 +89,12 @@ class AlmacenNube implements Almacen {
     const { data, error } = await this.cliente.from(tabla).insert(fila).select().single();
     if (error) throw new Error(error.message);
     return data as T;
+  }
+  async insertarVarios(tabla: string, filas: Fila[]) {
+    for (let i = 0; i < filas.length; i += 200) {
+      const { error } = await this.cliente.from(tabla).insert(filas.slice(i, i + 200));
+      if (error) throw new Error(`${tabla}: ${error.message}`);
+    }
   }
   async actualizar<T extends Fila>(tabla: string, id: string, cambios: Partial<T>) {
     const { error } = await this.cliente.from(tabla).update(cambios as Record<string, unknown>).eq('id', id);
@@ -189,7 +201,7 @@ export async function eliminar(tabla: string, id: string) {
 
 export const TABLAS = ['eco_cuentas', 'eco_categorias', 'pag_pagos', 'eco_movimientos', 'eco_ingresos',
   'ent_sesiones', 'ent_series', 'stk_productos', 'ali_platos', 'ali_comidas', 'ali_extras', 'ali_metas', 'ent_rutinas',
-  'com_supers', 'com_items', 'com_precios', 'com_compras'] as const;
+  'com_supers', 'com_items', 'com_precios', 'com_compras', 'ent_ejercicios'] as const;
 
 export async function exportarTodo(): Promise<Record<string, Fila[]>> {
   const salida: Record<string, Fila[]> = {};
@@ -201,12 +213,42 @@ export async function exportarTodo(): Promise<Record<string, Fila[]>> {
 export async function importarTodo(datos: Record<string, Fila[]>): Promise<number> {
   let n = 0;
   for (const t of TABLAS) {
+    if (!datos[t]?.length) continue;
     const existentes = new Set((await almacen.listar(t)).map((f) => f.id));
-    for (const fila of datos[t] ?? []) {
-      if (existentes.has(fila.id)) continue;
+    const nuevas = datos[t].filter((f) => !existentes.has(f.id)).map((fila) => {
       const limpia = { ...fila } as Fila & { user_id?: string };
       delete limpia.user_id;
-      await almacen.insertar(t, limpia);
+      return limpia;
+    });
+    // Si se importa una rutina activa, la que había queda archivada (solo puede haber una activa).
+    if (t === 'ent_rutinas' && nuevas.some((f) => (f as Fila & { activa?: boolean }).activa)) {
+      for (const f of await almacen.listar<Fila & { activa?: boolean }>(t)) if (f.activa) await almacen.actualizar<Fila & { activa?: boolean }>(t, f.id, { activa: false });
+    }
+    if (nuevas.length) await almacen.insertarVarios(t, nuevas);
+    n += nuevas.length;
+    await recargar(t);
+  }
+  return n;
+}
+
+/* ---------- Datos de prueba ---------- */
+
+/** Los historiales simulados usan ids que empiezan así, para poder borrarlos sin tocar lo real. */
+export const PREFIJO_PRUEBA = 'cafe0000-';
+
+export async function contarPrueba(): Promise<number> {
+  let n = 0;
+  for (const t of TABLAS) n += (await almacen.listar(t)).filter((f) => f.id.startsWith(PREFIJO_PRUEBA)).length;
+  return n;
+}
+
+/** Borra todo lo simulado (las series primero, por la relación con las sesiones). */
+export async function borrarPrueba(): Promise<number> {
+  let n = 0;
+  const orden = ['ent_series', ...TABLAS.filter((t) => t !== 'ent_series')];
+  for (const t of orden) {
+    for (const f of (await almacen.listar(t)).filter((x) => x.id.startsWith(PREFIJO_PRUEBA))) {
+      await almacen.borrar(t, f.id);
       n++;
     }
     await recargar(t);

@@ -3,10 +3,12 @@ import { escribirStorage, leerStorage } from '../../core/config';
 import { fechaCorta, hoy } from '../../core/format';
 import { Campo, Modal, Tarjeta } from '../../ui/ui';
 import { compararSemana, evaluarPreparacion, objetivoHoy, type Preparacion } from './analisis';
-import { infoEjercicio } from './biblioteca';
-import { guardarSesion, pesoSugerido, ultimaVez, useRutina, useSeries, type DiaPlan, type Sesion } from './modelo';
+import { infoEjercicio, variantesDe } from './biblioteca';
+import { guardarSesion, pesoSugerido, ultimaVez, useBiblioteca, useRutina, useSeries, type DiaPlan, type Sesion } from './modelo';
 import { Delta, ResumenEntreno } from './Resumen';
 import { SelectorEjercicio } from './Rutina';
+import { describirSemana, type SemanaCiclo } from './ciclo';
+import { ImagenEjercicio, Stepper } from './Controles';
 
 type Hecha = { ejercicio: string; numero: number; peso: number; reps: number; rpe: number | null; tipo: 'efectiva' | 'calentamiento' };
 
@@ -21,6 +23,8 @@ interface EnCurso {
   ej: number;
   hechas: Hecha[];
   descansoHasta: number | null;
+  /** Semana del ciclo al empezar (el plan ya viene ajustado; esto se usa para el peso sugerido). */
+  semana?: SemanaCiclo | null;
 }
 
 const CLAVE = 'life.entreno.encurso';
@@ -29,8 +33,8 @@ export const leerEnCurso = (): EnCurso | null => {
 };
 const guardar = (x: EnCurso | null) => escribirStorage(CLAVE, x ? JSON.stringify(x) : null);
 
-export function empezarEntreno(plan: DiaPlan) {
-  guardar({ dia: plan.id, plan, fase: 'chequeo', inicio: Date.now(), ej: 0, hechas: [], descansoHasta: null });
+export function empezarEntreno(plan: DiaPlan, semana: SemanaCiclo | null = null) {
+  guardar({ dia: plan.id, plan, semana, fase: 'chequeo', inicio: Date.now(), ej: 0, hechas: [], descansoHasta: null });
 }
 
 function useAhora(activo: boolean) {
@@ -46,6 +50,8 @@ function useAhora(activo: boolean) {
 function vibrar() {
   try { navigator.vibrate?.([200, 100, 200]); } catch { /* iPhone no vibra desde la web */ }
 }
+
+const NOTAS_RAPIDAS = ['Dormí poco', 'Me sentí fuerte', 'Poco tiempo', 'Máquina ocupada', 'Molestia en hombro', 'Molestia en rodilla', 'Comí poco', 'Mucho estrés', 'Técnica mejor', 'Gimnasio lleno'];
 
 const efectivasDe = (hechas: Hecha[], nombre: string) => hechas.filter((h) => h.ejercicio === nombre && h.tipo !== 'calentamiento');
 
@@ -81,8 +87,9 @@ function Chequeo({ onListo }: { onListo: (p: Preparacion) => void }) {
 /* ---------- Pantalla principal del modo entrenando ---------- */
 
 export function Entrenando({ onSalir }: { onSalir: () => void }) {
+  useBiblioteca();
   const { filas: series } = useSeries();
-  const { dias } = useRutina();
+  const { dias, perfil } = useRutina();
   const [st, setSt] = useState<EnCurso | null>(leerEnCurso);
   const [guardada, setGuardada] = useState<Sesion | null>(null);
   const ahora = useAhora(!!st);
@@ -92,8 +99,8 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   const ej = plan.ejercicios[st?.ej ?? 0];
   const hechasEj = st && ej ? st.hechas.filter((h) => h.ejercicio === ej.nombre) : [];
   const efEj = st && ej ? efectivasDe(st.hechas, ej.nombre) : [];
-  const [peso, setPeso] = useState('');
-  const [reps, setReps] = useState('');
+  const [peso, setPeso] = useState(0);
+  const [reps, setReps] = useState(0);
   const [rpe, setRpe] = useState<number | null>(null);
   const [calent, setCalent] = useState(false);
   const [sensacion, setSensacion] = useState(7);
@@ -105,18 +112,24 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   // Ajuste por cansancio: día bajo = una serie menos y ~10 % menos peso; día medio = sin subir peso y tope RPE 8.
   const seriesObjetivo = ej ? (ev?.nivel === 'bajo' ? Math.max(2, ej.series - 1) : ej.series) : 0;
   const rpeObjetivo = ej ? (ev && ev.nivel !== 'bien' ? Math.min(ej.rpe, ev.nivel === 'bajo' ? 7 : 8) : ej.rpe) : 0;
-  const sugBase = ej ? pesoSugerido(series, ej) : { peso: null, motivo: '' };
+  const sugBase = ej ? pesoSugerido(series, ej, perfil, st?.semana) : { peso: null, motivo: '' };
   const ultimoPeso = ej ? Math.max(0, ...ultimaVez(series, ej.nombre).map((s) => Number(s.peso) || 0)) : 0;
   const sug = !ev || ev.nivel === 'bien' || sugBase.peso == null ? sugBase
     : ev.nivel === 'medio' ? { peso: Math.min(sugBase.peso, ultimoPeso || sugBase.peso), motivo: 'Día medio: mismo peso que la última vez, sin forzar.' }
       : { peso: Math.round((ultimoPeso || sugBase.peso) * 0.9 / 1.25) * 1.25, motivo: 'Día de poca energía: 10 % menos de peso y una serie menos.' };
 
-  // Al cambiar de ejercicio o de serie, precargar el peso de la serie anterior o el sugerido.
+  // Al cambiar de ejercicio o de serie, dejar todo previsto para confirmar con un toque:
+  // peso = el de la serie anterior de hoy o el sugerido; reps = lo que hiciste en esa serie la última vez
+  // (si fue con el mismo peso) o el mínimo del rango; esfuerzo = el objetivo.
   useEffect(() => {
+    if (!ej) return;
     const ult = efEj[efEj.length - 1];
-    setPeso(ult ? String(ult.peso) : sug.peso != null ? String(sug.peso) : '');
-    setReps('');
-    setRpe(null);
+    const p = ult ? ult.peso : sug.peso ?? 0;
+    const antes = ultimaVez(series, ej.nombre)[efEj.length];
+    const r = antes && Number(antes.peso) === p ? Math.min(ej.repsMax, Math.max(ej.repsMin, antes.reps)) : ej.repsMin;
+    setPeso(p);
+    setReps(r);
+    setRpe(Math.round(rpeObjetivo));
     setCalent(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [st?.ej, ej?.nombre, hechasEj.length, fase]);
@@ -173,8 +186,8 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
 
   function serieHecha() {
     if (!st || !ej) return;
-    const p = Number(peso.replace(',', '.'));
-    const r = Number(reps);
+    const p = peso;
+    const r = reps;
     if (!(r > 0)) return;
     const tipo = calent ? 'calentamiento' : 'efectiva';
     const hechas = [...st.hechas, { ejercicio: ej.nombre, numero: hechasEj.length + 1, peso: p || 0, reps: r, rpe, tipo } as Hecha];
@@ -214,16 +227,19 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
 
   return (
     <div className="pila">
-      <div className="barra-acciones">
-        <div>
-          <h2>Día {plan.id} · {plan.nombre}</h2>
-          <small className="nota">{nEfectivas} de {totalSeries} series · {Math.round((ahora - st.inicio) / 60000)} min{ev ? ` · preparación ${ev.puntaje}/100` : ''}</small>
+      <div className="ent-fijo-arriba">
+        <div className="barra-acciones">
+          <div className="crece">
+            <h2>Día {plan.id} · {plan.nombre}</h2>
+            <small className="nota">{nEfectivas} de {totalSeries} series · {Math.round((ahora - st.inicio) / 60000)} min{ev ? ` · preparación ${ev.puntaje}/100` : ''}</small>
+          </div>
+          <button className="btn chico btn-peligro" onClick={() => {
+            if (window.confirm('¿Cancelar el entreno? Se pierde lo anotado.')) { actualizar(null); onSalir(); }
+          }}>Cancelar</button>
         </div>
-        <button className="btn chico btn-peligro" onClick={() => {
-          if (window.confirm('¿Cancelar el entreno? Se pierde lo anotado.')) { actualizar(null); onSalir(); }
-        }}>Cancelar</button>
+        <div className="barra-xp"><div style={{ width: `${Math.min(1, nEfectivas / totalSeries) * 100}%` }} /></div>
+        {st.semana && <small className="nota">Ciclo · {st.semana.nombre}: {describirSemana(st.semana)}</small>}
       </div>
-      <div className="barra-xp"><div style={{ width: `${Math.min(1, nEfectivas / totalSeries) * 100}%` }} /></div>
       {ev && ev.nivel !== 'bien' && <p className="nota" style={{ margin: 0 }}>{ev.consejo}</p>}
 
       {restante > 0 && (
@@ -257,21 +273,24 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
             </div>
           )}
 
-          <div className="fila-campos" style={{ marginTop: 8 }}>
-            <Campo etiqueta="Peso (kg)"><input inputMode="decimal" value={peso} onChange={(x) => setPeso(x.target.value)} /></Campo>
-            <Campo etiqueta="Repeticiones"><input inputMode="numeric" value={reps} onChange={(x) => setReps(x.target.value)} autoFocus /></Campo>
+          <div className="ent-steppers">
+            <Stepper etiqueta="Peso" sufijo="kg" valor={peso} onCambio={setPeso} paso={ej.salto > 0 ? Math.min(ej.salto, 2.5) : 1} decimales />
+            <Stepper etiqueta="Reps" sufijo={`objetivo ${ej.repsMin}–${ej.repsMax}`} valor={reps} onCambio={setReps} min={0} />
           </div>
-          <p className="subtitulo">¿Cuánto te costó? (RPE: 10 = no podías ni una más)</p>
-          <div className="segmentado">
+          <div className="ent-reps-rapidas" aria-label="Repeticiones rápidas">
+            {Array.from({ length: Math.max(1, ej.repsMax - ej.repsMin + 3) }, (_, i) => ej.repsMin - 1 + i).filter((n) => n > 0).map((n) => (
+              <button key={n} type="button" className={`${reps === n ? 'activo' : ''} ${n < ej.repsMin ? 'bajo' : n > ej.repsMax ? 'alto' : ''}`} onClick={() => setReps(n)}>{n}</button>
+            ))}
+          </div>
+          <p className="subtitulo">¿Cuánto te costó? RPE {rpeObjetivo} es el objetivo (10 = no podías ni una más)</p>
+          <div className="segmentado grande-toque">
             {[6, 7, 8, 9, 10].map((n) => <button key={n} type="button" className={rpe === n ? 'activo' : ''} onClick={() => setRpe(n)}>{n}</button>)}
           </div>
-          <label className="nota" style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-            <input type="checkbox" checked={calent} onChange={(x) => setCalent(x.target.checked)} style={{ width: 'auto', minHeight: 0 }} />
+          <label className="ent-check-cal">
+            <input type="checkbox" checked={calent} onChange={(x) => setCalent(x.target.checked)} />
             Serie de calentamiento (no cuenta para el progreso)
           </label>
-          <div className="acciones" style={{ marginTop: 12 }}>
-            <button className="btn btn-primario crece" onClick={serieHecha} disabled={!(Number(reps) > 0)}>Serie hecha</button>
-          </div>
+          <div style={{ marginTop: 8 }}><ImagenEjercicio nombre={ej.nombre} /></div>
           {hechasEj.length > 0 && (
             <p className="nota" style={{ marginTop: 8 }}>Hoy: {hechasEj.map((h) => `${h.tipo === 'calentamiento' ? '(cal) ' : ''}${h.peso}×${h.reps}${h.rpe ? ` @${h.rpe}` : ''}`).join(' · ')}</p>
           )}
@@ -311,31 +330,63 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
 
       {terminado && restante === 0 && (
         <Tarjeta titulo={st.ej >= plan.ejercicios.length ? '¡Entreno completo!' : 'Cerrar entreno'}>
-          <p className="nota">Anotaste {nEfectivas} series en {Math.round((ahora - st.inicio) / 60000)} minutos.</p>
+          <p className="nota">Anotaste {nEfectivas} {nEfectivas === 1 ? 'serie' : 'series'} en {Math.round((ahora - st.inicio) / 60000)} minutos.</p>
           <p className="subtitulo">¿Qué tan duro fue todo el entreno? (1 = muy fácil, 10 = máximo)</p>
-          <div className="segmentado">
+          <div className="segmentado grande-toque">
             {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => <button key={n} type="button" className={rpeSesion === n ? 'activo' : ''} onClick={() => setRpeSesion(n)}>{n}</button>)}
           </div>
           <p className="subtitulo">Sensación general (1 = horrible, 10 = excelente)</p>
-          <div className="segmentado">
+          <div className="segmentado grande-toque">
             {[3, 5, 6, 7, 8, 9, 10].map((n) => <button key={n} type="button" className={sensacion === n ? 'activo' : ''} onClick={() => setSensacion(n)}>{n}</button>)}
           </div>
-          <Campo etiqueta="Notas"><input value={notas} onChange={(x) => setNotas(x.target.value)} placeholder="Dormí poco, me dolía el hombro…" /></Campo>
-          <div className="acciones" style={{ marginTop: 12 }}>
-            <button className="btn btn-primario crece" onClick={finalizar} disabled={!st.hechas.length}>Guardar y ver resultado (+50 XP)</button>
+          <p className="subtitulo">Notas rápidas</p>
+          <div className="ent-chips-notas">
+            {NOTAS_RAPIDAS.map((n) => (
+              <button key={n} type="button" className={notas.includes(n) ? 'activo' : ''}
+                onClick={() => setNotas((t) => (t.includes(n) ? t.replace(n, '').replace(/^[.\s]+|\s*\.\s*\.|[.\s]+$/g, '').trim() : [t.trim(), n].filter(Boolean).join('. ')))}>{n}</button>
+            ))}
+          </div>
+          <Campo etiqueta="Notas"><textarea rows={2} value={notas} onChange={(x) => setNotas(x.target.value)} placeholder="Dormí poco, me dolía el hombro…" /></Campo>
+          <div className="pila" style={{ marginTop: 12, gap: 8 }}>
+            <button className="btn btn-primario ancho btn-grande" onClick={finalizar} disabled={!st.hechas.length}>Guardar y ver resultado (+50 XP)</button>
             {fase === 'cierre' && <button className="btn" onClick={() => actualizar({ ...st, fase: 'entrenando', ej: siguiente(-1) >= plan.ejercicios.length ? 0 : siguiente(-1) })}>Seguir entrenando</button>}
           </div>
         </Tarjeta>
       )}
 
+      {!terminado && restante === 0 && ej && (
+        <div className="barra-fija-abajo">
+          <button className="btn btn-primario ancho btn-grande" onClick={serieHecha} disabled={!(reps > 0)}>
+            ✓ {calent ? 'Calentamiento' : `Serie ${efEj.length + 1}`} · {String(peso).replace('.', ',')} kg × {reps}{rpe ? ` @${rpe}` : ''}
+          </button>
+        </div>
+      )}
+      {restante > 0 && (
+        <div className="barra-fija-abajo">
+          <button className="btn ancho btn-grande" onClick={() => actualizar({ ...st, descansoHasta: null })}>
+            Descanso {Math.floor(restante / 60)}:{String(restante % 60).padStart(2, '0')} · Saltar
+          </button>
+        </div>
+      )}
+
       <Modal titulo="Cambiar ejercicio (solo hoy)" abierto={cambiar} onCerrar={() => setCambiar(false)}>
-        {cambiar && ej && (
-          <SelectorEjercicio grupoInicial={info?.grupo} onElegir={(nombre) => {
+        {cambiar && ej && (() => {
+          const elegir = (nombre: string) => {
             const nuevo = { ...ej, nombre, salto: infoEjercicio(nombre)?.salto ?? ej.salto };
             actualizar({ ...st, plan: { ...plan, ejercicios: plan.ejercicios.map((x, i) => (i === st.ej ? nuevo : x)) } });
             setCambiar(false);
-          }} />
-        )}
+          };
+          return (
+            <>
+              <p className="subtitulo" style={{ margin: 0 }}>Variantes</p>
+              <div className="ent-variantes-rapidas">
+                {variantesDe(ej.nombre, ej.variantes).map((v) => <button key={v} className="btn chico" onClick={() => elegir(v)}>{v}</button>)}
+              </div>
+              <p className="subtitulo" style={{ margin: 0 }}>O cualquier otro</p>
+              <SelectorEjercicio grupoInicial={info?.grupo} onElegir={elegir} />
+            </>
+          );
+        })()}
       </Modal>
     </div>
   );
