@@ -1,10 +1,11 @@
 import { dinero, relativo } from '../../core/format';
 import type { Modulo, Senal } from '../../core/types';
 import './compras.css';
+import { PantallaEscanear } from './Carrito';
 import { PantallaComprando } from './Comprando';
 import { PantallaHistorial } from './Historial';
 import { PantallaLista } from './Lista';
-import { CADENAS, leerEnCurso, preciosViejos, totalesPorCadena, useCompras, useItems, usePrecios } from './modelo';
+import { CADENAS, leerCarrito, leerEnCurso, preciosViejos, totalesPorCadena, useCompras, useItems, usePrecios } from './modelo';
 import { oportunidades, PantallaPrecios } from './Precios';
 
 const ICONO = (
@@ -18,6 +19,8 @@ function useSenalesCompras(): Senal[] {
   const { filas: precios } = usePrecios();
   if (!cargado) return [];
   const senales: Senal[] = [];
+  const carro = leerCarrito();
+  if (carro?.lineas.length) senales.push({ id: 'com-carro', modulo: 'compras', nivel: 'info', titulo: `Carro a medias: ${carro.lineas.length} cosas`, detalle: 'Tocá para seguir cargando o cerrar la compra.', ruta: '#/compras/escanear' });
   if (leerEnCurso()) senales.push({ id: 'com-curso', modulo: 'compras', nivel: 'info', titulo: 'Tenés una compra a medias', detalle: 'Tocá para seguir en el súper.', ruta: '#/compras/comprando' });
   const lista = items.filter((i) => i.en_lista);
   if (lista.length) {
@@ -62,6 +65,7 @@ export const moduloCompras: Modulo = {
   icono: ICONO,
   pantallas: [
     { ruta: '', titulo: 'Lista', componente: PantallaLista },
+    { ruta: 'escanear', titulo: 'Escanear', componente: PantallaEscanear },
     { ruta: 'comprando', titulo: 'Modo compra', componente: PantallaComprando },
     { ruta: 'precios', titulo: 'Precios', componente: PantallaPrecios },
     { ruta: 'historial', titulo: 'Historial', componente: PantallaHistorial },

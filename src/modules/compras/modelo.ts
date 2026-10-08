@@ -2,7 +2,7 @@ import { escribirStorage, leerStorage } from '../../core/config';
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { diasEntre, hoy } from '../../core/format';
 import { T as TE, type Movimiento } from '../economia/modelo';
-import { ajustar, LUGARES, type Lugar, type Producto } from '../stock/modelo';
+import { ajustar, LUGARES, type Lugar, nuevoProducto, type Persona, personaDe, type Producto } from '../stock/modelo';
 
 /* ---------- Tipos ---------- */
 
@@ -45,7 +45,7 @@ export interface PrecioReg extends Fila {
   compra_id: string | null;
 }
 
-export interface LineaCompra { item_id: string; nombre: string; cantidad: number; estimado: number; real: number | null }
+export interface LineaCompra { item_id: string; nombre: string; cantidad: number; estimado: number; real: number | null; para?: Persona }
 export interface Compra extends Fila {
   fecha: string;
   super_id: string | null;
@@ -53,6 +53,8 @@ export interface Compra extends Fila {
   total: number;
   items: LineaCompra[];
   movimiento_id: string | null;
+  /** Compra compartida: quién pagó, cuánto le toca a cada uno y cuánto queda debiendo el otro. */
+  reparto?: { pago: Persona; yo: number; ulises: number; debe: number } | null;
 }
 
 export const TC = { items: 'com_items', supers: 'com_supers', precios: 'com_precios', compras: 'com_compras' } as const;
@@ -285,4 +287,126 @@ export function frecuentes(compras: Compra[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const c of compras) for (const l of c.items ?? []) m.set(l.item_id, (m.get(l.item_id) ?? 0) + 1);
   return m;
+}
+
+/* ---------- Carrito con escáner (compra compartida) ---------- */
+
+export { PERSONAS } from '../stock/modelo';
+export type { Persona };
+
+/** Una cosa cargada en el súper: escaneada o escrita. Precio opcional (por unidad). */
+export interface LineaCarrito {
+  id: string;
+  ean: string | null;
+  nombre: string;
+  marca: string;
+  para: Persona;
+  cantidad: number;
+  precio: number | null;
+  /** Precio online de referencia, si lo encontramos. */
+  ref: number | null;
+}
+export interface Carrito { super_id: string | null; inicio: number; lineas: LineaCarrito[]; ultimoPara: Persona }
+
+const CLAVE_CARRITO = 'life.compras.carrito';
+export const leerCarrito = (): Carrito | null => {
+  try { return JSON.parse(leerStorage(CLAVE_CARRITO) ?? 'null'); } catch { return null; }
+};
+export const guardarCarrito = (c: Carrito | null) => escribirStorage(CLAVE_CARRITO, c ? JSON.stringify(c) : null);
+
+/** Lo de "los dos" se divide a medias. */
+export function totalesCarrito(lineas: LineaCarrito[]) {
+  const t = { total: 0, yo: 0, ulises: 0, compartido: 0, sinPrecio: 0 };
+  for (const l of lineas) {
+    if (l.precio == null) { t.sinPrecio++; continue; }
+    const m = l.precio * l.cantidad;
+    t.total += m;
+    if (l.para === 'yo') t.yo += m;
+    else if (l.para === 'ulises') t.ulises += m;
+    else { t.compartido += m; t.yo += m / 2; t.ulises += m / 2; }
+  }
+  return t;
+}
+
+/** Busca qué producto es un código: primero en tu catálogo, después en los súper online y por último en Open Food Facts. */
+export async function identificar(ean: string, items: Item[]): Promise<{ nombre: string; marca: string; ref: number | null; item: Item | null }> {
+  const it = items.find((i) => i.ean === ean);
+  if (it) return { nombre: it.nombre, marca: it.marca, ref: masBarato(it)?.precio.p ?? null, item: it };
+  try {
+    const r = await buscarPrecios({ eans: [ean] });
+    if (r.length) {
+      const barato = [...r].sort((a, b) => a.precio - b.precio)[0];
+      return { nombre: r[0].nombre, marca: r[0].marca, ref: barato.precio, item: null };
+    }
+  } catch { /* sin señal o sin función: seguimos */ }
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=product_name,product_name_es,brands`);
+    if (r.ok) {
+      const d = await r.json();
+      const n = d?.product?.product_name_es || d?.product?.product_name;
+      if (n) return { nombre: String(n), marca: String(d.product.brands ?? '').split(',')[0], ref: null, item: null };
+    }
+  } catch { /* nada */ }
+  return { nombre: '', marca: '', ref: null, item: null };
+}
+
+const LUGAR_DE_BLOQUE: Record<string, Lugar> = {
+  'Verdulería': 'frutas', 'Carnicería': 'heladera', 'Fiambrería': 'heladera', 'Lácteos': 'heladera',
+  'Congelados': 'freezer', 'Limpieza': 'limpieza', 'Higiene': 'bano',
+};
+
+/**
+ * Cerrar la compra compartida: guarda la compra con quién lleva qué, los precios que anotaste,
+ * suma cada cosa al stock de su dueño (Yo, Ulises o Los dos) y, si pagaste vos, anota el gasto.
+ */
+export async function cerrarCarrito(d: {
+  carrito: Carrito; super: Super | null; items: Item[]; productos: Producto[]; total: number; pago: Persona;
+  gasto: { cuenta_id: string; categoria_id: string | null } | null;
+}) {
+  const fecha = hoy();
+  const t = totalesCarrito(d.carrito.lineas);
+  const lineas: LineaCompra[] = [];
+  const catalogo = [...d.items];
+  const stock = [...d.productos];
+  for (const l of d.carrito.lineas) {
+    const nombre = l.nombre.trim() || (l.ean ? `Código ${l.ean}` : 'Sin nombre');
+    let it = (l.ean ? catalogo.find((i) => i.ean === l.ean) : null) ?? catalogo.find((i) => i.nombre.toLowerCase() === nombre.toLowerCase()) ?? null;
+    if (!it) {
+      it = await nuevoItem({ nombre, ean: l.ean, marca: l.marca });
+      catalogo.push(it);
+    }
+    lineas.push({ item_id: it.id, nombre, cantidad: l.cantidad, estimado: l.ref ?? 0, real: l.precio, para: l.para });
+    // Stock del dueño.
+    let p = stock.find((x) => x.nombre.toLowerCase() === nombre.toLowerCase() && personaDe(x) === l.para) ?? null;
+    if (p) await ajustar(p, l.cantidad);
+    else {
+      p = await nuevoProducto({ nombre, lugar: LUGAR_DE_BLOQUE[it.bloque] ?? 'alacena', cantidad: l.cantidad, unidad: 'u', minimo: 0, compra: 0, vence: null, basico: false, persona: l.para });
+      stock.push(p);
+    }
+    const cambios: Partial<Item> = {};
+    if (l.para !== 'ulises' && !it.producto_id) cambios.producto_id = p.id;
+    if (l.para !== 'ulises' && it.en_lista) cambios.en_lista = false;
+    if (Object.keys(cambios).length) await modificar<Item>(TC.items, it.id, cambios);
+  }
+  const debe = d.pago === 'yo' ? t.ulises : t.yo;
+  const nota = debe > 0 ? (d.pago === 'yo' ? ` · Ulises te debe ${Math.round(debe)}` : ` · le debés a Ulises ${Math.round(debe)}`) : '';
+  let movimiento_id: string | null = null;
+  if (d.pago === 'yo' && d.gasto && d.total > 0) {
+    const m = await crear<Movimiento>(TE.movimientos, {
+      fecha, tipo: 'gasto', monto: d.total, cuenta_id: d.gasto.cuenta_id, cuenta_destino_id: null, monto_destino: null,
+      categoria_id: d.gasto.categoria_id, descripcion: `Compra${d.super ? ` en ${d.super.nombre}` : ''}${nota}`, pago_id: null,
+    });
+    movimiento_id = m.id;
+  }
+  const compra = await crear<Compra>(TC.compras, {
+    fecha, super_id: d.super?.id ?? null, estimado: lineas.reduce((s, l) => s + l.estimado * l.cantidad, 0), total: d.total, items: lineas,
+    movimiento_id, reparto: { pago: d.pago, yo: Math.round(t.yo), ulises: Math.round(t.ulises), debe: Math.round(debe) },
+  });
+  for (const l of lineas) {
+    if (l.real != null && l.real > 0) {
+      await crear<PrecioReg>(TC.precios, { item_id: l.item_id, cadena: d.super?.cadena ?? 'otro', super_id: d.super?.id ?? null, precio: l.real, fuente: 'ticket', fecha, compra_id: compra.id });
+    }
+  }
+  guardarCarrito(null);
+  return compra;
 }

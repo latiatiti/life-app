@@ -27,12 +27,19 @@ export interface Producto extends Fila {
   vence: string | null;
   /** Básico: tiene que estar siempre en casa. */
   basico: boolean;
+  /** De quién es: la usuaria, Ulises (con quien comparte compras) o de los dos. Sin dato = 'yo'. */
+  persona?: Persona;
 }
+
+export const PERSONAS = { yo: 'Yo', ulises: 'Ulises', compartido: 'Los dos' } as const;
+export type Persona = keyof typeof PERSONAS;
+export const personaDe = (p: Pick<Producto, 'persona'>): Persona => p.persona ?? 'yo';
 
 export const TS = { productos: 'stk_productos' } as const;
 export const useProductos = () => useTabla<Producto>(TS.productos);
 
-export const faltantes = (ps: Producto[]) => ps.filter((p) => Number(p.cantidad) < Number(p.minimo) || (p.basico && Number(p.cantidad) <= 0));
+/** Lo que falta en casa. Lo de Ulises no cuenta (es su stock). */
+export const faltantes = (ps: Producto[]) => ps.filter((p) => personaDe(p) !== 'ulises' && (Number(p.cantidad) < Number(p.minimo) || (p.basico && Number(p.cantidad) <= 0)));
 
 export function porVencer(ps: Producto[], dias = 3) {
   return ps.filter((p) => p.vence && Number(p.cantidad) > 0 && diasEntre(hoy(), p.vence) <= dias)

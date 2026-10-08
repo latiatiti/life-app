@@ -17,7 +17,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `src/core/registry.ts`: lista de módulos. **Sumar un módulo** = crear `src/modules/<x>/index.tsx` y registrarlo acá.
 - `src/core/db.ts`: capa de datos (`useTabla`, `crear`, `modificar`, `eliminar`, exportar/importar respaldo). Agregar las tablas nuevas a `TABLAS`.
 - `src/hub/Hub.tsx`: junta señales (ordenadas por nivel) y agenda compartida (14 días) de todos los módulos.
-- Rutas por hash: `#/economia` (+ `/movimientos`, `/ingresos`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock` (+ `/lista`), `#/compras` (+ `/comprando`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
+- Rutas por hash: `#/economia` (+ `/movimientos`, `/ingresos`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock` (+ `/lista`), `#/compras` (+ `/escanear`, `/comprando`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
 - `src/modules/ajustes/semilla.ts`: botón "Cargar mi configuración" con los datos reales de la usuaria (ingresos, fijos, básicos, platos). Idempotente por nombre.
 
 ## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql`, en ese orden)
@@ -39,6 +39,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Economía: señales de presupuesto al 80 % y 100 %, y gasto mayor que ingreso en el mes.
 - Compras: precios online vía la función de Supabase `precios` (`supabase/functions/precios`, proxy a los catálogos VTEX públicos de Carrefour, Vea y Jumbo; busca por texto o por código de barras). La app la llama con la anon key del proyecto Life (en `compras/modelo.ts`). Son precios web de referencia; el real sale del ticket.
 - Stock → Compras: "Falta en casa" suma faltantes a la lista. Compras → Stock/Economía: cerrar la compra suma al stock lo enlazado, guarda el precio real de cada cosa y crea el gasto (categoría Súper).
+- Escanear (compra compartida con Ulises): cámara con ZXing (`compras/Escaner.tsx`, cargado aparte), cada cosa con para quién (Yo / Ulises / Los dos, `PERSONAS` en `stock/modelo.ts`), cantidad y precio opcional; total y reparto (lo de los dos va a medias). Carro en localStorage (`life.compras.carrito`). Al cerrar: compra con `reparto` (quién pagó y cuánto debe el otro), precios del ticket, stock de cada dueño (`stk_productos.persona`, SQL `supabase/compras-personas.sql`, aplicado en la nube) y gasto si pagó ella. Lo de Ulises no cuenta como faltante.
 - Modo compra: estado en localStorage (`life.compras.encurso`), bloques en el orden guardado del súper (▲▼ lo reordena), "en este pasillo también" sugiere lo que comprás seguido o falta en casa.
 
 ## Preparador y ciclos (2026-10-06)
