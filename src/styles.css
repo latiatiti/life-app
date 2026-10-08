@@ -258,3 +258,16 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .centro { text-align: center; }
 .chip-on { background: var(--accent-soft); color: var(--accent); }
 textarea { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font: inherit; color: inherit; }
+
+/* ---------- Celular: todo lo tocable de al menos 44 px ---------- */
+@media (max-width: 760px) {
+  .btn { min-height: 44px; padding: 10px 14px; }
+  .btn.chico { min-height: 40px; padding: 8px 12px; }
+  .segmentado button { min-height: 42px; }
+  .btn-icono { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+  input, select, textarea { min-height: 44px; font-size: 16px; } /* 16 px evita el zoom automático de iPhone */
+  .pestanas a { padding: 12px 14px; }
+  .nav-item { min-height: 52px; justify-content: center; }
+  .tarjeta { padding: 14px; }
+}
+.aviso-msg { position: sticky; top: 8px; z-index: 7; margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--accent); color: var(--ink); box-shadow: var(--glow); }

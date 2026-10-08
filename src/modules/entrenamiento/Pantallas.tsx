@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { crear, eliminar } from '../../core/db';
 import { fechaCorta, hoy, relativo } from '../../core/format';
 import { Campo, Estado, Icono, Modal, Tarjeta, Vacio } from '../../ui/ui';
-import { compararSemana, informeEntrenador, leerRutinaJson, necesitaDescarga, pct, rutinaAJson, semanas } from './analisis';
-import { infoEjercicio } from './biblioteca';
+import { compararSemana, necesitaDescarga, pct, semanas } from './analisis';
 import { empezarEntreno, Entrenando, leerEnCurso } from './Entrenando';
 import { BarrasSemanas, Linea, VolumenGrupos } from './Graficos';
 import {
-  guardarRutina, pesoSugerido, progresoEjercicio, proximoDia, TE, tendencia, useRutina, useSeries, useSesiones, type Sesion,
+  pesoSugerido, progresoEjercicio, proximoDia, TE, tendencia, useRutina, useSeries, useSesiones, type Sesion,
 } from './modelo';
 import { Delta, ResumenEntreno } from './Resumen';
 import './entreno.css';
+import { ajustarDia, describirSemana } from './ciclo';
+import { inicioSemana } from './analisis';
 
 function FormOtroDeporte({ onListo }: { onListo: () => void }) {
   const [deporte, setDeporte] = useState('');
@@ -36,17 +37,43 @@ function FormOtroDeporte({ onListo }: { onListo: () => void }) {
   );
 }
 
+/** Las semanas del ciclo como fichas, con la actual marcada. */
+export function BarraCiclo() {
+  const { ciclo, estado, fila } = useRutina();
+  if (!ciclo || !estado) {
+    return fila ? null : (
+      <Tarjeta><p className="nota" style={{ margin: 0 }}>Todavía no armaste tu ciclo de 4 semanas. <a href="#/entrenamiento/entrenador">Abrí el Preparador</a>: cargás tu peso, elegís una rutina y la app te prevé los pesos.</p></Tarjeta>
+    );
+  }
+  return (
+    <div className="ent-ciclo">
+      <div className="ent-ciclo-sem">
+        {ciclo.semanas.map((s, i) => (
+          <span key={i} className={i === estado.indice && !estado.terminado ? 'actual' : i < estado.indice || estado.terminado ? 'hecha' : ''}>
+            <b>S{i + 1}</b>{s.nombre}
+          </span>
+        ))}
+      </div>
+      <small className="nota">
+        {estado.terminado
+          ? <>Terminó el ciclo{ciclo.numero ? ` ${ciclo.numero}` : ''}. <a href="#/entrenamiento/entrenador">Ver la propuesta para el próximo</a></>
+          : <>Ciclo{ciclo.numero ? ` ${ciclo.numero}` : ''} · semana {estado.indice + 1} de {estado.total}: {describirSemana(estado.semana)}. {estado.semana.nota ?? ''}</>}
+      </small>
+    </div>
+  );
+}
+
 export function PantallaHoy() {
   const { filas: sesiones } = useSesiones();
   const { filas: series } = useSeries();
-  const { dias } = useRutina();
+  const { dias, perfil, semana } = useRutina();
   const [enCurso, setEnCurso] = useState(() => !!leerEnCurso());
   const [elegido, setElegido] = useState<string | null>(null);
   const [otro, setOtro] = useState(false);
   if (enCurso) return <Entrenando onSalir={() => setEnCurso(false)} />;
 
   const sugerido = proximoDia(sesiones, dias);
-  const plan = dias.find((d) => d.id === elegido) ?? sugerido;
+  const plan = ajustarDia(dias.find((d) => d.id === elegido) ?? sugerido, semana);
   const ult = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
   const descarga = necesitaDescarga(sesiones, series);
 
@@ -56,7 +83,8 @@ export function PantallaHoy() {
         <p className="nota">{ult ? `Último entreno: ${fechaCorta(ult.fecha)} (${relativo(ult.fecha)})` : 'Todavía no registraste entrenos.'}</p>
         <button className="btn" onClick={() => setOtro(true)}>{Icono.mas} Otro deporte</button>
       </div>
-      {descarga && <Tarjeta><Estado nivel="aviso" texto="Fatiga acumulada" /><p className="nota" style={{ margin: '6px 0 0' }}>{descarga}</p></Tarjeta>}
+      <BarraCiclo />
+      {descarga && !semana?.seriesPct && <Tarjeta><Estado nivel="aviso" texto="Fatiga acumulada" /><p className="nota" style={{ margin: '6px 0 0' }}>{descarga}</p></Tarjeta>}
       <div className="segmentado" style={{ flexWrap: 'wrap' }}>
         {dias.map((d) => (
           <button key={d.id} className={plan.id === d.id ? 'activo' : ''} onClick={() => setElegido(d.id)}>
@@ -67,7 +95,7 @@ export function PantallaHoy() {
       <Tarjeta titulo={`Día ${plan.id}: ${plan.nombre}`} accion={plan.id === sugerido.id ? <span className="chip chip-on">Te toca hoy</span> : undefined}>
         <ul className="lista">
           {plan.ejercicios.map((ej) => {
-            const s = pesoSugerido(series, ej);
+            const s = pesoSugerido(series, ej, perfil, semana);
             const c = compararSemana(series, ej.nombre);
             return (
               <li key={ej.nombre} className="lista-item">
@@ -83,7 +111,7 @@ export function PantallaHoy() {
             );
           })}
         </ul>
-        <button className="btn btn-primario ancho" style={{ marginTop: 12 }} onClick={() => { empezarEntreno(plan); setEnCurso(true); }}>
+        <button className="btn btn-primario ancho" style={{ marginTop: 12 }} onClick={() => { empezarEntreno(plan, semana); setEnCurso(true); }}>
           ▶ Empezar entreno
         </button>
       </Tarjeta>
@@ -165,98 +193,63 @@ export function PantallaProgreso() {
 export function PantallaHistorial() {
   const { filas: sesiones } = useSesiones();
   const { filas: series } = useSeries();
-  const { dias } = useRutina();
+  const { dias, todas } = useRutina();
   const [ver, setVer] = useState<Sesion | null>(null);
   const lista = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.created_at ?? '').localeCompare(a.created_at ?? ''));
-  if (!lista.length) return <Vacio titulo="Sin entrenos registrados" />;
-  return (
-    <Tarjeta>
-      <ul className="lista">
-        {lista.map((s) => {
-          const propias = series.filter((x) => x.sesion_id === s.id);
-          const plan = dias.find((d) => d.id === s.dia);
-          const ton = propias.filter((x) => x.tipo !== 'calentamiento').reduce((t, x) => t + Number(x.peso) * x.reps, 0);
-          return (
-            <li key={s.id} className="lista-item">
-              <button type="button" className="crece btn-icono" style={{ textAlign: 'left', color: 'var(--ink)', display: 'block', minWidth: 0 }} onClick={() => propias.length && setVer(s)}>
-                <strong>{s.dia === 'otro' ? s.deporte : `Día ${s.dia} · ${s.dia_nombre ?? plan?.nombre ?? ''}`}</strong>
-                <small className="nota">{fechaCorta(s.fecha)}{s.duracion_min ? ` · ${s.duracion_min} min` : ''}{propias.length ? ` · ${propias.length} series · ${Math.round(ton).toLocaleString('es-AR')} kg` : ''}{s.sensacion ? ` · sensación ${s.sensacion}/10` : ''}{s.notas ? ` · ${s.notas}` : ''}</small>
-              </button>
-              <button className="btn-icono" aria-label="Borrar" onClick={async () => {
-                if (!window.confirm('¿Borrar este entreno?')) return;
-                for (const x of propias) await eliminar(TE.series, x.id);
-                await eliminar(TE.sesiones, s.id);
-              }}>{Icono.borrar}</button>
-            </li>
-          );
-        })}
-      </ul>
-      <Modal titulo="Resultado del entreno" abierto={!!ver} onCerrar={() => setVer(null)}>
-        {ver && <ResumenEntreno sesion={ver} />}
-      </Modal>
-    </Tarjeta>
-  );
-}
+  if (!lista.length) return <Vacio titulo="Sin entrenos registrados"><p>Cuando guardes un entreno aparece acá, agrupado por semana y con la semana del ciclo en la que estabas.</p></Vacio>;
 
-async function copiar(texto: string) {
-  try { await navigator.clipboard.writeText(texto); return true; } catch { return false; }
-}
-
-/** Herramientas para que Claude funcione como entrenador: informe para pasarle y rutina para pegar de vuelta. */
-export function PantallaEntrenador() {
-  const { filas: sesiones } = useSesiones();
-  const { filas: series } = useSeries();
-  const { dias, fila } = useRutina();
-  const [msg, setMsg] = useState('');
-  const [pegado, setPegado] = useState('');
-  const [vista, setVista] = useState<ReturnType<typeof leerRutinaJson> | null>(null);
-  const [error, setError] = useState('');
-  const informe = informeEntrenador(sesiones, series, dias, fila?.notas ?? '');
-  const propios = [...new Set(dias.flatMap((d) => d.ejercicios.map((x) => x.nombre)))].filter((n) => !infoEjercicio(n));
+  // Agrupar por semana (lunes) y ubicar cada semana en su ciclo.
+  const grupos = new Map<string, Sesion[]>();
+  for (const s of lista) {
+    const l = inicioSemana(s.fecha);
+    grupos.set(l, [...(grupos.get(l) ?? []), s]);
+  }
+  const cicloDe = (lunes: string) => {
+    const r = todas.find((x) => x.inicio && x.inicio <= lunes && x.ciclo?.semanas?.length);
+    if (!r?.inicio || !r.ciclo) return null;
+    const i = Math.floor((new Date(lunes).getTime() - new Date(r.inicio).getTime()) / (7 * 86400000));
+    if (i >= r.ciclo.semanas.length) return null;
+    return `${r.ciclo.numero ? `Ciclo ${r.ciclo.numero} · ` : ''}S${i + 1} ${r.ciclo.semanas[i].nombre}`;
+  };
 
   return (
     <div className="pila">
-      <Tarjeta titulo="1 · Pasale tus datos a Claude">
-        <p className="nota" style={{ marginTop: 0 }}>Copiá el informe (últimas 4 semanas: series, pesos, esfuerzo, cansancio, volumen por músculo y progreso) y pegalo en el chat del proyecto. Claude lo analiza y te devuelve ajustes.</p>
-        <div className="acciones">
-          <button className="btn btn-primario crece" onClick={async () => setMsg((await copiar(informe)) ? 'Informe copiado. Pegalo en el chat con Claude.' : 'No pude copiar solo: seleccioná el texto de abajo y copialo.')}>Copiar informe</button>
-        </div>
-        {msg && <p className="nota">{msg}</p>}
-        <details><summary className="nota">Ver informe</summary><pre className="ent-pre">{informe}</pre></details>
-      </Tarjeta>
-
-      <Tarjeta titulo="2 · Pegá la rutina que te arme Claude">
-        <p className="nota" style={{ marginTop: 0 }}>Cuando Claude te pase una rutina en formato JSON, pegala acá. Vas a ver una vista previa antes de activarla; tu historial no se toca.</p>
-        <textarea rows={6} value={pegado} onChange={(x) => { setPegado(x.target.value); setVista(null); setError(''); }} placeholder='```json { "nombre": "…", "dias": [ … ] } ```' />
-        <div className="acciones" style={{ marginTop: 8 }}>
-          <button className="btn" disabled={!pegado.trim()} onClick={() => {
-            try { setVista(leerRutinaJson(pegado)); setError(''); } catch (x) { setError((x as Error).message); setVista(null); }
-          }}>Revisar</button>
-        </div>
-        {error && <p className="ent-baja">{error}</p>}
-        {vista && (
-          <div style={{ marginTop: 8 }}>
-            <strong>{vista.nombre}</strong>
-            {vista.notas && <p className="nota" style={{ whiteSpace: 'pre-wrap' }}>{vista.notas}</p>}
+      {[...grupos.entries()].map(([lunes, ss]) => {
+        const gym = ss.filter((s) => s.dia !== 'otro');
+        const ton = series.filter((x) => gym.some((s) => s.id === x.sesion_id) && x.tipo !== 'calentamiento').reduce((t, x) => t + Number(x.peso) * x.reps, 0);
+        const etiqueta = cicloDe(lunes);
+        return (
+          <Tarjeta key={lunes} titulo={`Semana del ${fechaCorta(lunes)}`} accion={etiqueta ? <span className="chip chip-on">{etiqueta}</span> : undefined}>
+            <small className="nota">{gym.length} {gym.length === 1 ? 'entreno' : 'entrenos'} de gimnasio{ss.length > gym.length ? ` + ${ss.length - gym.length} de otro deporte` : ''} · {Math.round(ton).toLocaleString('es-AR')} kg</small>
             <ul className="lista">
-              {vista.dias.map((d) => (
-                <li key={d.id} className="lista-item"><div className="crece"><strong>Día {d.id} · {d.nombre}</strong>
-                  <small className="nota">{d.ejercicios.map((x) => `${x.nombre} ${x.series}×${x.repsMin}-${x.repsMax}`).join(' · ')}</small></div></li>
-              ))}
+              {ss.map((s) => {
+                const propias = series.filter((x) => x.sesion_id === s.id);
+                const plan = dias.find((d) => d.id === s.dia);
+                const tonS = propias.filter((x) => x.tipo !== 'calentamiento').reduce((t, x) => t + Number(x.peso) * x.reps, 0);
+                const prep = [s.sueno_h != null ? `😴 ${s.sueno_h} h` : '', s.energia != null ? `⚡ ${s.energia}/5` : '', s.agujetas != null ? `dolor ${s.agujetas}/5` : ''].filter(Boolean).join(' · ');
+                return (
+                  <li key={s.id} className="lista-item">
+                    <button type="button" className="crece btn-icono ent-hist-item" onClick={() => propias.length && setVer(s)}>
+                      <strong>{s.dia === 'otro' ? `${/f[uú]tbol/i.test(s.deporte) ? '⚽' : '🏃'} ${s.deporte}` : `Día ${s.dia} · ${s.dia_nombre ?? plan?.nombre ?? ''}`}</strong>
+                      <small className="nota">{fechaCorta(s.fecha)}{s.duracion_min ? ` · ${s.duracion_min} min` : ''}{propias.length ? ` · ${propias.filter((x) => x.tipo !== 'calentamiento').length} series · ${Math.round(tonS).toLocaleString('es-AR')} kg` : ''}{s.rpe_sesion ? ` · RPE ${s.rpe_sesion}` : ''}{s.sensacion ? ` · sensación ${s.sensacion}/10` : ''}</small>
+                      {prep && <small className="nota">{prep}</small>}
+                      {s.notas && <span className="ent-hist-nota">“{s.notas}”</span>}
+                    </button>
+                    <button className="btn-icono" aria-label="Borrar" onClick={async () => {
+                      if (!window.confirm('¿Borrar este entreno?')) return;
+                      for (const x of propias) await eliminar(TE.series, x.id);
+                      await eliminar(TE.sesiones, s.id);
+                    }}>{Icono.borrar}</button>
+                  </li>
+                );
+              })}
             </ul>
-            <button className="btn btn-primario ancho" onClick={async () => {
-              await guardarRutina(vista.dias, { nombre: vista.nombre, notas: vista.notas }, fila);
-              setVista(null); setPegado(''); setMsg('Rutina activada. Ya la ves en Hoy y en Rutina.');
-            }}>Activar esta rutina</button>
-          </div>
-        )}
-      </Tarjeta>
-
-      <Tarjeta titulo="Copiar mi rutina actual">
-        <p className="nota" style={{ marginTop: 0 }}>Por si querés pedirle a Claude que la modifique.</p>
-        <button className="btn" onClick={async () => setMsg((await copiar(rutinaAJson(dias, fila?.nombre ?? 'Rutina base', fila?.notas ?? ''))) ? 'Rutina copiada.' : 'No pude copiar.')}>Copiar rutina en JSON</button>
-        {propios.length > 0 && <p className="nota">Ejercicios fuera de la biblioteca (no suman al conteo por músculo): {propios.join(', ')}.</p>}
-      </Tarjeta>
+          </Tarjeta>
+        );
+      })}
+      <Modal titulo="Resultado del entreno" abierto={!!ver} onCerrar={() => setVer(null)}>
+        {ver && <ResumenEntreno sesion={ver} />}
+      </Modal>
     </div>
   );
 }

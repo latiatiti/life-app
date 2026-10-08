@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { configDesdeEntorno, configGuardada, guardarConfigNube } from '../../core/config';
-import { almacen, exportarTodo, importarTodo, supabase } from '../../core/db';
+import { almacen, borrarPrueba, contarPrueba, exportarTodo, importarTodo, supabase } from '../../core/db';
 import { hoy } from '../../core/format';
 import type { Modulo } from '../../core/types';
 import { Campo, Icono, Tarjeta } from '../../ui/ui';
@@ -34,6 +34,27 @@ function PantallaAjustes() {
     URL.revokeObjectURL(a.href);
   }
 
+  async function cargarPrueba() {
+    if (!window.confirm('¿Cargar un historial de entrenamiento simulado (13 semanas, 4 ciclos)? Se suma a tus datos y después lo podés borrar con un toque.')) return;
+    setMsg('Cargando historial de prueba…');
+    try {
+      const json = await (await fetch(`${import.meta.env.BASE_URL}historial-prueba.json`)).json();
+      const n = await importarTodo(json.datos);
+      setMsg(`Listo: se cargaron ${n} registros de prueba. Mirá Entreno → Historial.`);
+    } catch (err) {
+      setMsg(`No se pudo cargar: ${(err as Error).message}`);
+    }
+  }
+
+  async function quitarPrueba() {
+    const n = await contarPrueba();
+    if (!n) { setMsg('No hay datos de prueba cargados.'); return; }
+    if (!window.confirm(`¿Borrar ${n} registros de prueba? Lo que cargaste vos no se toca.`)) return;
+    setMsg('Borrando…');
+    await borrarPrueba();
+    setMsg(`Listo: se borraron ${n} registros de prueba.`);
+  }
+
   async function importar(f: File) {
     try {
       const json = JSON.parse(await f.text());
@@ -46,6 +67,7 @@ function PantallaAjustes() {
 
   return (
     <div className="pila">
+      {msg && <p className="aviso-msg" role="status">{msg}</p>}
       <Tarjeta titulo="Dónde se guardan tus datos">
         {almacen.tipo === 'nube' ? (
           <>
@@ -88,6 +110,14 @@ function PantallaAjustes() {
         </div>
       </Tarjeta>
 
+      <Tarjeta titulo="Datos de prueba">
+        <p className="nota" style={{ marginTop: 0 }}>Un historial simulado de entrenamiento para probar la app: 4 ciclos con progresión, descargas, un resfrío, un viaje, días salteados, cambios de ejercicio y notas en cada entreno. Se identifica aparte y se borra sin tocar tus datos.</p>
+        <div className="acciones">
+          <button className="btn" onClick={cargarPrueba}>Cargar historial de prueba</button>
+          <button className="btn btn-peligro" onClick={quitarPrueba}>Borrar datos de prueba</button>
+        </div>
+      </Tarjeta>
+
       <Tarjeta titulo="Respaldo">
         <p className="nota">Descargá todos tus datos en un archivo, o importalos en otro dispositivo o en la nube.</p>
         <div className="acciones">
@@ -96,7 +126,6 @@ function PantallaAjustes() {
           <input ref={archivo} type="file" accept="application/json" hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void importar(f); e.target.value = ''; }} />
         </div>
-        {msg && <p className="nota">{msg}</p>}
       </Tarjeta>
 
       <Tarjeta titulo="Instalar en el celular">

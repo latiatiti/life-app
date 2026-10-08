@@ -4,15 +4,21 @@ import { Icono } from '../../ui/ui';
 import { leerEnCurso } from './Entrenando';
 import { necesitaDescarga } from './analisis';
 import { entrenoHoy, progresoEjercicio, proximoDia, tendencia, useRutina, useSeries, useSesiones } from './modelo';
-import { PantallaEntrenador, PantallaHistorial, PantallaHoy, PantallaProgreso } from './Pantallas';
+import { PantallaHistorial, PantallaHoy, PantallaProgreso } from './Pantallas';
+import { PantallaPreparador } from './Preparador';
 import { PantallaRutina } from './Rutina';
 
 function useSenalesEntreno(): Senal[] {
   const { filas: sesiones, cargado } = useSesiones();
   const { filas: series } = useSeries();
-  const { dias } = useRutina();
+  const { dias, estado, ciclo } = useRutina();
   if (!cargado) return [];
   const senales: Senal[] = [];
+  if (estado?.terminado) {
+    senales.push({ id: 'ent-ciclo', modulo: 'entrenamiento', nivel: 'info', titulo: `Terminó tu ciclo${ciclo?.numero ? ` ${ciclo.numero}` : ''} de entrenamiento`, detalle: 'Revisá la propuesta para el próximo ciclo (o pedile una a Claude).', ruta: '#/entrenamiento/entrenador' });
+  } else if (estado && estado.indice === estado.total - 1 && estado.semana.seriesPct) {
+    senales.push({ id: 'ent-desc-sem', modulo: 'entrenamiento', nivel: 'info', titulo: 'Semana de descarga', detalle: 'La mitad de las series y menos peso: es parte del plan, no te saltees.', ruta: '#/entrenamiento' });
+  }
   if (leerEnCurso()) {
     senales.push({ id: 'ent-curso', modulo: 'entrenamiento', nivel: 'info', titulo: 'Tenés un entreno a medias', detalle: 'Tocá para seguir donde quedaste.', ruta: '#/entrenamiento' });
   } else if (!entrenoHoy(sesiones)) {
@@ -70,7 +76,7 @@ export const moduloEntrenamiento: Modulo = {
     { ruta: 'progreso', titulo: 'Progreso', componente: PantallaProgreso },
     { ruta: 'historial', titulo: 'Historial', componente: PantallaHistorial },
     { ruta: 'rutina', titulo: 'Rutina', componente: PantallaRutina },
-    { ruta: 'entrenador', titulo: 'Coach', componente: PantallaEntrenador },
+    { ruta: 'entrenador', titulo: 'Preparador', componente: PantallaPreparador },
   ],
   Resumen: ResumenEntreno,
   useSenales: useSenalesEntreno,

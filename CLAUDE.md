@@ -41,6 +41,14 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Stock → Compras: "Falta en casa" suma faltantes a la lista. Compras → Stock/Economía: cerrar la compra suma al stock lo enlazado, guarda el precio real de cada cosa y crea el gasto (categoría Súper).
 - Modo compra: estado en localStorage (`life.compras.encurso`), bloques en el orden guardado del súper (▲▼ lo reordena), "en este pasillo también" sugiere lo que comprás seguido o falta en casa.
 
+## Preparador y ciclos (2026-10-06)
+- `ent_rutinas` guarda cada ciclo como una fila: `inicio` (lunes) + `ciclo` jsonb {semanas, objetivo, perfil, numero}. Solo una `activa`; las viejas quedan como historial (`empezarCiclo` en `modelo.ts`). SQL: `supabase/entreno-ciclos.sql` (aplicado).
+- `ciclo.ts`: semanas del ciclo (s+1, s50%, rpe-1, rpe6, c85), `ajustarDia`, peso inicial por perfil (`pesoInicial`), propuesta automática del próximo ciclo (`proponerCiclo`: cambia ejercicios estancados, ajusta series por rango de volumen, no sube volumen si la adherencia < 70 %).
+- `tabla.ts`: formato de tabla compacto para rutinas (lo que se le pide a Claude) + presets. Acepta nombres abreviados.
+- `Preparador.tsx` (pestaña Preparador, ruta `#/entrenamiento/entrenador`): ciclo, propuesta, perfil, presets, informe para Claude y pegar tabla/JSON.
+- Modo entrenando: steppers − / + (reps arranca en el mínimo o en lo de la última vez), RPE preelegido, botón fijo abajo para confirmar, encabezado fijo, notas rápidas. `Controles.tsx`: fotos inicio/final de Free Exercise DB (dominio público, CDN jsDelivr) alternadas como mini "reel" + imagen IA opcional (Pollinations, experimental).
+- Datos de prueba: Ajustes → Cargar/Borrar historial de prueba (`public/historial-prueba.json`, generado con `scripts/gen-historial.mjs`; ids `cafe0000-…`).
+
 ## Hoja de ruta (plan aprobado el 2026-10-05, ver doc del plan en la memoria del proyecto)
 1. ✅ Puesta a punto + versión base de Entreno, Stock y Comida conectados (falta: la usuaria crea Supabase y Netlify y publicamos).
 2. Entrenamiento completo: medición corporal guiada, otros deportes, cola offline para modo nube.
