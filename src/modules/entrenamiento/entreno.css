@@ -131,3 +131,55 @@
 .ent-guia p { margin: 0; }
 @media (max-width: 560px) { .ent-guia { grid-template-columns: 1fr; } }
 .ent-variantes-rapidas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+/* ---------- Pantalla completa del modo entrenando (tapa todo, como la vista de reparto) ---------- */
+.ent-pantalla {
+  position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow-y: auto; overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.ent-pantalla-int { max-width: 640px; margin: 0 auto; padding: calc(8px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+.ent-pantalla .ent-fijo-arriba { margin: 0 -16px; padding: 8px 16px; top: 0; }
+.ent-pantalla .barra-fija-abajo { bottom: 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+
+.ent-cabeza-ej { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; margin-bottom: 8px; }
+.ent-nombre-ej { font-size: clamp(1.4rem, 6vw, 1.9rem); line-height: 1.15; margin: 0; text-wrap: balance; }
+
+/* Objetivo, esfuerzo y peso como tarjetitas, cada dato en su espacio. */
+.ent-objetivos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.ent-objetivos > div {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 6px;
+}
+.ent-objetivos span { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.ent-objetivos strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.ent-objetivos small { font-size: 0.7rem; color: var(--ink-2); }
+
+/* Botón verde de confirmar la serie. */
+.btn.btn-confirmar { background: var(--good); border-color: var(--good); color: #05210f; font-weight: 700; box-shadow: 0 0 14px color-mix(in srgb, var(--good) 40%, transparent); }
+.btn.btn-confirmar:disabled { opacity: 0.5; }
+
+.ent-dudas { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+
+.ent-manana { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.ent-manana .segmentado button { padding: 7px 2px; }
+
+/* Descanso tipo bomba: anillo que se vacía, de verde a rojo, y titila más rápido al final. */
+.ent-bomba-caja { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.ent-bomba {
+  --c: #22c55e; --p: 360deg;
+  position: relative; width: min(220px, 60vw); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--c) var(--p), var(--surface-2) 0);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--c) 45%, transparent);
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.ent-bomba::before { content: ''; position: absolute; inset: 12px; border-radius: 50%; background: var(--bg); }
+.ent-bomba-num { position: relative; font-size: clamp(2.4rem, 12vw, 3.4rem); font-variant-numeric: tabular-nums; color: var(--c); }
+.ent-bomba-ico { position: absolute; bottom: 22%; font-size: 1.6rem; }
+.ent-bomba-mecha { position: absolute; top: -6px; right: 18%; font-size: 1.4rem; color: var(--c); }
+.ent-bomba.titila { animation-name: ent-titila; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+.ent-bomba.titila .ent-bomba-mecha { animation: ent-chispa 0.3s infinite alternate; }
+@keyframes ent-titila { 0%, 100% { filter: none; transform: scale(1); } 50% { filter: brightness(1.6); transform: scale(1.04); } }
+@keyframes ent-chispa { from { transform: scale(0.8) rotate(0deg); } to { transform: scale(1.3) rotate(25deg); } }
+@media (prefers-reduced-motion: reduce) { .ent-bomba.titila, .ent-bomba.titila .ent-bomba-mecha { animation: none; } }
+.ent-bomba-btns { display: flex; gap: 8px; width: 100%; }
+.ent-bomba-btns .btn { min-height: 52px; font-size: 1.05rem; }

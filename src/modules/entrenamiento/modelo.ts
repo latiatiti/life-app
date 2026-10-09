@@ -111,6 +111,8 @@ export interface Serie extends Fila {
   rpe: number | null;
   /** "efectiva" (cuenta para progreso y volumen) o "calentamiento". */
   tipo?: 'efectiva' | 'calentamiento';
+  /** Segundos que se descansó de verdad después de esta serie (si se cortó el descanso, lo real). */
+  descanso_seg?: number | null;
 }
 
 export const TE = { sesiones: 'ent_sesiones', series: 'ent_series', rutinas: 'ent_rutinas', ejercicios: 'ent_ejercicios' } as const;

@@ -2,6 +2,7 @@ import { diasEntre, hoy } from '../../core/format';
 import type { Modulo, Senal } from '../../core/types';
 import { Icono } from '../../ui/ui';
 import { leerEnCurso } from './Entrenando';
+import { ChequeoManana } from './Manana';
 import { necesitaDescarga } from './analisis';
 import { entrenoHoy, progresoEjercicio, proximoDia, tendencia, useBiblioteca, useRutina, useSeries, useSesiones } from './modelo';
 import { PantallaHistorial, PantallaHoy, PantallaProgreso } from './Pantallas';
@@ -55,10 +56,13 @@ function ResumenEntreno() {
   const semana = sesiones.filter((s) => diasEntre(s.fecha, hoy()) < 7).length;
   const p = proximoDia(sesiones, dias);
   return (
+    <>
     <div className="grilla-cifras compacta">
       <div className="cifra"><span className="cifra-etq">Esta semana</span><strong className="cifra-val">{semana}/{dias.length}</strong><span className="cifra-nota">entrenos</span></div>
       <div className="cifra"><span className="cifra-etq">Próximo</span><strong className="cifra-val">Día {p.id}</strong><span className="cifra-nota">{p.nombre}</span></div>
     </div>
+    <ChequeoManana />
+    </>
   );
 }
 
