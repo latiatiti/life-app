@@ -55,6 +55,8 @@ export interface Compra extends Fila {
   movimiento_id: string | null;
   /** Compra compartida: quién pagó, cuánto le toca a cada uno y cuánto queda debiendo el otro. */
   reparto?: { pago: Persona; yo: number; ulises: number; debe: number } | null;
+  /** Datos del QR fiscal del ticket, si se escaneó. */
+  ticket?: TicketQR | null;
 }
 
 export const TC = { items: 'com_items', supers: 'com_supers', precios: 'com_precios', compras: 'com_compras' } as const;
@@ -305,6 +307,7 @@ export interface LineaCarrito {
   precio: number | null;
   /** Precio online de referencia, si lo encontramos. */
   ref: number | null;
+  imagen?: string;
 }
 export interface Carrito { super_id: string | null; inicio: number; lineas: LineaCarrito[]; ultimoPara: Persona }
 
@@ -329,25 +332,103 @@ export function totalesCarrito(lineas: LineaCarrito[]) {
 }
 
 /** Busca qué producto es un código: primero en tu catálogo, después en los súper online y por último en Open Food Facts. */
-export async function identificar(ean: string, items: Item[]): Promise<{ nombre: string; marca: string; ref: number | null; item: Item | null }> {
+export async function identificar(ean: string, items: Item[]): Promise<{ nombre: string; marca: string; ref: number | null; imagen: string; item: Item | null }> {
   const it = items.find((i) => i.ean === ean);
-  if (it) return { nombre: it.nombre, marca: it.marca, ref: masBarato(it)?.precio.p ?? null, item: it };
+  if (it) return { nombre: it.nombre, marca: it.marca, ref: masBarato(it)?.precio.p ?? null, imagen: '', item: it };
   try {
     const r = await buscarPrecios({ eans: [ean] });
     if (r.length) {
       const barato = [...r].sort((a, b) => a.precio - b.precio)[0];
-      return { nombre: r[0].nombre, marca: r[0].marca, ref: barato.precio, item: null };
+      return { nombre: r[0].nombre, marca: r[0].marca, ref: barato.precio, imagen: r.find((x) => x.imagen)?.imagen ?? '', item: null };
     }
   } catch { /* sin señal o sin función: seguimos */ }
   try {
-    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=product_name,product_name_es,brands`);
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=product_name,product_name_es,brands,image_front_small_url`);
     if (r.ok) {
       const d = await r.json();
       const n = d?.product?.product_name_es || d?.product?.product_name;
-      if (n) return { nombre: String(n), marca: String(d.product.brands ?? '').split(',')[0], ref: null, item: null };
+      if (n) return { nombre: String(n), marca: String(d.product.brands ?? '').split(',')[0], ref: null, imagen: String(d.product.image_front_small_url ?? ''), item: null };
     }
   } catch { /* nada */ }
-  return { nombre: '', marca: '', ref: null, item: null };
+  return { nombre: '', marca: '', ref: null, imagen: '', item: null };
+}
+
+/** El ítem del catálogo que corresponde a una línea del carro (por código o por nombre). */
+export function itemDeLinea(l: Pick<LineaCarrito, 'ean' | 'nombre'>, items: Item[]): Item | null {
+  const n = l.nombre.trim().toLowerCase();
+  return (l.ean ? items.find((i) => i.ean === l.ean) : null) ?? (n ? items.find((i) => i.nombre.toLowerCase() === n) : null) ?? null;
+}
+
+/* ---------- QR del ticket (factura electrónica de ARCA/AFIP) ---------- */
+
+/**
+ * Lo que trae el QR fiscal impreso en el ticket. Ojo: ARCA solo pone el total, la fecha y el comercio,
+ * no el detalle de productos; los precios de cada cosa se cargan a mano mirando el ticket.
+ */
+export interface TicketQR { fecha: string; cuit: string; ptoVta: number; nroCmp: number; importe: number }
+
+export function leerQrTicket(texto: string): TicketQR | null {
+  const m = /[?&]p=([^&#]+)/.exec(texto.trim());
+  if (!m) return null;
+  try {
+    let b = decodeURIComponent(m[1]).replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    const d = JSON.parse(atob(b));
+    const importe = Number(d.importe);
+    if (!Number.isFinite(importe) || importe <= 0) return null;
+    return { fecha: String(d.fecha ?? '').slice(0, 10), cuit: String(d.cuit ?? ''), ptoVta: Number(d.ptoVta) || 0, nroCmp: Number(d.nroCmp) || 0, importe };
+  } catch { return null; }
+}
+
+export const numeroTicket = (t: TicketQR) => `${String(t.ptoVta).padStart(4, '0')}-${String(t.nroCmp).padStart(8, '0')}`;
+
+/* ---------- Subas y bajas ---------- */
+
+/** Para cada producto, el último precio de ticket contra el anterior (solo los que cambiaron más de 1 %). */
+export function cambiosDePrecio(precios: PrecioReg[], items: Item[]) {
+  const por = new Map<string, PrecioReg[]>();
+  for (const r of precios) {
+    if (r.fuente === 'online') continue;
+    const l = por.get(r.item_id) ?? [];
+    l.push(r);
+    por.set(r.item_id, l);
+  }
+  const r: Array<{ item: Item; antes: number; ahora: number; pct: number; fecha: string }> = [];
+  for (const [id, regs] of por) {
+    if (regs.length < 2) continue;
+    regs.sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+    const ahora = Number(regs[0].precio);
+    const antes = Number(regs.find((x) => x.fecha < regs[0].fecha)?.precio ?? regs[1].precio);
+    const item = items.find((i) => i.id === id);
+    if (!item || !antes) continue;
+    const pct = Math.round((ahora / antes - 1) * 100);
+    if (Math.abs(ahora - antes) / antes > 0.01) r.push({ item, antes, ahora, pct, fecha: regs[0].fecha });
+  }
+  return r.sort((a, b) => b.pct - a.pct);
+}
+
+/* ---------- Lo que falta agarrar ---------- */
+
+/** Lo que está en la lista o falta en casa (tuyo o de los dos) y todavía no está en el carro. */
+export function faltaAgarrar(items: Item[], faltan: Producto[], lineas: LineaCarrito[]) {
+  const enCarro = new Set(lineas.flatMap((l) => [l.ean ?? '', l.nombre.trim().toLowerCase()]).filter(Boolean));
+  const r: Array<{ nombre: string; ean: string | null; basico: boolean }> = [];
+  const vistos = new Set<string>();
+  for (const i of items.filter((x) => x.en_lista)) {
+    const n = i.nombre.toLowerCase();
+    vistos.add(n);
+    if (i.producto_id) vistos.add(`p:${i.producto_id}`);
+    if (enCarro.has(n) || (i.ean && enCarro.has(i.ean))) continue;
+    r.push({ nombre: i.nombre, ean: i.ean, basico: !!faltan.find((p) => p.id === i.producto_id)?.basico });
+  }
+  for (const p of faltan) {
+    const n = p.nombre.toLowerCase();
+    if (vistos.has(n) || vistos.has(`p:${p.id}`) || enCarro.has(n)) continue;
+    const it = items.find((i) => i.producto_id === p.id);
+    if (it && ((it.ean && enCarro.has(it.ean)) || enCarro.has(it.nombre.toLowerCase()))) continue;
+    r.push({ nombre: p.nombre, ean: it?.ean ?? null, basico: !!p.basico });
+  }
+  return r.sort((a, b) => Number(b.basico) - Number(a.basico) || a.nombre.localeCompare(b.nombre));
 }
 
 const LUGAR_DE_BLOQUE: Record<string, Lugar> = {
@@ -361,9 +442,9 @@ const LUGAR_DE_BLOQUE: Record<string, Lugar> = {
  */
 export async function cerrarCarrito(d: {
   carrito: Carrito; super: Super | null; items: Item[]; productos: Producto[]; total: number; pago: Persona;
-  gasto: { cuenta_id: string; categoria_id: string | null } | null;
+  gasto: { cuenta_id: string; categoria_id: string | null } | null; ticket?: TicketQR | null;
 }) {
-  const fecha = hoy();
+  const fecha = d.ticket?.fecha && /^\d{4}-\d{2}-\d{2}$/.test(d.ticket.fecha) ? d.ticket.fecha : hoy();
   const t = totalesCarrito(d.carrito.lineas);
   const lineas: LineaCompra[] = [];
   const catalogo = [...d.items];
@@ -401,6 +482,7 @@ export async function cerrarCarrito(d: {
   const compra = await crear<Compra>(TC.compras, {
     fecha, super_id: d.super?.id ?? null, estimado: lineas.reduce((s, l) => s + l.estimado * l.cantidad, 0), total: d.total, items: lineas,
     movimiento_id, reparto: { pago: d.pago, yo: Math.round(t.yo), ulises: Math.round(t.ulises), debe: Math.round(debe) },
+    ...(d.ticket ? { ticket: d.ticket } : {}),
   });
   for (const l of lineas) {
     if (l.real != null && l.real > 0) {

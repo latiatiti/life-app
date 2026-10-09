@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
  * Lector de códigos de barras con la cámara trasera. Usa ZXing (anda en iPhone, donde Safari
  * no trae lector propio). La librería se carga recién al abrir la cámara para no pesar en el inicio.
  */
-export function Escaner({ onCodigo, pausado }: { onCodigo: (codigo: string) => void; pausado: boolean }) {
+export function Escaner({ onCodigo, pausado, qr = false, aviso = 'Completá el producto ↓' }: {
+  onCodigo: (codigo: string) => void; pausado: boolean; /** Leer el QR del ticket en vez de códigos de barras. */ qr?: boolean; aviso?: string;
+}) {
   const video = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState('');
   const ultimo = useRef({ codigo: '', t: 0 });
@@ -22,7 +24,8 @@ export function Escaner({ onCodigo, pausado }: { onCodigo: (codigo: string) => v
           import('@zxing/browser'), import('@zxing/library'),
         ]);
         const pistas = new Map();
-        pistas.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.CODE_128]);
+        pistas.set(DecodeHintType.POSSIBLE_FORMATS, qr ? [BarcodeFormat.QR_CODE]
+          : [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.CODE_128]);
         const lector = new BrowserMultiFormatReader(pistas, { delayBetweenScanAttempts: 120 });
         if (!vivo || !video.current) return;
         const controles = await lector.decodeFromConstraints(
@@ -48,15 +51,15 @@ export function Escaner({ onCodigo, pausado }: { onCodigo: (codigo: string) => v
       }
     })();
     return () => { vivo = false; parar?.(); };
-  }, []);
+  }, [qr]);
 
   return (
     <div className="com-escaner">
       {error ? <p className="nota texto-critico">{error}</p> : (
         <>
           <video ref={video} playsInline muted autoPlay />
-          <div className="com-mira" aria-hidden="true" />
-          {pausado && <div className="com-pausa">Completá el producto ↓</div>}
+          <div className={qr ? 'com-mira com-mira-qr' : 'com-mira'} aria-hidden="true" />
+          {pausado && <div className="com-pausa">{aviso}</div>}
         </>
       )}
     </div>

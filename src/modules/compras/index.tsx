@@ -5,7 +5,7 @@ import { PantallaEscanear } from './Carrito';
 import { PantallaComprando } from './Comprando';
 import { PantallaHistorial } from './Historial';
 import { PantallaLista } from './Lista';
-import { CADENAS, leerCarrito, leerEnCurso, preciosViejos, totalesPorCadena, useCompras, useItems, usePrecios } from './modelo';
+import { CADENAS, cambiosDePrecio, leerCarrito, leerEnCurso, preciosViejos, totalesPorCadena, useCompras, useItems, usePrecios } from './modelo';
 import { oportunidades, PantallaPrecios } from './Precios';
 
 const ICONO = (
@@ -34,6 +34,9 @@ function useSenalesCompras(): Senal[] {
   }
   const ops = oportunidades(items, precios);
   if (ops.length) senales.push({ id: 'com-ops', modulo: 'compras', nivel: 'ok', titulo: `${ops.length} oportunidad${ops.length > 1 ? 'es' : ''} de ahorro`, detalle: ops.slice(0, 3).map((o) => o.item.nombre).join(', '), ruta: '#/compras/precios' });
+  const cambios = cambiosDePrecio(precios, items);
+  const suben = cambios.filter((x) => x.pct > 0);
+  if (suben.length) senales.push({ id: 'com-suben', modulo: 'compras', nivel: 'aviso', titulo: `${suben.length} cosa${suben.length > 1 ? 's' : ''} subi${suben.length > 1 ? 'eron' : 'ó'} desde la compra anterior`, detalle: suben.slice(0, 3).map((x) => `${x.item.nombre} +${x.pct} %`).join(', '), ruta: '#/compras/precios' });
   const viejos = preciosViejos(items);
   if (viejos.length) senales.push({ id: 'com-viejos', modulo: 'compras', nivel: 'info', titulo: 'Precios de hace más de una semana', detalle: 'Tocá "Actualizar precios" antes de ir al súper.', ruta: '#/compras/precios' });
   return senales;
@@ -46,7 +49,7 @@ function ResumenCompras() {
   const ult = [...compras].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
   return (
     <div className="grilla-cifras compacta">
-      <div className="cifra"><span className="cifra-etq">En la lista</span><strong className="cifra-val">{lista}</strong><span className="cifra-nota"><a href="#/compras/comprando">Modo compra</a></span></div>
+      <div className="cifra"><span className="cifra-etq">En la lista</span><strong className="cifra-val">{lista}</strong><span className="cifra-nota"><a href="#/compras/escanear">Modo compra</a></span></div>
       <div className="cifra"><span className="cifra-etq">Última compra</span><strong className="cifra-val">{ult ? dinero(Number(ult.total)) : '—'}</strong>
         <span className="cifra-nota">{ult ? relativo(ult.fecha) : 'todavía ninguna'}</span></div>
     </div>
@@ -65,8 +68,8 @@ export const moduloCompras: Modulo = {
   icono: ICONO,
   pantallas: [
     { ruta: '', titulo: 'Lista', componente: PantallaLista },
-    { ruta: 'escanear', titulo: 'Escanear', componente: PantallaEscanear },
-    { ruta: 'comprando', titulo: 'Modo compra', componente: PantallaComprando },
+    { ruta: 'escanear', titulo: 'Modo compra', componente: PantallaEscanear },
+    { ruta: 'comprando', titulo: 'Por pasillos', componente: PantallaComprando },
     { ruta: 'precios', titulo: 'Precios', componente: PantallaPrecios },
     { ruta: 'historial', titulo: 'Historial', componente: PantallaHistorial },
   ],

@@ -28,3 +28,17 @@
 .com-mira { position: absolute; left: 10%; right: 10%; top: 38%; height: 24%; border: 2px solid var(--xp); border-radius: 10px; box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35); pointer-events: none; }
 .com-pausa { position: absolute; inset: auto 0 0 0; padding: 8px; text-align: center; background: rgba(10, 10, 18, 0.8); color: var(--ink); font-weight: 550; }
 .com-escaner .nota { padding: 16px; }
+.com-mira-qr { left: 22%; right: 22%; top: 18%; height: auto; aspect-ratio: 1; }
+
+/* Modo compra con escáner */
+.com-tablero { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 6px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.com-tablero .cifra { padding: 10px 12px; }
+.com-tablero button.cifra { text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.com-ficha { display: flex; gap: 12px; align-items: center; }
+.com-ficha img { width: 72px; height: 72px; }
+.com-ficha strong { font-size: 1.05rem; display: block; }
+.com-sube { color: var(--critical-text, #f87171); }
+.com-baja { color: var(--good-text); }
+.com-falta-basico { color: var(--warning-text); font-size: 0.75rem; }
+.com-asignar { display: grid; grid-template-columns: 1fr 104px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.com-asignar input { text-align: right; }

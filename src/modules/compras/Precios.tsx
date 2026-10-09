@@ -3,7 +3,7 @@ import { dinero, fechaCorta } from '../../core/format';
 import { Icono, Modal, Tarjeta, Vacio } from '../../ui/ui';
 import { FormItem } from './FormItem';
 import {
-  actualizarTodo, BLOQUES, CADENAS, type Cadena, descuento, enOferta, type Item, masBarato, NOMBRE_CADENA, ultimoTicket, useItems,
+  actualizarTodo, BLOQUES, cambiosDePrecio, CADENAS, type Cadena, descuento, enOferta, type Item, masBarato, NOMBRE_CADENA, ultimoTicket, useItems,
   usePrecios, useSupers,
 } from './modelo';
 
@@ -32,6 +32,7 @@ export function PantallaPrecios() {
   const [filtro, setFiltro] = useState('');
 
   const ops = oportunidades(items, precios);
+  const cambios = cambiosDePrecio(precios, items);
   const visibles = items
     .filter((i) => !filtro || i.nombre.toLowerCase().includes(filtro.toLowerCase()) || i.bloque === filtro)
     .sort((a, b) => BLOQUES.indexOf(a.bloque) - BLOQUES.indexOf(b.bloque) || a.nombre.localeCompare(b.nombre));
@@ -49,6 +50,20 @@ export function PantallaPrecios() {
         <button className="btn" onClick={actualizar} disabled={!items.some((i) => i.ean)}>Actualizar precios</button>
         <button className="btn btn-primario" onClick={() => setEditando('nuevo')}>{Icono.mas} Producto</button>
       </div>
+
+      {cambios.length > 0 && (
+        <Tarjeta titulo={`Subas y bajas (${cambios.length})`}>
+          <p className="nota">Último ticket contra el anterior.</p>
+          <ul className="lista">
+            {cambios.slice(0, 12).map((x) => (
+              <li key={x.item.id} className="lista-item">
+                <div className="crece"><strong>{x.item.nombre}</strong><small className="nota">{dinero(x.antes)} → {dinero(x.ahora)} · {fechaCorta(x.fecha)}</small></div>
+                <span className={`num ${x.pct > 0 ? 'texto-critico' : 'texto-bien'}`}>{x.pct > 0 ? `▲ ${x.pct}` : `▼ ${-x.pct}`} %</span>
+              </li>
+            ))}
+          </ul>
+        </Tarjeta>
+      )}
 
       {ops.length > 0 && (
         <Tarjeta titulo={`Oportunidades (${ops.length})`}>
