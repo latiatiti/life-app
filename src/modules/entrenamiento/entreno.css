@@ -183,3 +183,23 @@
 @media (prefers-reduced-motion: reduce) { .ent-bomba.titila, .ent-bomba.titila .ent-bomba-mecha { animation: none; } }
 .ent-bomba-btns { display: flex; gap: 8px; width: 100%; }
 .ent-bomba-btns .btn { min-height: 52px; font-size: 1.05rem; }
+
+/* Resumen del entreno: lo principal arriba, el detalle para abrir. */
+.ent-resumen-top { margin-top: 0; }
+.ent-resumen-top .ent-obj-val { font-size: 1.5rem; }
+.ent-resumen-top small { font-size: 0.8rem; color: var(--muted); }
+.ent-objetivos .ent-obj-nota { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 0.78rem; color: var(--ink-2); }
+.ent-resumen-notas { margin: 0; font-style: italic; color: var(--ink-2); }
+.ent-resumen-titular { margin: 0 0 10px; font-weight: 600; font-size: 1.02rem; }
+.ent-mejoras { display: flex; flex-direction: column; gap: 8px; }
+.ent-mejora { display: grid; grid-template-columns: minmax(0, 1fr) 56px; align-items: center; column-gap: 10px; row-gap: 4px; font-size: 0.9rem; }
+.ent-mejora-nombre { grid-column: 1 / -1; }
+.ent-mejora-num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.ent-mejora-barra { position: relative; height: 10px; background: var(--surface-2); border-radius: 6px; }
+.ent-mejora-barra::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--border); }
+.ent-mejora-barra > span { position: absolute; top: 0; bottom: 0; border-radius: 6px; min-width: 3px; }
+.ent-mejora-barra > .sube { background: var(--good); }
+.ent-mejora-barra > .baja { background: var(--critical, #ef4444); }
+.ent-proximas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ent-proximas li { display: flex; justify-content: space-between; gap: 10px; font-size: 0.9rem; }
+.ent-detalle summary { cursor: pointer; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-weight: 600; }
