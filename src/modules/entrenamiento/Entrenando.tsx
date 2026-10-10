@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { escribirStorage, leerStorage } from '../../core/config';
 import { fechaCorta, hoy } from '../../core/format';
 import { Campo, Modal, Tarjeta } from '../../ui/ui';
@@ -9,8 +9,10 @@ import { Delta, ResumenEntreno } from './Resumen';
 import { SelectorEjercicio } from './Rutina';
 import { describirSemana, type SemanaCiclo } from './ciclo';
 import { ImagenEjercicio, Stepper } from './Controles';
+import { leerManana } from './Manana';
 
-type Hecha = { ejercicio: string; numero: number; peso: number; reps: number; rpe: number | null; tipo: 'efectiva' | 'calentamiento' };
+/** `descanso` = segundos que se descansó de verdad después de la serie. */
+type Hecha = { ejercicio: string; numero: number; peso: number; reps: number; rpe: number | null; tipo: 'efectiva' | 'calentamiento'; descanso?: number | null };
 
 /** Estado del entreno en curso. Se guarda en el celular, así sobrevive si se cierra la app o no hay señal. */
 interface EnCurso {
@@ -23,6 +25,8 @@ interface EnCurso {
   ej: number;
   hechas: Hecha[];
   descansoHasta: number | null;
+  /** Cuándo empezó el descanso en curso (para saber cuánto se descansó si se corta). */
+  descansoDesde?: number | null;
   /** Semana del ciclo al empezar (el plan ya viene ajustado; esto se usa para el peso sugerido). */
   semana?: SemanaCiclo | null;
 }
@@ -47,6 +51,42 @@ function useAhora(activo: boolean) {
   return ahora;
 }
 
+const mmss = (seg: number) => `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
+
+/** Descanso tipo bomba: arranca verde, se va poniendo roja y en los últimos segundos titila cada vez más rápido. */
+function Bomba({ restante, total, onCortar, onMas, sigue }: { restante: number; total: number; onCortar: () => void; onMas: () => void; sigue?: string }) {
+  const frac = total > 0 ? Math.min(1, Math.max(0, restante / total)) : 0;
+  const tono = Math.round(130 * frac); // 130 = verde, 0 = rojo
+  const color = `hsl(${tono} 85% 50%)`;
+  const titila = restante <= 15 ? Math.max(0.18, (restante / 15) * 0.9) : 0;
+  return (
+    <div className="ent-bomba-caja">
+      <p className="nota" style={{ margin: 0 }}>Descanso</p>
+      <div className={`ent-bomba ${titila ? 'titila' : ''}`} style={{ '--c': color, '--p': `${frac * 360}deg`, animationDuration: titila ? `${titila}s` : undefined } as CSSProperties}>
+        <span className="ent-bomba-mecha" aria-hidden="true">✦</span>
+        <strong className="ent-bomba-num" aria-live="polite">{mmss(restante)}</strong>
+        <span className="ent-bomba-ico" aria-hidden="true">💣</span>
+      </div>
+      {sigue && <p className="nota" style={{ margin: 0 }}>Sigue: {sigue}</p>}
+      <div className="ent-bomba-btns">
+        <button className="btn" onClick={onMas}>+30 s</button>
+        <button className="btn btn-primario crece" onClick={onCortar}>Cortar descanso</button>
+      </div>
+      <p className="nota" style={{ margin: 0, fontSize: '0.75rem' }}>Si lo cortás, se guarda cuánto descansaste de verdad.</p>
+    </div>
+  );
+}
+
+/** Pantalla que tapa todo mientras se entrena (como la vista de reparto): una sola cosa a la vez, botones grandes. */
+function Capa({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const antes = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = antes; };
+  }, []);
+  return <div className="ent-pantalla" role="dialog" aria-modal="true" aria-label="Modo entrenando"><div className="ent-pantalla-int pila">{children}</div></div>;
+}
+
 function vibrar() {
   try { navigator.vibrate?.([200, 100, 200]); } catch { /* iPhone no vibra desde la web */ }
 }
@@ -58,7 +98,10 @@ const efectivasDe = (hechas: Hecha[], nombre: string) => hechas.filter((h) => h.
 /* ---------- Paso 1: chequeo antes de entrenar ---------- */
 
 function Chequeo({ onListo }: { onListo: (p: Preparacion) => void }) {
-  const [p, setP] = useState<Preparacion>({ sueno_h: null, energia: null, agujetas: null });
+  // Si ya contestó a la mañana, solo falta el dolor muscular.
+  const manana = leerManana();
+  const [p, setP] = useState<Preparacion>({ sueno_h: manana?.sueno_h ?? null, energia: manana?.energia ?? null, agujetas: null });
+  const [todo, setTodo] = useState(!(manana?.sueno_h != null && manana?.energia != null));
   const ev = evaluarPreparacion(p);
   const seg = (k: keyof Preparacion, ops: Array<[number, string]>) => (
     <div className="segmentado">
@@ -68,10 +111,16 @@ function Chequeo({ onListo }: { onListo: (p: Preparacion) => void }) {
   return (
     <Tarjeta titulo="¿Cómo llegás hoy?">
       <div className="ent-check">
-        <p className="subtitulo">Horas de sueño anoche</p>
-        {seg('sueno_h', [[4, '≤4'], [5, '5'], [6, '6'], [7, '7'], [8, '8'], [9, '9+']])}
-        <p className="subtitulo">Energía (1 = sin nafta, 5 = a full)</p>
-        {seg('energia', [[1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5']])}
+        {todo ? (
+          <>
+            <p className="subtitulo">Horas de sueño anoche</p>
+            {seg('sueno_h', [[4, '≤4'], [5, '5'], [6, '6'], [7, '7'], [8, '8'], [9, '9+']])}
+            <p className="subtitulo">Energía (1 = sin nafta, 5 = a full)</p>
+            {seg('energia', [[1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5']])}
+          </>
+        ) : (
+          <p className="nota" style={{ margin: 0 }}>A la mañana dijiste: {p.sueno_h} h de sueño y energía {p.energia}/5. <button type="button" className="btn-link" onClick={() => setTodo(true)}>cambiar</button></p>
+        )}
         <p className="subtitulo">Dolor muscular (1 = nada, 5 = mucho)</p>
         {seg('agujetas', [[1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5']])}
       </div>
@@ -107,6 +156,9 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   const [rpeSesion, setRpeSesion] = useState<number | null>(null);
   const [notas, setNotas] = useState('');
   const [cambiar, setCambiar] = useState(false);
+  /** Avisos antes de guardar una serie con datos raros (el usuario confirma o corrige). */
+  const [duda, setDuda] = useState<string[] | null>(null);
+  const [avisoDescanso, setAvisoDescanso] = useState('');
   const restante = st?.descansoHasta ? Math.max(0, Math.ceil((st.descansoHasta - ahora) / 1000)) : 0;
 
   // Ajuste por cansancio: día bajo = una serie menos y ~10 % menos peso; día medio = sin subir peso y tope RPE 8.
@@ -137,7 +189,7 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   useEffect(() => {
     if (st?.descansoHasta && restante === 0) {
       vibrar();
-      actualizar({ ...st, descansoHasta: null });
+      cerrarDescanso(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restante]);
@@ -147,23 +199,37 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
     setSt(n);
   }
 
+  /** Termina el descanso y anota en la última serie cuánto se descansó (lo real si se cortó, lo previsto si se cumplió). */
+  function cerrarDescanso(cortado: boolean) {
+    if (!st) return;
+    const desde = st.descansoDesde ?? null;
+    const fin = cortado ? Date.now() : (st.descansoHasta ?? Date.now());
+    const seg = desde ? Math.max(0, Math.round((fin - desde) / 1000)) : null;
+    const hechas = st.hechas.slice();
+    const i = hechas.length - 1;
+    if (i >= 0 && seg != null) hechas[i] = { ...hechas[i], descanso: seg };
+    actualizar({ ...st, hechas, descansoHasta: null, descansoDesde: null });
+    setAvisoDescanso(seg != null ? `Descansaste ${mmss(seg)}${cortado ? ' (cortado)' : ''}` : '');
+  }
+
   if (guardada) {
     return (
-      <div className="pila">
+      <Capa>
         <h2>Resultado del entreno</h2>
         <ResumenEntreno sesion={guardada} />
         <button className="btn btn-primario ancho" onClick={onSalir}>Listo</button>
-      </div>
+      </Capa>
     );
   }
   if (!st) return null;
 
   if (fase === 'chequeo') {
     return (
-      <div className="pila">
+      <Capa>
         <h2>Día {plan.id} · {plan.nombre}</h2>
         <Chequeo onListo={(prep) => actualizar({ ...st, prep, fase: 'entrenando', inicio: Date.now() })} />
-      </div>
+        <button className="btn" onClick={() => { if (window.confirm('¿Salir sin entrenar?')) { actualizar(null); onSalir(); } }}>Salir</button>
+      </Capa>
     );
   }
 
@@ -184,16 +250,40 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   const totalSeries = plan.ejercicios.reduce((s, x) => s + (ev?.nivel === 'bajo' ? Math.max(2, x.series - 1) : x.series), 0);
   const nEfectivas = st.hechas.filter((h) => h.tipo !== 'calentamiento').length;
 
-  function serieHecha() {
+  /** Revisa que la serie tenga sentido antes de guardarla; si algo es raro, pregunta. */
+  function revisarSerie(): string[] {
+    if (!ej) return [];
+    const p: string[] = [];
+    const ref = efEj[efEj.length - 1]?.peso || sug.peso || ultimoPeso || 0;
+    const corporal = info?.equipo === 'peso corporal';
+    if (!calent) {
+      if (reps > ej.repsMax + 4) p.push(`Marcaste ${reps} repeticiones y el objetivo es ${ej.repsMin}–${ej.repsMax}. Si te sobraron tantas, la próxima subí el peso.`);
+      if (reps < Math.max(1, ej.repsMin - 3)) p.push(`Marcaste ${reps} repeticiones y el objetivo es ${ej.repsMin}–${ej.repsMax}.`);
+      if (!peso && ref > 0 && !corporal) p.push('No pusiste peso.');
+      if (peso && ref > 0 && peso > ref * 1.25) p.push(`El peso (${peso} kg) es ${Math.round((peso / ref - 1) * 100)} % más que lo previsto (${ref} kg).`);
+      if (peso && ref > 0 && peso < ref * 0.7) p.push(`El peso (${peso} kg) es mucho menos que lo previsto (${ref} kg).`);
+      if (rpe == null) p.push('No marcaste cuánto te costó (RPE).');
+      if (rpe != null && rpe <= 6 && reps < ej.repsMin) p.push(`Esfuerzo ${rpe} con pocas repeticiones no cuadra: ¿no te quedaban más?`);
+    }
+    return p;
+  }
+
+  function serieHecha(forzar = false) {
     if (!st || !ej) return;
     const p = peso;
     const r = reps;
     if (!(r > 0)) return;
+    if (!forzar) {
+      const dudas = revisarSerie();
+      if (dudas.length) { setDuda(dudas); return; }
+    }
+    setDuda(null);
+    setAvisoDescanso('');
     const tipo = calent ? 'calentamiento' : 'efectiva';
     const hechas = [...st.hechas, { ejercicio: ej.nombre, numero: hechasEj.length + 1, peso: p || 0, reps: r, rpe, tipo } as Hecha];
     const completo = !calent && efEj.length + 1 >= seriesObjetivo;
     const prox = completo ? siguienteCon(hechas, st.ej) : st.ej;
-    actualizar({ ...st, hechas, ej: prox, descansoHasta: calent ? null : Date.now() + ej.descanso * 1000 });
+    actualizar({ ...st, hechas, ej: prox, descansoHasta: calent ? null : Date.now() + ej.descanso * 1000, descansoDesde: calent ? null : Date.now() });
   }
   function siguienteCon(hechas: Hecha[], desde: number) {
     for (let k = 1; k <= plan.ejercicios.length; k++) {
@@ -213,7 +303,7 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
         duracion_min: Math.max(1, Math.round((Date.now() - st.inicio) / 60000)), sensacion, rpe_sesion: rpeSesion, notas: notas.trim(),
         sueno_h: st.prep?.sueno_h ?? null, energia: st.prep?.energia ?? null, agujetas: st.prep?.agujetas ?? null,
       },
-      st.hechas,
+      st.hechas.map(({ descanso, ...h }) => ({ ...h, descanso_seg: descanso ?? null })),
     );
     actualizar(null);
     setGuardada(s);
@@ -226,7 +316,7 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   const info = ej ? infoEjercicio(ej.nombre) : undefined;
 
   return (
-    <div className="pila">
+    <Capa>
       <div className="ent-fijo-arriba">
         <div className="barra-acciones">
           <div className="crece">
@@ -243,23 +333,27 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
       {ev && ev.nivel !== 'bien' && <p className="nota" style={{ margin: 0 }}>{ev.consejo}</p>}
 
       {restante > 0 && (
-        <Tarjeta className="centro">
-          <p className="nota">Descanso</p>
-          <p className="grande">{Math.floor(restante / 60)}:{String(restante % 60).padStart(2, '0')}</p>
-          <div className="acciones" style={{ justifyContent: 'center' }}>
-            <button className="btn chico" onClick={() => actualizar({ ...st, descansoHasta: (st.descansoHasta ?? Date.now()) + 30000 })}>+30 s</button>
-            <button className="btn chico" onClick={() => actualizar({ ...st, descansoHasta: null })}>Saltar descanso</button>
-          </div>
-          {!terminado && <p className="nota">Sigue: {ej.nombre}, serie {efEj.length + 1}</p>}
-        </Tarjeta>
+        <Bomba
+          restante={restante}
+          total={Math.max(1, Math.round(((st.descansoHasta ?? 0) - (st.descansoDesde ?? Date.now())) / 1000))}
+          onMas={() => actualizar({ ...st, descansoHasta: (st.descansoHasta ?? Date.now()) + 30000 })}
+          onCortar={() => cerrarDescanso(true)}
+          sigue={!terminado && ej ? `${ej.nombre}, serie ${efEj.length + 1}` : undefined}
+        />
       )}
+      {restante === 0 && avisoDescanso && <p className="nota centro" style={{ margin: 0 }}>⏱ {avisoDescanso}</p>}
 
       {!terminado && restante === 0 && ej && (
-        <Tarjeta titulo={ej.nombre} accion={<span className="chip chip-on">Serie {efEj.length + 1}/{seriesObjetivo}</span>}>
-          <div className="grilla-cifras compacta">
-            <div className="cifra"><span className="cifra-etq">Objetivo</span><strong className="cifra-val">{ej.repsMin}–{ej.repsMax} reps</strong></div>
-            <div className="cifra"><span className="cifra-etq">Esfuerzo</span><strong className="cifra-val">RPE {rpeObjetivo}</strong><span className="cifra-nota">te quedan {10 - rpeObjetivo} en reserva</span></div>
-            <div className="cifra"><span className="cifra-etq">Peso sugerido</span><strong className="cifra-val">{sug.peso != null ? `${sug.peso} kg` : '—'}</strong></div>
+        <Tarjeta>
+          <div className="ent-cabeza-ej">
+            <span className="chip chip-on">Serie {efEj.length + 1} de {seriesObjetivo}</span>
+            <h1 className="ent-nombre-ej">{ej.nombre}</h1>
+          </div>
+          <ImagenEjercicio nombre={ej.nombre} />
+          <div className="ent-objetivos">
+            <div><span>Repeticiones</span><strong>{ej.repsMin}–{ej.repsMax}</strong></div>
+            <div><span>Esfuerzo</span><strong>RPE {rpeObjetivo}</strong><small>{10 - rpeObjetivo} en reserva</small></div>
+            <div><span>Peso sugerido</span><strong>{sug.peso != null ? `${String(sug.peso).replace('.', ',')} kg` : '—'}</strong></div>
           </div>
           <p className="nota" style={{ margin: '8px 0 0' }}>{sug.motivo}</p>
           {ej.nota && <p className="nota" style={{ margin: '4px 0 0' }}>💡 {ej.nota}</p>}
@@ -290,9 +384,8 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
             <input type="checkbox" checked={calent} onChange={(x) => setCalent(x.target.checked)} />
             Serie de calentamiento (no cuenta para el progreso)
           </label>
-          <div style={{ marginTop: 8 }}><ImagenEjercicio nombre={ej.nombre} /></div>
           {hechasEj.length > 0 && (
-            <p className="nota" style={{ marginTop: 8 }}>Hoy: {hechasEj.map((h) => `${h.tipo === 'calentamiento' ? '(cal) ' : ''}${h.peso}×${h.reps}${h.rpe ? ` @${h.rpe}` : ''}`).join(' · ')}</p>
+            <p className="nota" style={{ marginTop: 8 }}>Hoy: {hechasEj.map((h) => `${h.tipo === 'calentamiento' ? '(cal) ' : ''}${h.peso}×${h.reps}${h.rpe ? ` @${h.rpe}` : ''}${h.descanso != null ? ` (desc. ${mmss(h.descanso)})` : ''}`).join(' · ')}</p>
           )}
           <div className="ent-acciones-ej">
             <button className="btn chico" onClick={() => actualizar({ ...st, ej: siguiente(st.ej) })}>Siguiente ejercicio</button>
@@ -300,7 +393,7 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
             {st.hechas.length > 0 && <button className="btn chico" onClick={() => {
               const ult = st.hechas[st.hechas.length - 1];
               const i = plan.ejercicios.findIndex((x) => x.nombre === ult.ejercicio);
-              actualizar({ ...st, hechas: st.hechas.slice(0, -1), ej: i >= 0 ? i : st.ej, descansoHasta: null });
+              actualizar({ ...st, hechas: st.hechas.slice(0, -1), ej: i >= 0 ? i : st.ej, descansoHasta: null, descansoDesde: null });
             }}>Deshacer última serie</button>}
             <button className="btn chico" onClick={() => actualizar({ ...st, fase: 'cierre', descansoHasta: null })}>Terminar ya</button>
           </div>
@@ -356,18 +449,22 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
 
       {!terminado && restante === 0 && ej && (
         <div className="barra-fija-abajo">
-          <button className="btn btn-primario ancho btn-grande" onClick={serieHecha} disabled={!(reps > 0)}>
-            ✓ {calent ? 'Calentamiento' : `Serie ${efEj.length + 1}`} · {String(peso).replace('.', ',')} kg × {reps}{rpe ? ` @${rpe}` : ''}
+          <button className="btn btn-confirmar ancho btn-grande" onClick={() => serieHecha()} disabled={!(reps > 0)}>
+            ✓ Confirmar {calent ? 'calentamiento' : `serie ${efEj.length + 1}`} · {String(peso).replace('.', ',')} kg × {reps}{rpe ? ` @${rpe}` : ''}
           </button>
         </div>
       )}
-      {restante > 0 && (
-        <div className="barra-fija-abajo">
-          <button className="btn ancho btn-grande" onClick={() => actualizar({ ...st, descansoHasta: null })}>
-            Descanso {Math.floor(restante / 60)}:{String(restante % 60).padStart(2, '0')} · Saltar
-          </button>
-        </div>
-      )}
+      <Modal titulo="¿Estás seguro?" abierto={!!duda} onCerrar={() => setDuda(null)}>
+        {duda && (
+          <div className="pila" style={{ gap: 10 }}>
+            <ul className="ent-dudas">{duda.map((d) => <li key={d}>{d}</li>)}</ul>
+            <div className="acciones">
+              <button className="btn crece" onClick={() => setDuda(null)}>Corregir</button>
+              <button className="btn btn-confirmar crece" onClick={() => serieHecha(true)}>Sí, está bien</button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal titulo="Cambiar ejercicio (solo hoy)" abierto={cambiar} onCerrar={() => setCambiar(false)}>
         {cambiar && ej && (() => {
@@ -388,7 +485,7 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
           );
         })()}
       </Modal>
-    </div>
+    </Capa>
   );
 }
 
