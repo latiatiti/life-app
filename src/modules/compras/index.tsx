@@ -5,6 +5,7 @@ import { PantallaEscanear } from './Carrito';
 import { PantallaComprando } from './Comprando';
 import { PantallaHistorial } from './Historial';
 import { PantallaLista } from './Lista';
+import { PantallaTicket } from './Ticket';
 import { CADENAS, cambiosDePrecio, leerCarrito, leerEnCurso, preciosViejos, totalesPorCadena, useCompras, useItems, usePrecios } from './modelo';
 import { oportunidades, PantallaPrecios } from './Precios';
 
@@ -70,6 +71,7 @@ export const moduloCompras: Modulo = {
     { ruta: '', titulo: 'Lista', componente: PantallaLista },
     { ruta: 'escanear', titulo: 'Modo compra', componente: PantallaEscanear },
     { ruta: 'comprando', titulo: 'Por pasillos', componente: PantallaComprando },
+    { ruta: 'ticket', titulo: 'Ticket', componente: PantallaTicket },
     { ruta: 'precios', titulo: 'Precios', componente: PantallaPrecios },
     { ruta: 'historial', titulo: 'Historial', componente: PantallaHistorial },
   ],

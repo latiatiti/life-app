@@ -216,7 +216,7 @@ export interface ResultadoPrecio {
 }
 
 // Claves públicas del proyecto (la anon key está pensada para ir en la app). Si Ajustes tiene otra nube, se usa esa.
-const NUBE_LIFE = {
+export const NUBE_LIFE = {
   url: 'https://jxnlgszmywoebjjpacod.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4bmxnc3pteXdvZWJqanBhY29kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMjg3NjgsImV4cCI6MjEwNjgwNDc2OH0.x-P_STJg6SoA-91aSNQoAcO40OYzQNG0iAYqCwR2EYw',
 };
@@ -443,8 +443,10 @@ const LUGAR_DE_BLOQUE: Record<string, Lugar> = {
 export async function cerrarCarrito(d: {
   carrito: Carrito; super: Super | null; items: Item[]; productos: Producto[]; total: number; pago: Persona;
   gasto: { cuenta_id: string; categoria_id: string | null } | null; ticket?: TicketQR | null;
+  /** false = no vaciar el carro del modo compra (cuando se cierra desde un ticket guardado). */
+  vaciarCarro?: boolean; fecha?: string;
 }) {
-  const fecha = d.ticket?.fecha && /^\d{4}-\d{2}-\d{2}$/.test(d.ticket.fecha) ? d.ticket.fecha : hoy();
+  const fecha = d.fecha ?? (d.ticket?.fecha && /^\d{4}-\d{2}-\d{2}$/.test(d.ticket.fecha) ? d.ticket.fecha : hoy());
   const t = totalesCarrito(d.carrito.lineas);
   const lineas: LineaCompra[] = [];
   const catalogo = [...d.items];
@@ -489,6 +491,6 @@ export async function cerrarCarrito(d: {
       await crear<PrecioReg>(TC.precios, { item_id: l.item_id, cadena: d.super?.cadena ?? 'otro', super_id: d.super?.id ?? null, precio: l.real, fuente: 'ticket', fecha, compra_id: compra.id });
     }
   }
-  guardarCarrito(null);
+  if (d.vaciarCarro !== false) guardarCarrito(null);
   return compra;
 }
