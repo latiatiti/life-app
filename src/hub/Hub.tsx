@@ -1,17 +1,9 @@
 import { MODULOS } from '../core/registry';
 import { dinero, fechaCorta, fechaLarga, hoy, relativo, sumarDias } from '../core/format';
 import { calcularProgreso } from '../core/juego';
-import type { ItemAgenda, NivelSenal, Senal } from '../core/types';
+import { useTodasLasSenales } from '../core/senales';
+import type { ItemAgenda } from '../core/types';
 import { Estado, Tarjeta } from '../ui/ui';
-
-const ORDEN: Record<NivelSenal, number> = { critico: 0, aviso: 1, info: 2, ok: 3 };
-
-/** Junta las señales de todos los módulos. La lista de módulos es fija, así el orden de hooks no cambia. */
-function useSenales(): Senal[] {
-  const todas: Senal[] = [];
-  for (const m of MODULOS) if (m.useSenales) todas.push(...m.useSenales());
-  return todas.sort((a, b) => ORDEN[a.nivel] - ORDEN[b.nivel]);
-}
 
 function useAgenda(): ItemAgenda[] {
   const todos: ItemAgenda[] = [];
@@ -49,7 +41,7 @@ function saludo() {
 }
 
 export function Hub() {
-  const senales = useSenales();
+  const senales = useTodasLasSenales();
   const limite = sumarDias(hoy(), 14);
   const agenda = useAgenda().filter((i) => i.fecha <= limite);
   const nombreModulo = new Map(MODULOS.map((m) => [m.id, m.nombre]));

@@ -6,6 +6,7 @@ import {
   cobrosEsperados, disponible, estadoPago, FRECUENCIAS, pagosPendientes, siguienteVencimiento,
   useCuentas, useIngresos, useMovimientos, usePagos, type Pago,
 } from '../economia/modelo';
+import { alDiaEnCurso } from './AlDia';
 import { FormPagar, PantallaPagos } from './Pagos';
 
 /** Agenda compartida: cada pago activo publica sus vencimientos de los próximos 60 días. */
@@ -45,7 +46,7 @@ function useSenalesPagos(): Senal[] {
       id: 'pag-vencidos', modulo: 'pagos', nivel: 'critico',
       titulo: vencidos.length === 1 ? `${vencidos[0].nombre} está vencido` : `${vencidos.length} pagos vencidos`,
       detalle: vencidos.map((p) => `${p.nombre} (${relativo(p.proximo_vencimiento)})`).join(', '),
-      ruta: '#/pagos',
+      ruta: '#/pagos', accion: { texto: vencidos.length === 1 ? 'Pagar' : 'Ponerme al día', ruta: '#/pagos/al-dia' },
     });
   }
   const pronto = pendientes.filter((p) => estadoPago(p) === 'pronto');
@@ -54,7 +55,7 @@ function useSenalesPagos(): Senal[] {
       id: 'pag-pronto', modulo: 'pagos', nivel: 'aviso',
       titulo: pronto.length === 1 ? `${pronto[0].nombre} vence ${relativo(pronto[0].proximo_vencimiento)}` : `${pronto.length} pagos vencen esta semana`,
       detalle: pronto.map((p) => `${p.nombre} ${fechaCorta(p.proximo_vencimiento)}`).join(', '),
-      ruta: '#/pagos',
+      ruta: '#/pagos', accion: { texto: pronto.length === 1 ? 'Pagar' : 'Ponerme al día', ruta: '#/pagos/al-dia' },
     });
   }
 
@@ -126,4 +127,5 @@ export const moduloPagos: Modulo = {
   Resumen: ResumenPagos,
   useSenales: useSenalesPagos,
   useAgenda: useAgendaPagos,
+  enCurso: alDiaEnCurso,
 };

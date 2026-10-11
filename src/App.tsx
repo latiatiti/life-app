@@ -2,6 +2,8 @@ import { almacen } from './core/db';
 import { MODULOS } from './core/registry';
 import { useRuta } from './core/router';
 import { Hub } from './hub/Hub';
+import { BarraActividad, useHayBarra } from './ui/Actividad';
+import { Avisos } from './ui/Avisos';
 import { Icono } from './ui/ui';
 
 export function App() {
@@ -12,10 +14,11 @@ export function App() {
   const pantalla = modulo?.pantallas.find((p) => p.ruta === subruta) ?? modulo?.pantallas[0];
   const Componente = pantalla?.componente;
 
+  const hayBarra = useHayBarra();
   const nav = [{ id: '', nombre: 'Inicio', icono: Icono.inicio }, ...MODULOS.map((m) => ({ id: m.id, nombre: m.nombre, icono: m.icono }))];
 
   return (
-    <div className="app">
+    <div className={`app ${hayBarra ? 'con-barra' : ''}`}>
       <nav className="nav" aria-label="Principal">
         <a href="#/" className="marca">LIFE</a>
         {nav.map((n) => (
@@ -50,6 +53,9 @@ export function App() {
           <Hub />
         )}
       </main>
+
+      <Avisos />
+      <BarraActividad />
     </div>
   );
 }

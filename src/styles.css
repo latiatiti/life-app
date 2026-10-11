@@ -271,3 +271,110 @@ textarea { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid
   .tarjeta { padding: 14px; }
 }
 .aviso-msg { position: sticky; top: 8px; z-index: 7; margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--accent); color: var(--ink); box-shadow: var(--glow); }
+
+/* ---------- Modo actividad: capa a pantalla completa, una cosa por vez ---------- */
+.btn-confirmar { background: var(--good); border-color: var(--good); color: #052e14; font-weight: 750; }
+.btn-confirmar:hover { background: var(--good); filter: brightness(1.08); }
+.grande-boton { min-height: 56px; font-size: 1.05rem; border-radius: 16px; }
+.grande-boton svg { width: 22px; height: 22px; }
+.btn-secundario-grande { min-height: 56px; flex: 0 0 110px; border-radius: 16px; background: transparent; color: var(--ink-2); }
+html.con-actividad, html.con-actividad body { overflow: hidden; }
+
+.actividad { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
+.actividad-ancho { width: 100%; max-width: 760px; margin: 0 auto; }
+.actividad-cab { background: var(--surface); border-bottom: 1px solid var(--line); padding: calc(14px + env(safe-area-inset-top)) 16px 12px; }
+.actividad-fila { display: flex; align-items: center; gap: 12px; }
+.actividad-boton {
+  width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2);
+  color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.actividad-boton:hover { color: var(--ink); border-color: var(--accent); }
+.actividad-etq { display: block; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.actividad-tit { display: block; font-size: 1.05rem; }
+.actividad-xp { color: var(--xp); font-weight: 700; font-variant-numeric: tabular-nums; }
+.actividad-pasos { display: grid; gap: 6px; margin-top: 12px; }
+.actividad-pasos span { height: 6px; border-radius: 3px; background: var(--line); }
+.actividad-pasos .hecho { background: var(--good); }
+.actividad-pasos .actual { background: var(--accent); }
+.actividad-progreso { height: 6px; border-radius: 3px; background: var(--line); margin-top: 12px; overflow: hidden; }
+.actividad-progreso span { display: block; height: 100%; background: var(--good); }
+.actividad-cuerpo { flex: 1; overflow-y: auto; padding: 20px 16px 120px; -webkit-overflow-scrolling: touch; }
+.actividad-pie, .actividad-pie-fijo {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+}
+.actividad-botones { display: flex; gap: 10px; }
+.actividad-cifras { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.actividad-cifras .cifra { padding: 10px 12px; }
+.actividad-cifras .cifra-val { font-size: 1.05rem; }
+
+/* Recorrido tipo reparto: lo hecho tachado, el paso actual abierto y grande */
+.recorrido { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.recorrido-fila { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; border: 1px solid var(--line); }
+.recorrido-fila.hecha { opacity: 0.6; background: var(--surface); }
+.recorrido-fila.hecha .crece { text-decoration: line-through; }
+.recorrido-marca { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 0.8rem; font-weight: 800; }
+.recorrido-marca.pagado { background: var(--good); border-color: var(--good); color: #052e14; }
+.recorrido-marca.saltado { color: var(--ink-2); }
+.paso-actual { background: var(--surface); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 14px; margin: 4px 0; }
+.paso-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.paso-titulo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.paso-titulo h2, .paso-titulo strong { font-size: 1.6rem; font-weight: 750; }
+.vinetas { display: flex; flex-wrap: wrap; gap: 6px; }
+.vinetas span { font-size: 0.85rem; padding: 4px 10px; border-radius: 99px; background: var(--surface-2); color: var(--ink-2); }
+input.input-grande { font-size: 1.6rem; font-weight: 700; min-height: 56px; text-align: center; font-variant-numeric: tabular-nums; }
+.actividad-final { background: var(--surface); border: 1px solid var(--good); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+.actividad-final strong { font-size: 1.4rem; color: var(--good-text); }
+@media (min-width: 761px) {
+  .actividad-cab { padding: 18px 32px 14px; }
+  .actividad-cuerpo { padding: 32px 32px 130px; }
+  .actividad-pie, .actividad-pie-fijo { padding: 14px 32px 18px; }
+  .paso-titulo h2, .paso-titulo strong { font-size: 2rem; }
+  .paso-actual { padding: 22px; }
+}
+
+/* ---------- Avisos flotantes ---------- */
+.avisos {
+  position: fixed; z-index: 40; top: calc(10px + env(safe-area-inset-top)); left: 12px; right: 12px;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.aviso, .aviso-mas { pointer-events: auto; }
+.aviso {
+  display: flex; align-items: flex-start; gap: 8px; padding: 12px 8px 12px 14px; border-radius: 16px;
+  background: var(--surface-2); border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  animation: aviso-entra 0.25s ease-out;
+}
+.aviso-critico { border-color: color-mix(in srgb, var(--critical) 60%, transparent); }
+.aviso-aviso { border-color: color-mix(in srgb, var(--warning) 55%, transparent); }
+.aviso-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; color: var(--ink); }
+.aviso-texto strong { font-weight: 650; }
+.aviso-texto small { color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.aviso-acciones { display: flex; align-items: center; gap: 4px; flex: none; }
+.aviso-mas { align-self: flex-end; font-size: 0.8rem; padding: 4px 10px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); }
+@keyframes aviso-entra { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@media (min-width: 761px) {
+  .avisos { left: auto; right: 24px; top: 20px; width: 380px; }
+}
+
+/* ---------- Barra de actividad (algo a medias, para volver con un toque) ---------- */
+.barra-actividad {
+  position: fixed; z-index: 30; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 8px;
+}
+.barra-actividad-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-radius: 18px; color: var(--ink);
+  background: color-mix(in srgb, var(--good) 14%, var(--surface)); border: 1px solid var(--good); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.barra-actividad-item strong { display: block; font-size: 0.95rem; }
+.barra-actividad-item small { display: block; font-size: 0.8rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.barra-actividad-punto { width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--good); animation: latido 1.6s ease-in-out infinite; }
+.barra-actividad-volver { min-height: 44px; padding: 0 16px; border-radius: 12px; background: var(--good); color: #052e14; font-weight: 800; display: flex; align-items: center; }
+@keyframes latido { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--good) 25%, transparent); } }
+.con-barra .contenido { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
+@media (min-width: 761px) {
+  .barra-actividad { left: auto; right: 24px; bottom: 24px; width: 380px; }
+  .con-barra .contenido { padding-bottom: 110px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aviso, .barra-actividad-punto { animation: none; }
+}

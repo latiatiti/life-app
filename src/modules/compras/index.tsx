@@ -1,5 +1,5 @@
 import { dinero, relativo } from '../../core/format';
-import type { Modulo, Senal } from '../../core/types';
+import type { ActividadEnCurso, Modulo, Senal } from '../../core/types';
 import './compras.css';
 import { PantallaEscanear } from './Carrito';
 import { PantallaComprando } from './Comprando';
@@ -62,6 +62,17 @@ function useActividadCompras(): string[] {
   return useCompras().filas.flatMap((c) => Array(3).fill(c.fecha));
 }
 
+/** Para la barra de actividad: una compra con cosas en el carro o un recorrido por pasillos sin cerrar. */
+function compraEnCurso(): ActividadEnCurso | null {
+  const c = leerCarrito();
+  if (c?.lineas.length) {
+    return { id: 'compra', ruta: '#/compras/escanear', titulo: 'Compra en curso', detalle: c.lineas.length === 1 ? '1 cosa en el carro' : `${c.lineas.length} cosas en el carro` };
+  }
+  const e = leerEnCurso();
+  if (e) return { id: 'compra-pasillos', ruta: '#/compras/comprando', titulo: 'Compra por pasillos', detalle: `${e.tildados.length} cosas tildadas` };
+  return null;
+}
+
 export const moduloCompras: Modulo = {
   id: 'compras',
   nombre: 'Compras',
@@ -78,4 +89,5 @@ export const moduloCompras: Modulo = {
   Resumen: ResumenCompras,
   useSenales: useSenalesCompras,
   useActividad: useActividadCompras,
+  enCurso: compraEnCurso,
 };

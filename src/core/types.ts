@@ -12,6 +12,24 @@ export interface Senal {
   detalle?: string;
   /** Ruta a la que lleva la señal al tocarla, ej. "#/pagos". */
   ruta?: string;
+  /** Acceso directo que se ofrece en el aviso flotante, ej. { texto: 'Pagar', ruta: '#/pagos/al-dia' }. */
+  accion?: { texto: string; ruta: string };
+}
+
+/**
+ * Algo que quedó a medias (un entreno, una compra, ponerse al día con los pagos).
+ * Se muestra en la barra flotante para volver con un toque.
+ */
+export interface ActividadEnCurso {
+  id: string;
+  titulo: string;
+  detalle?: string;
+  /** Ruta donde sigue la actividad, ej. "#/entrenamiento". */
+  ruta: string;
+  /** La actividad está minimizada aunque estés en su pantalla. */
+  minimizada?: boolean;
+  /** Se ejecuta al tocar "Volver" (antes de navegar), ej. para desminimizar. */
+  volver?: () => void;
 }
 
 /**
@@ -59,6 +77,11 @@ export interface Modulo {
    * un gasto, un entreno, una comida. Alimenta el nivel, la experiencia y la racha del hub.
    */
   useActividad?: () => string[];
+  /**
+   * Lee (sin hooks) si hay algo de este módulo a medias. La barra de actividad lo consulta
+   * cada segundo, así que tiene que ser liviano (leer localStorage, no la base).
+   */
+  enCurso?: () => ActividadEnCurso | null;
   /** Si es false, se muestra en el menú pero no en el hub. */
   enHub?: boolean;
 }
