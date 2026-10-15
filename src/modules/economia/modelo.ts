@@ -87,6 +87,10 @@ export interface Ingreso extends Fila {
   categoria_id: string | null;
   activo: boolean;
   notas: string;
+  /** Lo que esta fuente te debe (cobros que quedaron pendientes). */
+  adeudado?: number;
+  /** Suele quedar debiendo (ej. la fábrica): sus cobros cuentan en la proyección, pero aparte. */
+  puede_adeudarse?: boolean;
 }
 
 /* ---------- Tablas ---------- */
@@ -280,9 +284,8 @@ export function cobrosEsperados(ingresos: Ingreso[], hasta: string): Array<{ ing
   return r.sort((a, b) => a.fecha.localeCompare(b.fecha));
 }
 
-/** Registrar un cobro: crea el ingreso en Economía y pasa al próximo cobro. */
-export async function registrarCobro(i: Ingreso, datos: { monto: number; cuenta_id: string; fecha: string }) {
-  await crear<Movimiento>(T.movimientos, {
+const movIngreso = (i: Ingreso, datos: { monto: number; cuenta_id: string; fecha: string }, descripcion = i.nombre) =>
+  crear<Movimiento>(T.movimientos, {
     fecha: datos.fecha,
     tipo: 'ingreso',
     monto: datos.monto,
@@ -290,10 +293,126 @@ export async function registrarCobro(i: Ingreso, datos: { monto: number; cuenta_
     cuenta_destino_id: null,
     monto_destino: null,
     categoria_id: i.categoria_id,
-    descripcion: i.nombre,
+    descripcion,
     pago_id: null,
   });
-  await modificar<Ingreso>(T.ingresos, i.id, { proximo_cobro: siguienteCobro(i) });
+
+/**
+ * Registrar un cobro: crea el ingreso en Economía y pasa al próximo cobro.
+ * Si cobraste menos de lo esperado y `restoPendiente`, la diferencia queda como deuda de esa fuente.
+ */
+export async function registrarCobro(
+  i: Ingreso,
+  datos: { monto: number; cuenta_id: string; fecha: string },
+  restoPendiente = false
+) {
+  if (datos.monto > 0) await movIngreso(i, datos);
+  const falta = Math.max(0, num(i.monto) - datos.monto);
+  await modificar<Ingreso>(T.ingresos, i.id, {
+    proximo_cobro: siguienteCobro(i),
+    ...(restoPendiente && falta > 0 ? { adeudado: num(i.adeudado) + falta } : {}),
+  });
+}
+
+/** El cobro de esta semana no llegó: pasa al próximo y el monto se suma a lo que te deben. */
+export async function quedoPendiente(i: Ingreso) {
+  await modificar<Ingreso>(T.ingresos, i.id, {
+    proximo_cobro: siguienteCobro(i),
+    adeudado: num(i.adeudado) + num(i.monto),
+  });
+}
+
+/** Te pagaron (todo o parte de) lo adeudado: entra como ingreso y baja la deuda. */
+export async function cobrarAdeudado(i: Ingreso, datos: { monto: number; cuenta_id: string; fecha: string }) {
+  await movIngreso(i, datos, `${i.nombre} (lo adeudado)`);
+  await modificar<Ingreso>(T.ingresos, i.id, { adeudado: Math.max(0, num(i.adeudado) - datos.monto) });
+}
+
+/** Ajustar a mano lo que te deben (sin crear movimientos). */
+export async function fijarAdeudado(i: Ingreso, monto: number) {
+  await modificar<Ingreso>(T.ingresos, i.id, { adeudado: Math.max(0, monto) });
+}
+
+/* ---------- Proyección día por día ---------- */
+
+export interface EventoProyeccion {
+  fecha: string;
+  tipo: 'cobro' | 'pago';
+  nombre: string;
+  monto: number;
+  /** Cobro de una fuente que suele quedar debiendo. */
+  dudoso?: boolean;
+  /** Cobro o pago con fecha pasada que todavía no registraste. */
+  atrasado?: boolean;
+}
+
+export interface DiaProyeccion {
+  fecha: string;
+  /** Plata contando todo lo que te tienen que pagar (también lo adeudado). */
+  conTodo: number;
+  /** Plata si las fuentes que suelen deber no pagan. */
+  seguro: number;
+  eventos: EventoProyeccion[];
+}
+
+export interface Proyeccion {
+  inicial: number;
+  adeudado: number;
+  dias: DiaProyeccion[];
+}
+
+/** Vencimientos de un pago entre hoy y `hasta` (incluye el atrasado). */
+function vencimientosHasta(p: Pago, hasta: string): string[] {
+  const r: string[] = [];
+  let f: string | null = p.proximo_vencimiento;
+  let n = 0;
+  while (f && f <= hasta && n < 60) {
+    r.push(f);
+    f = siguienteVencimiento({ ...p, proximo_vencimiento: f });
+    n++;
+  }
+  return r;
+}
+
+/**
+ * Cuánta plata vas a tener cada día de acá a `dias` días (en pesos):
+ * disponible de hoy + cobros esperados − pagos que vencen.
+ * Lo atrasado (cobros o pagos sin registrar) cuenta hoy. Lo adeudado suma hoy en la línea "con todo".
+ */
+export function proyectar(
+  cuentas: Cuenta[], movs: Movimiento[], ingresos: Ingreso[], pagos: Pago[], dias: number, hoyISO = hoy()
+): Proyeccion {
+  const hasta = sumarDias(hoyISO, dias);
+  const eventos = new Map<string, EventoProyeccion[]>();
+  const push = (e: EventoProyeccion) => {
+    const f = e.fecha < hoyISO ? hoyISO : e.fecha;
+    if (!eventos.has(f)) eventos.set(f, []);
+    eventos.get(f)!.push({ ...e, fecha: f, atrasado: e.fecha < hoyISO });
+  };
+  const activos = ingresos.filter((i) => i.activo && i.moneda === 'ARS');
+  for (const { ingreso: i, fecha } of cobrosEsperados(activos, hasta)) {
+    push({ fecha, tipo: 'cobro', nombre: i.nombre, monto: num(i.monto), dudoso: !!i.puede_adeudarse });
+  }
+  for (const p of pagos) {
+    if (!p.activo || p.moneda !== 'ARS') continue;
+    for (const f of vencimientosHasta(p, hasta)) push({ fecha: f, tipo: 'pago', nombre: p.nombre, monto: num(p.monto) });
+  }
+  const inicial = disponible(cuentas, movs, 'ARS');
+  const adeudado = activos.reduce((s, i) => s + num(i.adeudado), 0);
+  let conTodo = inicial + adeudado;
+  let seguro = inicial;
+  const r: DiaProyeccion[] = [];
+  for (let d = 0; d <= dias; d++) {
+    const fecha = sumarDias(hoyISO, d);
+    const ev = eventos.get(fecha) ?? [];
+    for (const e of ev) {
+      const v = e.tipo === 'cobro' ? e.monto : -e.monto;
+      conTodo += v;
+      if (!(e.tipo === 'cobro' && e.dudoso)) seguro += v;
+    }
+    r.push({ fecha, conTodo, seguro, eventos: ev });
+  }
+  return { inicial, adeudado, dias: r };
 }
 
 /* ---------- Datos sugeridos para empezar ---------- */

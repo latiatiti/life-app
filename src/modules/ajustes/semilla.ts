@@ -76,11 +76,12 @@ export async function cargarConfiguracionInicial(): Promise<number> {
   const sabado = proximoSabado();
   await contar<Ingreso>(T.ingresos, {
     nombre: 'Reparto de soda', monto: 120000, moneda: 'ARS', frecuencia: 'semanal', proximo_cobro: sabado,
-    cuenta_id: efectivo.id, categoria_id: cat.get('Reparto de soda') ?? null, activo: true, notas: '3 días por semana',
+    cuenta_id: efectivo.id, categoria_id: cat.get('Reparto de soda') ?? null, activo: true, notas: '3 días por semana. Se cobra los sábados.', puede_adeudarse: false, adeudado: 0,
   });
   await contar<Ingreso>(T.ingresos, {
     nombre: 'Fábrica', monto: 135000, moneda: 'ARS', frecuencia: 'semanal', proximo_cobro: sabado,
-    cuenta_id: efectivo.id, categoria_id: cat.get('Fábrica') ?? null, activo: true, notas: '3 días por semana',
+    cuenta_id: efectivo.id, categoria_id: cat.get('Fábrica') ?? null, activo: true, notas: '3 días por semana. Se cobra los sábados; a veces queda debiendo.',
+    puede_adeudarse: true, adeudado: 0,
   });
 
   const pago = (nombre: string, monto: number, dia: number, categoria: string, cuenta: string | null, notas: string) =>
