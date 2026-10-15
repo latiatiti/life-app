@@ -41,6 +41,9 @@ const DESCRIPCION: Record<string, string> = {
   com_precios: 'Historial de precios (online, ticket, manual).',
   com_compras: 'Compras cerradas: estimado, total del ticket, reparto.',
   com_tickets: 'Tickets guardados (QR, texto leído, productos).',
+  dia_plantilla: 'Semana tipo: un bloque por fila (dia_semana 0=domingo, inicio/fin HH:MM, 24:00 = fin del día, tipo, opcional, come_alla). Vacía = usa la de fábrica de la app.',
+  dia_dias: 'Una fila por fecha marcada: estado normal/libre/feriado/especial, prioridades [{texto,hecho}], nota, bloques = horario propio (null = semana tipo).',
+  dia_tareas: 'Tareas con fecha (YYYY-MM-DD), hora (HH:MM) opcional, prioridad alta/media/baja; origen "claude" si las carga Claude.',
 };
 
 type Json = Record<string, unknown>;
