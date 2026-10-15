@@ -1,6 +1,7 @@
 -- Módulo Día (2026-10-15): semana tipo, días puntuales (libre/feriado/prioridades/horario propio) y tareas.
 -- Pensado para que la API de Claude lea y escriba directo: fechas 'YYYY-MM-DD', horas 'HH:MM' (24:00 = fin del día).
--- Correr después de schema.sql. Se puede correr más de una vez.
+-- Correr después de schema.sql. Se puede correr más de una vez. Si ya está cuentas.sql, volver a correrlo
+-- después de este para que las reglas de escritura pidan life_puede_escribir() (en la nube ya quedó así).
 
 -- Semana tipo: un bloque por fila. dia_semana 0 = domingo … 6 = sábado.
 create table if not exists public.dia_plantilla (
