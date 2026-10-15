@@ -4,10 +4,14 @@ import { almacen, borrarPrueba, contarPrueba, exportarTodo, importarTodo, supaba
 import { hoy } from '../../core/format';
 import type { Modulo } from '../../core/types';
 import { Campo, Icono, Tarjeta } from '../../ui/ui';
+import { usePerfil } from '../../core/auth';
+import { ConexionClaude } from './Claude';
+import { PanelCuentas } from './Cuentas';
 import { cargarConfiguracionInicial } from './semilla';
 
 function PantallaAjustes() {
   const fija = configDesdeEntorno();
+  const perfil = usePerfil();
   const guardada = configGuardada();
   const [url, setUrl] = useState(guardada?.url ?? '');
   const [clave, setClave] = useState(guardada?.anonKey ?? '');
@@ -68,10 +72,12 @@ function PantallaAjustes() {
   return (
     <div className="pila">
       {msg && <p className="aviso-msg" role="status">{msg}</p>}
-      <Tarjeta titulo="Dónde se guardan tus datos">
+      <Tarjeta titulo={almacen.tipo === 'nube' ? 'Tu cuenta' : 'Dónde se guardan tus datos'}>
         {almacen.tipo === 'nube' ? (
           <>
-            <p>Conectado a <strong>Supabase</strong>: tus datos se sincronizan entre la PC y el celular.</p>
+            <p>Entraste como <strong>{perfil.nombre || perfil.usuario || perfil.email}</strong>
+              {' · '}{perfil.rol === 'superadmin' ? 'Superadmin' : perfil.rol === 'lector' ? 'Solo lectura' : 'Usuario'}.
+              Tus datos se guardan en tu cuenta y se ven igual en la PC y el celular.</p>
             <div className="acciones">
               <button className="btn" onClick={() => supabase?.auth.signOut().then(() => window.location.reload())}>Cerrar sesión</button>
               {!fija && (
@@ -95,6 +101,9 @@ function PantallaAjustes() {
           </>
         )}
       </Tarjeta>
+
+      <PanelCuentas />
+      <ConexionClaude />
 
       <Tarjeta titulo="Tu configuración inicial">
         <p className="nota">Carga tus cuentas (Mercado Pago, efectivo, Cocos), tus categorías, tus dos trabajos de los sábados tus gastos fijos (alquiler, internet, gimnasio, celular), los básicos de la casa, tus platos y metas de comida. Si ya existen, no los duplica.</p>
@@ -138,7 +147,7 @@ function PantallaAjustes() {
 export const moduloAjustes: Modulo = {
   id: 'ajustes',
   nombre: 'Ajustes',
-  descripcion: 'Conexión, respaldo e instalación',
+  descripcion: 'Cuenta, conexión con Claude, respaldo e instalación',
   icono: Icono.ajustes,
   pantallas: [{ ruta: '', titulo: 'Ajustes', componente: PantallaAjustes }],
   enHub: false,
