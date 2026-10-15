@@ -12,7 +12,7 @@ import { Icono, Modal } from './ui/ui';
  * Módulos que van fijos en la barra flotante del celular (además de Inicio y "Más").
  * El resto queda en "Más". En la compu se ven todos en el menú lateral.
  */
-const EN_BARRA = ['economia', 'entrenamiento', 'compras'];
+const EN_BARRA = ['dia', 'economia', 'entrenamiento'];
 
 export function App() {
   const ruta = useRuta();
@@ -26,7 +26,13 @@ export function App() {
   const [verMas, setVerMas] = useState(false);
 
   // Cada pantalla nueva arranca desde arriba (con el hash el navegador deja el scroll donde estaba).
-  useEffect(() => { window.scrollTo(0, 0); }, [ruta]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    // En el celu las pestañas se deslizan: que la elegida quede a la vista.
+    const a = document.querySelector<HTMLElement>('.pestanas .activa');
+    const tira = a?.parentElement;
+    if (a && tira) tira.scrollLeft = a.offsetLeft - (tira.clientWidth - a.offsetWidth) / 2;
+  }, [ruta]);
 
   const hayBarra = useHayBarra();
   const actual = modulo?.id ?? '';

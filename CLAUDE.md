@@ -17,7 +17,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `src/core/registry.ts`: lista de módulos. **Sumar un módulo** = crear `src/modules/<x>/index.tsx` y registrarlo acá.
 - `src/core/db.ts`: capa de datos (`useTabla`, `crear`, `modificar`, `eliminar`, exportar/importar respaldo). Agregar las tablas nuevas a `TABLAS`.
 - `src/hub/Hub.tsx`: junta señales (ordenadas por nivel) y agenda compartida (14 días) de todos los módulos.
-- Rutas por hash: `#/economia` (+ `/movimientos`, `/ingresos`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock` (+ `/lista`), `#/compras` (+ `/escanear`, `/comprando`, `/ticket`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
+- Rutas por hash: `#/dia` (+ `/semana`), `#/economia` (+ `/movimientos`, `/ingresos`, `/proyeccion`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock` (+ `/lista`), `#/compras` (+ `/escanear`, `/comprando`, `/ticket`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
 - `src/modules/ajustes/semilla.ts`: botón "Cargar mi configuración" con los datos reales de la usuaria (ingresos, fijos, básicos, platos). Idempotente por nombre.
 
 ## Cuentas y conexión con Claude (2026-10-15, `docs/cuentas-y-conexiones.md`)
@@ -25,10 +25,11 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `supabase/cuentas.sql`: `perfiles` (rol superadmin/usuario/lector, modulos, activo), reglas de escritura con `life_puede_escribir()` en toda tabla con `user_id`, `api_claves`, `api_registro`, `life_columnas()`. `usePerfil()` en `core/auth.tsx`.
 - Funciones: `cuentas` (superadmin: listar/crear/clave) y `life-mcp` (conector MCP para Claude con clave personal, sin JWT; leer/crear/modificar/borrar/deshacer con registro).
 
-## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql`, en ese orden)
+## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql` + `dia.sql`, en ese orden)
 - `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
 - Compras (`supabase/compras.sql`, aplicado en la nube): `com_supers` (bloques jsonb = orden de pasillos de ese súper), `com_items` (catálogo propio; precios jsonb = último precio online por cadena; producto_id enlaza al stock), `com_precios` (historial: online/ticket/manual), `com_compras` (estimado vs total del ticket, items jsonb, reparto y ticket jsonb).
-- Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
+- Día (`supabase/dia.sql`, aplicado en la nube): `dia_plantilla` (semana tipo, un bloque por fila: dia_semana 0=dom, inicio/fin 'HH:MM' con '24:00' = fin, tipo, opcional, come_alla), `dia_dias` (una fila por fecha: estado normal/libre/feriado/especial, nombre, nota, prioridades jsonb [{texto,hecho}], bloques jsonb = horario propio o null = semana tipo), `dia_tareas` (fecha, hora, prioridad alta/media/baja, origen 'app'|'claude'). Pensadas para la API de lectura/escritura de Claude.
+- Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; `dia_`; próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
 - Toda tabla nueva: con `user_id` y política RLS, igual que las existentes.
 
 ## Cruces ya implementados
@@ -42,6 +43,8 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Entrenamiento (v2, 2026-10-07): biblioteca de ~70 ejercicios con grupo muscular (`biblioteca.ts`); rutina editable guardada en `ent_rutinas` (si no hay, usa `RUTINA_BASE`); modo entrenando con chequeo previo (sueño/energía/dolor → ajusta series, peso y RPE), series de calentamiento, cambiar ejercicio solo por hoy, deshacer, terminar antes; estado en localStorage (sobrevive sin señal). Al guardar muestra el resultado (tonelaje, RPE medio, carga = RPE sesión × min, récords, Δ vs. la vez anterior, próxima carga). Progreso: series por músculo vs. semana pasada con rango 10–20, barras de 8 semanas, 1RM Epley y estancamiento; señal de descarga por fatiga (`analisis.ts`).
 - Claude como entrenador: pantalla Coach copia un informe de 4 semanas para pegar en el chat y acepta una rutina en JSON (`{nombre, notas, dias:[{id,nombre,ejercicios:[{nombre,series,repsMin,repsMax,descanso,rpe,salto,nota}]}]}`) con vista previa antes de activarla.
 - Economía: señales de presupuesto al 80 % y 100 %, y gasto mayor que ingreso en el mes.
+- Ingresos con deuda (2026-10-15, `supabase/economia-cobros.sql`, aplicado): `eco_ingresos.adeudado` (lo que te debe esa fuente) y `puede_adeudarse` (la fábrica suele pagar atrasado). Botones Cobré (si cobrás menos, el resto queda pendiente) / Quedó pendiente / Me pagó. Botón de un toque para cargar Reparto $120.000 y Fábrica $135.000 los sábados.
+- Proyección (`#/economia/proyeccion`, `Proyeccion.tsx`, `proyectar()` en `modelo.ts`): plata día por día a 30/60/90 días = disponible + cobros − vencimientos de Pagos; dos líneas (contando lo adeudado / si la fábrica no paga), deslizador para elegir día y línea de tiempo de lo que entra y sale. Señales: "Te deben $X" y día en rojo dentro de 30 días.
 - Compras: precios online vía la función de Supabase `precios` (`supabase/functions/precios`, proxy a los catálogos VTEX públicos de Carrefour, Vea y Jumbo; busca por texto o por código de barras). La app la llama con la anon key del proyecto Life (en `compras/modelo.ts`). Son precios web de referencia; el real sale del ticket.
 - Stock → Compras: "Falta en casa" suma faltantes a la lista. Compras → Stock/Economía: cerrar la compra suma al stock lo enlazado, guarda el precio real de cada cosa y crea el gasto (categoría Súper).
 - Escanear (compra compartida con Ulises): cámara con ZXing (`compras/Escaner.tsx`, cargado aparte), cada cosa con para quién (Yo / Ulises / Los dos, `PERSONAS` en `stock/modelo.ts`), cantidad y precio opcional; total y reparto (lo de los dos va a medias). Carro en localStorage (`life.compras.carrito`). Al cerrar: compra con `reparto` (quién pagó y cuánto debe el otro), precios del ticket, stock de cada dueño (`stk_productos.persona`, SQL `supabase/compras-personas.sql`, aplicado en la nube) y gasto si pagó ella. Lo de Ulises no cuenta como faltante.
@@ -54,6 +57,13 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `Modulo.enCurso()` (sin hooks, lee localStorage) → `BarraActividad`: lo que quedó a medias flota arriba del menú (celu) o abajo a la derecha (compu) con "Volver". Ya lo publican Pagos, Entreno y Compras. Al cambiar el estado, llamar `avisarCambio()`.
 - `src/ui/Avisos.tsx`: avisos flotantes con las señales urgentes y las que traen `Senal.accion` {texto, ruta} (acceso directo, ej. "Pagar"). Al cerrarlos no vuelven hasta el otro día (`life.avisos.cerrados`). Señales de todos los módulos: `useTodasLasSenales()` en `core/senales.ts`.
 - Pagos → "Ponerse al día" (`pagos/AlDia.tsx`, ruta `#/pagos/al-dia`): recorre vencidos y los de los próximos 7 días de a uno, registra el pago con control de monto (más de 30 % de diferencia pregunta). Estado en `life.pagos.aldia`.
+
+## Día (2026-10-15)
+- `src/modules/dia/`: línea del día deslizable por hora (cursor al centro que dice qué pasa a esa hora; línea roja = ahora), tarjeta "Ahora", plan en lista, tareas y prioridades, tira de la semana y calendario mensual (tocar un día lo abre; "Editar día": libre/feriado/especial, prioridades, nota, horario solo de ese día). Pestaña Semana tipo para editar cada día.
+- Si `dia_plantilla` está vacía usa `SEMANA_BASE` (`modelo.ts`, armada con lo que contó: lun reparto, mar/mié fábrica 8–17, jue reparto partido + gym, vie fábrica + Challao, sáb reparto 10:30 y cobro, dom libre). Editar un día guarda toda la semana.
+- Feriados nacionales 2026–2027 + Santiago Apóstol (Mendoza) en `FERIADOS`; los "puente" no cuentan como feriado automático.
+- Gimnasio: domingo cerrado, sábado abre a las 7, entrenos ~1 h 30 (`GIMNASIO`). Días de fábrica come allá: bloques `come_alla`, `comeEnFabrica(bloques)` para Alimentación.
+- Al hub: señales (tareas atrasadas, prioridad de hoy, feriado mañana), agenda (tareas, feriados, días libres) y XP por tarea hecha.
 
 ## Preparador y ciclos (2026-10-06)
 - `ent_rutinas` guarda cada ciclo como una fila: `inicio` (lunes) + `ciclo` jsonb {semanas, objetivo, perfil, numero}. Solo una `activa`; las viejas quedan como historial (`empezarCiclo` en `modelo.ts`). SQL: `supabase/entreno-ciclos.sql` (aplicado).

@@ -121,7 +121,7 @@ small.nota { display: block; font-size: 0.82rem; color: var(--texto-3); }
 
 /* Pestañas: grupo segmentado tipo tablero (HOY · SEMANA · MES); en el celu se deslizan */
 .pestanas {
-  display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; align-self: flex-start; max-width: 100%;
+  position: relative; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; align-self: flex-start; max-width: 100%;
   padding: 3px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio); background: var(--capa-1);
   scroll-snap-type: x proximity;
 }
