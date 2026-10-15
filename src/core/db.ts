@@ -255,3 +255,33 @@ export async function borrarPrueba(): Promise<number> {
   }
   return n;
 }
+
+/* ---------- Pasar a la nube lo que quedó guardado solo en este navegador ---------- */
+
+const MARCA_SUBIDO = 'life.local.subido';
+
+/** Cuántos registros hay guardados en este navegador (de cuando la app andaba en modo local). */
+export async function contarLocales(): Promise<number> {
+  if (almacen.tipo !== 'nube' || leerStorage(MARCA_SUBIDO)) return 0;
+  const local = new AlmacenLocal();
+  let n = 0;
+  for (const t of TABLAS) n += (await local.listar(t)).length;
+  return n;
+}
+
+/**
+ * Sube a la cuenta lo guardado en este navegador, sin duplicar (omite ids que ya están).
+ * No borra la copia local: queda como respaldo.
+ */
+export async function subirDatosLocales(): Promise<number> {
+  const local = new AlmacenLocal();
+  const datos: Record<string, Fila[]> = {};
+  for (const t of TABLAS) datos[t] = await local.listar(t);
+  const n = await importarTodo(datos);
+  escribirStorage(MARCA_SUBIDO, new Date().toISOString());
+  return n;
+}
+
+export function noSubirDatosLocales() {
+  escribirStorage(MARCA_SUBIDO, 'no');
+}

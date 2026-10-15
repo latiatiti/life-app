@@ -1,4 +1,4 @@
-import { escribirStorage, leerStorage } from '../../core/config';
+import { escribirStorage, leerStorage, NUBE_LIFE } from '../../core/config';
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { diasEntre, hoy } from '../../core/format';
 import { T as TE, type Movimiento } from '../economia/modelo';
@@ -215,11 +215,7 @@ export interface ResultadoPrecio {
   cadena: Cadena; nombre: string; marca: string; ean: string; precio: number; precioLista: number; unidad: string; imagen: string; link: string;
 }
 
-// Claves públicas del proyecto (la anon key está pensada para ir en la app). Si Ajustes tiene otra nube, se usa esa.
-export const NUBE_LIFE = {
-  url: 'https://jxnlgszmywoebjjpacod.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4bmxnc3pteXdvZWJqanBhY29kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMjg3NjgsImV4cCI6MjEwNjgwNDc2OH0.x-P_STJg6SoA-91aSNQoAcO40OYzQNG0iAYqCwR2EYw',
-};
+export { NUBE_LIFE };
 
 export async function buscarPrecios(datos: { q?: string; eans?: string[]; limite?: number }): Promise<ResultadoPrecio[]> {
   const { url, anonKey } = NUBE_LIFE;
