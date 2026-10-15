@@ -201,7 +201,8 @@ export async function eliminar(tabla: string, id: string) {
 
 export const TABLAS = ['eco_cuentas', 'eco_categorias', 'pag_pagos', 'eco_movimientos', 'eco_ingresos',
   'ent_sesiones', 'ent_series', 'stk_productos', 'ali_platos', 'ali_comidas', 'ali_extras', 'ali_metas', 'ent_rutinas',
-  'com_supers', 'com_items', 'com_precios', 'com_compras', 'ent_ejercicios', 'com_tickets'] as const;
+  'com_supers', 'com_items', 'com_precios', 'com_compras', 'ent_ejercicios', 'com_tickets',
+  'dia_plantilla', 'dia_dias', 'dia_tareas'] as const;
 
 export async function exportarTodo(): Promise<Record<string, Fila[]>> {
   const salida: Record<string, Fila[]> = {};
