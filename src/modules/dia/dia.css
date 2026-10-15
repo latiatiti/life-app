@@ -1,0 +1,158 @@
+/* ---------- Módulo Día: estilo de tablero (rótulos en mayúscula, bloques de fecha, cantos firmes) ---------- */
+.dia .tarjeta { border-radius: 10px; }
+.etq-tit { font-size: 0.8rem; font-weight: 750; letter-spacing: 0.06em; }
+.etq { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); }
+
+.dia-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dia-cab { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.dia-fecha {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; width: 64px; height: 64px; flex: none;
+  border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border);
+}
+.dia-fecha strong { font-size: 1.7rem; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums; }
+.dia-fecha small { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-2); }
+.dia-cab.es-hoy .dia-fecha { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: var(--glow); }
+.dia-cab.es-hoy .dia-fecha small { color: var(--on-accent); }
+.dia-tit { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.03em; }
+.dia-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.dchip { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 6px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.dchip.rojo { color: var(--critical-text); background: color-mix(in srgb, var(--critical) 14%, transparent); }
+.dchip.cian { color: var(--xp); background: color-mix(in srgb, var(--xp) 14%, transparent); }
+.dchip.naranja { color: #fb923c; background: rgba(251, 146, 60, 0.14); }
+.dchip.violeta { color: var(--accent); background: var(--accent-soft); }
+
+/* Tira de la semana (capa de arriba) */
+.semana-tira.capa { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 10px; }
+.semana-punto { width: 6px; height: 6px; border-radius: 50%; }
+.semana-dia.sel .semana-punto { background: var(--on-accent) !important; }
+.semana-tira { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.semana-tira::-webkit-scrollbar { display: none; }
+.semana-dia {
+  flex: 1; min-width: 46px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px;
+  min-height: 62px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; transition: transform 0.15s, background 0.15s;
+}
+.semana-dia small { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); }
+.semana-dia strong { font-size: 1.1rem; font-variant-numeric: tabular-nums; min-height: 1.4em; }
+.semana-dia:active { transform: scale(0.95); }
+.semana-dia.hoy { border-color: var(--accent); }
+.semana-dia.sel { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: var(--glow); }
+.semana-dia.sel small { color: var(--on-accent); }
+
+/* Ahora */
+.dia-ahora {
+  border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+  background: color-mix(in srgb, var(--c) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  animation: dia-entra 0.35s ease;
+}
+.dia-ahora .etq { color: var(--c); }
+.dia-ahora-fila { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; }
+.dia-emoji { font-size: 1.6rem; }
+.dia-prog { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.dia-prog div { height: 100%; background: var(--c); border-radius: 99px; transition: width 0.6s; }
+.dia-despues { font-size: 0.75rem; font-weight: 650; letter-spacing: 0.04em; color: var(--ink-2); }
+
+/* Línea de tiempo */
+.linea { display: flex; flex-direction: column; gap: 8px; }
+.linea-lectura { display: flex; align-items: center; gap: 10px; font-weight: 600; min-height: 1.6em; }
+.linea-lectura .num { font-size: 1.2rem; font-weight: 800; color: var(--accent); }
+.linea-marco { position: relative; }
+.linea-cursor { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); z-index: 3; pointer-events: none; box-shadow: 0 0 10px var(--accent); }
+.linea-scroll { position: relative; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding: 0 50%; margin: 0 -18px; }
+.linea-pista { position: relative; height: 150px; }
+.linea-hora { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); font-size: 0.68rem; color: var(--muted); padding-left: 4px; font-variant-numeric: tabular-nums; }
+.linea-bloque {
+  position: absolute; top: 22px; height: 88px; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;
+  padding: 10px; box-sizing: border-box; background: var(--c); color: #0a0a12; font-weight: 750; font-size: 0.9rem; line-height: 1.2;
+}
+.linea-bloque small { font-size: 0.7rem; font-weight: 700; opacity: 0.8; }
+.linea-bloque span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.linea-bloque.opcional { background: transparent; color: var(--ink); border: 2px dashed var(--c); }
+.linea-bloque.tenue { background: var(--surface-2); color: var(--muted); }
+.linea-tarea { position: absolute; top: 118px; transform: translateX(-6px); font-size: 0.72rem; max-width: 160px; }
+.linea-tarea span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 3px 6px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); }
+.linea-tarea.hecha { opacity: 0.5; text-decoration: line-through; }
+.linea-ahora { position: absolute; top: 16px; bottom: 0; width: 2px; background: var(--critical); z-index: 2; }
+.linea-ahora::before { content: ''; position: absolute; top: -4px; left: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--critical); }
+.dia-nota { margin: 10px 0 0; color: var(--ink-2); }
+
+/* Plan del día */
+.dia-grilla { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.bloques { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bloques li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border-left: 3px solid var(--c); transition: opacity 0.2s; }
+.bloques li.pasado { opacity: 0.45; }
+.bloques li.actual { background: color-mix(in srgb, var(--c) 18%, var(--surface-2)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
+.bloques li.opcional { background: transparent; border: 1px dashed var(--line); border-left: 3px dashed var(--c); }
+.bloques-hora { display: flex; flex-direction: column; font-weight: 750; font-size: 0.9rem; width: 46px; }
+.bloques-hora small { font-weight: 500; color: var(--muted); font-size: 0.72rem; }
+.bloques-ico { font-size: 1.3rem; }
+.bloques strong { display: block; font-weight: 650; }
+.bloques small, .tareas small { display: block; color: var(--ink-2); font-size: 0.78rem; }
+
+/* Tareas */
+.prioridades, .tareas { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.prioridades li, .tareas li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.prioridades .etq { display: block; color: var(--warning-text); }
+.tarea-otro a { color: var(--ink); }
+.tilde {
+  width: 30px; height: 30px; flex: none; border-radius: 8px; border: 2px solid var(--border); background: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 800; color: var(--ink-2); transition: transform 0.15s, background 0.15s;
+}
+.tilde:active { transform: scale(0.88); }
+.tilde.si { background: var(--good); border-color: var(--good); color: #0a0a12; }
+.tilde.fija { border-style: dashed; cursor: default; }
+.tachado { text-decoration: line-through; color: var(--muted); }
+.tarea-nueva { display: grid; grid-template-columns: minmax(0, 1fr) 96px 84px 44px; gap: 6px; margin-top: 8px; }
+.tarea-nueva .btn { padding: 0; }
+
+/* Calendario */
+.cal-grilla { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-dow { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 4px 0; }
+.cal-dia {
+  position: relative; height: 60px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2);
+  cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; padding: 5px 6px; transition: transform 0.12s, border-color 0.15s;
+}
+.cal-dia:hover { border-color: var(--border); }
+.cal-dia:active { transform: scale(0.94); }
+.cal-dia.fuera { opacity: 0.35; }
+.cal-dia.hoy { border-color: var(--accent); }
+.cal-dia.sel { background: var(--accent-soft); border-color: var(--accent); box-shadow: var(--glow); }
+.cal-dia.feriado .cal-num { color: var(--critical-text); }
+.cal-dia.libre { background: color-mix(in srgb, var(--xp) 10%, var(--surface-2)); }
+.cal-num { font-weight: 750; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.cal-barra { position: absolute; left: 6px; right: 6px; bottom: 5px; height: 3px; border-radius: 99px; opacity: 0.85; }
+.cal-cuenta { position: absolute; top: 4px; right: 5px; font-size: 0.62rem; font-weight: 800; min-width: 16px; height: 16px; border-radius: 99px; background: var(--warning); color: #0a0a12; display: grid; place-items: center; }
+.cal-estrella { position: absolute; bottom: 9px; right: 6px; font-size: 0.7rem; color: var(--warning-text); }
+.cal-leyenda { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 0.75rem; color: var(--ink-2); }
+.cal-leyenda i { display: inline-block; width: 10px; height: 3px; border-radius: 99px; margin-right: 5px; vertical-align: middle; }
+.cal-leyenda i.rojo { background: var(--critical); }
+
+/* Editor de bloques */
+.editor-bloques { display: flex; flex-direction: column; gap: 10px; }
+.eb-fila { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 8px; background: var(--surface-2); border-left: 3px solid var(--c); }
+.eb-horas { display: flex; align-items: center; gap: 6px; }
+.eb-horas span { color: var(--muted); }
+.eb-extra { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.eb-extra select { width: auto; flex: 1; min-width: 130px; }
+.eb-check { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--ink-2); white-space: nowrap; }
+.eb-check input { width: 18px; height: 18px; min-height: 0; }
+.eb-nota { font-size: 0.85rem; }
+.prio-fila { display: flex; align-items: center; gap: 6px; }
+
+/* Animación al cambiar de día */
+.dia-entra { animation: dia-entra 0.3s ease; }
+@keyframes dia-entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dia-entra, .dia-ahora { animation: none; } .linea-scroll { scroll-behavior: auto; } }
+
+@media (max-width: 760px) {
+  .dia-grilla { grid-template-columns: minmax(0, 1fr); }
+  .dia-barra .acciones { width: 100%; }
+  .dia-barra .acciones .btn { flex: 1; min-height: 46px; }
+  .linea-scroll { margin: 0 -18px; }
+  .tarea-nueva { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px; }
+  .tarea-nueva input:first-child { grid-column: 1 / -1; min-height: 46px; }
+  .tarea-nueva .btn { min-height: 44px; }
+  .semana-tira .btn-icono { display: none; }
+  .semana-tira.capa { gap: 4px; padding: 6px; }
+  .semana-dia { min-width: 0; padding: 8px 0; }
+  .cal-dia { height: 48px; padding: 4px; }
+}

@@ -17,13 +17,14 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `src/core/registry.ts`: lista de módulos. **Sumar un módulo** = crear `src/modules/<x>/index.tsx` y registrarlo acá.
 - `src/core/db.ts`: capa de datos (`useTabla`, `crear`, `modificar`, `eliminar`, exportar/importar respaldo). Agregar las tablas nuevas a `TABLAS`.
 - `src/hub/Hub.tsx`: junta señales (ordenadas por nivel) y agenda compartida (14 días) de todos los módulos.
-- Rutas por hash: `#/economia` (+ `/movimientos`, `/ingresos`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock` (+ `/lista`), `#/compras` (+ `/escanear`, `/comprando`, `/ticket`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
+- Rutas por hash: `#/dia` (+ `/semana`), `#/economia` (+ `/movimientos`, `/ingresos`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock` (+ `/lista`), `#/compras` (+ `/escanear`, `/comprando`, `/ticket`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
 - `src/modules/ajustes/semilla.ts`: botón "Cargar mi configuración" con los datos reales de la usuaria (ingresos, fijos, básicos, platos). Idempotente por nombre.
 
-## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql`, en ese orden)
+## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql` + `dia.sql`, en ese orden)
 - `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
 - Compras (`supabase/compras.sql`, aplicado en la nube): `com_supers` (bloques jsonb = orden de pasillos de ese súper), `com_items` (catálogo propio; precios jsonb = último precio online por cadena; producto_id enlaza al stock), `com_precios` (historial: online/ticket/manual), `com_compras` (estimado vs total del ticket, items jsonb, reparto y ticket jsonb).
-- Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
+- Día (`supabase/dia.sql`, aplicado en la nube): `dia_plantilla` (semana tipo, un bloque por fila: dia_semana 0=dom, inicio/fin 'HH:MM' con '24:00' = fin, tipo, opcional, come_alla), `dia_dias` (una fila por fecha: estado normal/libre/feriado/especial, nombre, nota, prioridades jsonb [{texto,hecho}], bloques jsonb = horario propio o null = semana tipo), `dia_tareas` (fecha, hora, prioridad alta/media/baja, origen 'app'|'claude'). Pensadas para la API de lectura/escritura de Claude.
+- Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; `dia_`; próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
 - Toda tabla nueva: con `user_id` y política RLS, igual que las existentes.
 
 ## Cruces ya implementados
@@ -43,6 +44,13 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Modo compra con escáner (2026-10-09, pestaña "Modo compra" = `#/compras/escanear`; la de pasillos quedó como "Por pasillos"): tablero fijo (gastado, cosas en el carro, te falta = lista + faltantes de casa no cargados, `faltaAgarrar`), cada escaneo abre una ventana para confirmar (foto, último precio pagado, ya en el carro, cantidad, para quién, precio). Cierre en 3 pasos: QR fiscal del ticket (`leerQrTicket`: ARCA solo trae total, fecha, CUIT y número, no los productos), precio de cada cosa con ▲▼ contra el último ticket, quién pagó. `com_compras.ticket` jsonb (`supabase/compras-ticket.sql`, aplicado). Subas y bajas: `cambiosDePrecio` (tarjeta en Precios y señal en el hub).
 - Ticket (2026-10-10, `#/compras/ticket`, `Ticket.tsx` + `ticket.ts`): tabla `com_tickets` (`supabase/compras-tickets.sql`, aplicado). QR: si es el fiscal de ARCA guarda total/fecha; si es un link de ticket digital, PRIMERO guarda el QR y después lo baja UNA vez con la función `ticket` (`supabase/functions/ticket`, desplegada; los links vencen al abrirlos) y guarda la copia (html + texto, se ve en un iframe sin scripts). Foto: OCR en el teléfono con tesseract.js (español, datos desde jsDelivr; varias fotos si es largo), o pegar el texto. `leerProductos()` interpreta renglones "2 x 1.250,00" + producto, EAN, kg y descuentos. Repartir de a uno (foto del producto vía `precios`, Yo/Ulises/Los dos) → cuenta → `cerrarCarrito(..., vaciarCarro:false)`.
 - Por pasillos: estado en localStorage (`life.compras.encurso`), bloques en el orden guardado del súper (▲▼ lo reordena), "en este pasillo también" sugiere lo que comprás seguido o falta en casa.
+
+## Día (2026-10-15)
+- `src/modules/dia/`: línea del día deslizable por hora (cursor al centro que dice qué pasa a esa hora; línea roja = ahora), tarjeta "Ahora", plan en lista, tareas y prioridades, tira de la semana y calendario mensual (tocar un día lo abre; "Editar día": libre/feriado/especial, prioridades, nota, horario solo de ese día). Pestaña Semana tipo para editar cada día.
+- Si `dia_plantilla` está vacía usa `SEMANA_BASE` (`modelo.ts`, armada con lo que contó: lun reparto, mar/mié fábrica 8–17, jue reparto partido + gym, vie fábrica + Challao, sáb reparto 10:30 y cobro, dom libre). Editar un día guarda toda la semana.
+- Feriados nacionales 2026–2027 + Santiago Apóstol (Mendoza) en `FERIADOS`; los "puente" no cuentan como feriado automático.
+- Gimnasio: domingo cerrado, sábado abre a las 7, entrenos ~1 h 30 (`GIMNASIO`). Días de fábrica come allá: bloques `come_alla`, `comeEnFabrica(bloques)` para Alimentación.
+- Al hub: señales (tareas atrasadas, prioridad de hoy, feriado mañana), agenda (tareas, feriados, días libres) y XP por tarea hecha.
 
 ## Preparador y ciclos (2026-10-06)
 - `ent_rutinas` guarda cada ciclo como una fila: `inicio` (lunes) + `ciclo` jsonb {semanas, objetivo, perfil, numero}. Solo una `activa`; las viejas quedan como historial (`empezarCiclo` en `modelo.ts`). SQL: `supabase/entreno-ciclos.sql` (aplicado).

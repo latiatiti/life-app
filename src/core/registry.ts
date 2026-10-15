@@ -1,6 +1,7 @@
 import { moduloAjustes } from '../modules/ajustes';
 import { moduloAlimentacion } from '../modules/alimentacion';
 import { moduloCompras } from '../modules/compras';
+import { moduloDia } from '../modules/dia';
 import { moduloEconomia } from '../modules/economia';
 import { moduloEntrenamiento } from '../modules/entrenamiento';
 import { moduloPagos } from '../modules/pagos';
@@ -14,4 +15,4 @@ import type { Modulo } from './types';
  *
  * El orden de la lista es fijo: los hooks de señales y agenda se llaman en este orden.
  */
-export const MODULOS: Modulo[] = [moduloEconomia, moduloPagos, moduloEntrenamiento, moduloStock, moduloCompras, moduloAlimentacion, moduloAjustes];
+export const MODULOS: Modulo[] = [moduloDia, moduloEconomia, moduloPagos, moduloEntrenamiento, moduloStock, moduloCompras, moduloAlimentacion, moduloAjustes];
