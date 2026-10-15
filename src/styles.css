@@ -330,9 +330,31 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--acento-text
 .vacio-tit { font-weight: 800; font-size: 1.05rem; margin: 0; }
 .vacio .btn { white-space: normal; text-align: center; }
 .vacio p { margin: 0; color: var(--texto-2); max-width: 60ch; }
-.login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
-.login-caja { width: min(380px, 100%); background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+.login { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 16px; background: var(--fondo); }
+.login-caja { width: min(380px, 100%); background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); padding: 28px 22px; display: flex; flex-direction: column; gap: 12px; animation: vista-entra 0.35s var(--curva); }
 .login-caja h1 { letter-spacing: 0.08em; }
+.login-marca { width: 56px; height: 56px; border-radius: var(--radio); display: grid; place-items: center; font-weight: 800; font-size: 1.6rem; color: var(--sobre-acento); background: var(--acento); }
+.login-form { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+.login-campo { display: flex; flex-direction: column; gap: 6px; font-size: 0.72rem; font-weight: 700; letter-spacing: var(--etiqueta-espacio); text-transform: var(--etiqueta-mayus); color: var(--texto-2); }
+.login-campo input { min-height: 52px; padding: 0 14px; font-size: 1.05rem; color: var(--texto); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.login-clave { position: relative; }
+.login-clave input { padding-right: 84px; }
+.login-ver { position: absolute; right: 6px; top: 6px; bottom: 6px; padding: 0 12px; border: 0; border-radius: var(--radio-chico); background: var(--acento-suave); color: var(--acento-texto); font-weight: 700; cursor: pointer; }
+.login-entrar { min-height: 52px; font-size: 1.05rem; }
+.login-pie { text-align: center; margin: 4px 0 0; }
+
+/* ---------- Cuentas y conexión con Claude ---------- */
+.lista-simple { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; }
+.lista-simple li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--borde); min-height: 48px; }
+.lista-simple li:first-child { border-top: 0; }
+.link-clave { display: block; padding: 12px; border-radius: var(--radio-chico); background: var(--capa-2); border: 1px solid var(--borde-fuerte); word-break: break-all; font-size: 0.85rem; user-select: all; }
+.pasos { padding-left: 20px; margin: 4px 0 0; display: flex; flex-direction: column; gap: 4px; }
+.check { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.check input { width: 20px; height: 20px; min-height: 0; accent-color: var(--acento); }
+.check-grupo { border: 1px solid var(--borde); border-radius: var(--radio); padding: 8px 12px; margin: 0; }
+.check-grupo legend { padding: 0 6px; color: var(--texto-2); font-size: 0.75rem; font-weight: 700; letter-spacing: var(--etiqueta-espacio); text-transform: var(--etiqueta-mayus); }
+.aviso-locales { margin-bottom: 16px; border-color: var(--acento-borde); }
+.aviso-locales p { margin-top: 0; }
 
 /* ---------- Celular: todo lo tocable de al menos 44 px ---------- */
 @media (max-width: 760px) {
