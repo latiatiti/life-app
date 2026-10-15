@@ -13,7 +13,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 ## Arquitectura
 - `src/core/types.ts`: contrato `Modulo` { id, nombre, icono, pantallas, Resumen (tarjeta del hub), useSenales(), useAgenda(), useActividad(), enHub }.
 - `src/core/juego.ts`: nivel, XP y racha (la usuaria pidió estética de juego). `useActividad()` devuelve una fecha por registro; 10 XP cada uno.
-- Tema: siempre oscuro, acento violeta neón + cian para XP (tokens en `styles.css`).
+- Tema: siempre oscuro. **Todo el look sale de `src/tema/tema.css`** (color principal `--acento`, capas, letras Barlow, esquinas `--radio`, animación); `styles.css` arma las piezas con esos tokens, sin colores sueltos. Guía en `DISENO.md`. Estilo "A + C" (2026-10-15): tablero tipo Tiatiti + capas deslizables; en el celu barra flotante (Inicio + `EN_BARRA` en `App.tsx` + "Más"), en la compu menú lateral; Inicio con tira de días `ui/Semana.tsx` y tarjeta del día.
 - `src/core/registry.ts`: lista de módulos. **Sumar un módulo** = crear `src/modules/<x>/index.tsx` y registrarlo acá.
 - `src/core/db.ts`: capa de datos (`useTabla`, `crear`, `modificar`, `eliminar`, exportar/importar respaldo). Agregar las tablas nuevas a `TABLAS`.
 - `src/hub/Hub.tsx`: junta señales (ordenadas por nivel) y agenda compartida (14 días) de todos los módulos.

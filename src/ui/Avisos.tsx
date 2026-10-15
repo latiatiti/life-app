@@ -13,7 +13,7 @@ import { Estado, Icono } from './ui';
 
 const CLAVE = 'life.avisos.cerrados';
 /** En el celular entran menos para no tapar la pantalla. */
-const maximo = () => (window.matchMedia?.('(max-width: 760px)').matches ? 2 : 3);
+const maximo = () => (window.matchMedia?.('(max-width: 760px)').matches ? 1 : 3);
 
 type Cerrados = Record<string, string>; // clave del aviso → día en que se cerró
 const claveDe = (s: Senal) => `${s.id}|${s.titulo}`;
