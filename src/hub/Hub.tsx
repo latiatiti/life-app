@@ -1,17 +1,13 @@
+import { useState } from 'react';
 import { MODULOS } from '../core/registry';
-import { dinero, fechaCorta, fechaLarga, hoy, relativo, sumarDias } from '../core/format';
+import { dinero, desdeISO, fechaLarga, hoy, relativo, sumarDias } from '../core/format';
 import { calcularProgreso } from '../core/juego';
-import type { ItemAgenda, NivelSenal, Senal } from '../core/types';
+import { useTodasLasSenales } from '../core/senales';
+import type { ItemAgenda } from '../core/types';
+import { Semana } from '../ui/Semana';
 import { Estado, Tarjeta } from '../ui/ui';
 
-const ORDEN: Record<NivelSenal, number> = { critico: 0, aviso: 1, info: 2, ok: 3 };
-
-/** Junta las señales de todos los módulos. La lista de módulos es fija, así el orden de hooks no cambia. */
-function useSenales(): Senal[] {
-  const todas: Senal[] = [];
-  for (const m of MODULOS) if (m.useSenales) todas.push(...m.useSenales());
-  return todas.sort((a, b) => ORDEN[a.nivel] - ORDEN[b.nivel]);
-}
+const DIAS_AGENDA = 14;
 
 function useAgenda(): ItemAgenda[] {
   const todos: ItemAgenda[] = [];
@@ -25,7 +21,7 @@ function useActividad(): string[] {
   return todas;
 }
 
-/** Tarjeta de "jugador": nivel, experiencia y racha de días seguidos registrando cosas. */
+/** Fila de "jugador": nivel, experiencia y racha de días seguidos registrando cosas. */
 function Jugador() {
   const p = calcularProgreso(useActividad());
   return (
@@ -36,9 +32,9 @@ function Jugador() {
         <div className="barra-xp" role="meter" aria-valuemin={0} aria-valuemax={p.paraSubir} aria-valuenow={p.enNivel}>
           <div style={{ width: `${(p.enNivel / p.paraSubir) * 100}%` }} />
         </div>
-        <small className="nota">Faltan {p.paraSubir - p.enNivel} XP para el nivel {p.nivel + 1}. Cada cosa que registrás suma.</small>
+        <small className="nota">Faltan {p.paraSubir - p.enNivel} XP para el nivel {p.nivel + 1}</small>
       </div>
-      <div className="racha">{p.racha > 0 ? `🔥 ${p.racha}` : '—'}<small>{p.racha === 1 ? 'día seguido' : 'días seguidos'}</small></div>
+      <div className="racha">{p.racha > 0 ? p.racha : '—'}<small>{p.racha === 1 ? 'día seguido' : 'días seguidos'}</small></div>
     </section>
   );
 }
@@ -48,33 +44,76 @@ function saludo() {
   return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
 }
 
+/** Tarjeta del día elegido: cabecera de color con la fecha y lo que hay ese día. */
+function Dia({ dia, items, atrasados, nombreModulo }: {
+  dia: string; items: ItemAgenda[]; atrasados: ItemAgenda[]; nombreModulo: Map<string, string>;
+}) {
+  const f = desdeISO(dia);
+  const nombreDia = f.toLocaleDateString('es-AR', { weekday: 'long' });
+  const mes = f.toLocaleDateString('es-AR', { month: 'short' }).replace('.', '');
+  const rel = relativo(dia);
+  const todos = [...atrasados, ...items];
+  return (
+    <section className="tarjeta dia" aria-label={`Agenda del ${fechaLarga(dia)}`}>
+      <header className="dia-cab">
+        <div className="dia-fecha"><strong>{f.getDate()}</strong><small>{mes}</small></div>
+        <div className="dia-titulo">
+          {rel === 'hoy' || rel === 'mañana' ? `${rel} · ${nombreDia}` : nombreDia}
+          <span>{todos.length ? `${todos.length} ${todos.length === 1 ? 'cosa' : 'cosas'}` : 'libre'}</span>
+        </div>
+      </header>
+      <div className="dia-cuerpo">
+        {todos.length === 0 ? (
+          <p className="nota dia-vacio">Nada agendado. Los vencimientos, cobros y compras aparecen acá.</p>
+        ) : (
+          todos.map((i) => (
+            <a key={i.id} href={i.ruta ?? '#/'} className="dia-item">
+              {i.fecha < hoy() ? <Estado nivel="critico" texto="Atrasado" /> : <span className="chip">{nombreModulo.get(i.modulo)}</span>}
+              <span className="crece">{i.titulo}</span>
+              {i.monto != null && <strong className="num">{dinero(i.monto, i.moneda)}</strong>}
+            </a>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function Hub() {
-  const senales = useSenales();
-  const limite = sumarDias(hoy(), 14);
+  const senales = useTodasLasSenales();
+  const h = hoy();
+  const limite = sumarDias(h, DIAS_AGENDA - 1);
   const agenda = useAgenda().filter((i) => i.fecha <= limite);
   const nombreModulo = new Map(MODULOS.map((m) => [m.id, m.nombre]));
+  const [elegido, setElegido] = useState(h);
 
-  // Agrupar agenda por día
-  const dias = new Map<string, ItemAgenda[]>();
-  for (const i of agenda) dias.set(i.fecha, [...(dias.get(i.fecha) ?? []), i]);
+  const conAlgo = new Set(agenda.map((i) => i.fecha));
+  const delDia = agenda.filter((i) => i.fecha === elegido);
+  const atrasados = elegido === h ? agenda.filter((i) => i.fecha < h && !i.hecho) : [];
 
   return (
     <div className="pila">
       <header className="hub-cab">
-        <h1>{saludo()}</h1>
-        <p className="nota">{fechaLarga(hoy())}</p>
+        <div>
+          <h1>{saludo()}</h1>
+          <p className="nota">{fechaLarga(h)}</p>
+        </div>
+        {senales.length > 0 && <span className="chip-fecha">{senales.length} {senales.length === 1 ? 'señal' : 'señales'}</span>}
       </header>
+
+      <Semana desde={h} cantidad={DIAS_AGENDA} elegido={elegido} onElegir={setElegido} conAlgo={conAlgo} />
+      <Dia dia={elegido} items={delDia} atrasados={atrasados} nombreModulo={nombreModulo} />
 
       <Jugador />
 
-      <Tarjeta titulo="Señales">
+      <Tarjeta titulo={<>Señales {senales.length > 0 && <span className="contador">{senales.length}</span>}</>}>
         {senales.length === 0 ? (
           <p className="nota">Todo en orden. A medida que cargues datos, acá aparecen alertas y sugerencias.</p>
         ) : (
           <ul className="senales">
             {senales.map((s) => (
               <li key={s.id}>
-                <a href={s.ruta ?? '#/'} className={`senal senal-${s.nivel}`}>
+                <a href={s.ruta ?? '#/'} className="senal">
                   <Estado nivel={s.nivel} />
                   <div>
                     <strong>{s.titulo}</strong>
@@ -87,35 +126,7 @@ export function Hub() {
         )}
       </Tarjeta>
 
-      <div className="grilla-hub">
-        <Tarjeta titulo="Agenda · próximos 14 días" className="agenda">
-          {agenda.length === 0 ? (
-            <p className="nota">Nada agendado. Los vencimientos de Pagos (y más adelante tareas y eventos) aparecen acá.</p>
-          ) : (
-            <ol className="agenda-lista">
-              {[...dias.entries()].map(([dia, items]) => (
-                <li key={dia}>
-                  <div className={`agenda-dia ${dia < hoy() ? 'texto-critico' : ''}`}>
-                    <strong>{fechaCorta(dia)}</strong>
-                    <small>{relativo(dia)}</small>
-                  </div>
-                  <ul>
-                    {items.map((i) => (
-                      <li key={i.id}>
-                        <a href={i.ruta ?? '#/'}>
-                          <span className="chip">{nombreModulo.get(i.modulo)}</span>
-                          <span className="crece">{i.titulo}</span>
-                          {i.monto != null && <span className="num">{dinero(i.monto, i.moneda)}</span>}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ol>
-          )}
-        </Tarjeta>
-
+      <div className="carrusel" aria-label="Resumen de cada módulo">
         {MODULOS.filter((m) => m.enHub !== false && m.Resumen).map((m) => {
           const R = m.Resumen!;
           return (

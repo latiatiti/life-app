@@ -1,5 +1,5 @@
 import { diasEntre, hoy } from '../../core/format';
-import type { Modulo, Senal } from '../../core/types';
+import type { ActividadEnCurso, Modulo, Senal } from '../../core/types';
 import { Icono } from '../../ui/ui';
 import { leerEnCurso } from './Entrenando';
 import { necesitaDescarga } from './analisis';
@@ -31,7 +31,7 @@ function useSenalesEntreno(): Senal[] {
         id: 'ent-toca', modulo: 'entrenamiento', nivel: hace != null && hace >= 4 ? 'aviso' : 'info',
         titulo: `Hoy toca: Día ${p.id} · ${p.nombre}`,
         detalle: hace == null ? 'Arrancá tu primera sesión.' : `Hace ${hace} días que no entrenás.`,
-        ruta: '#/entrenamiento',
+        ruta: '#/entrenamiento', accion: { texto: 'Ir a entrenar', ruta: '#/entrenamiento' },
       });
     }
   }
@@ -67,6 +67,20 @@ function useActividadEntreno(): string[] {
   return useSesiones().filas.flatMap((s) => Array(5).fill(s.fecha));
 }
 
+/** Para la barra de actividad: un entreno empezado y no guardado, con el descanso en vivo. */
+function entrenoEnCurso(): ActividadEnCurso | null {
+  const e = leerEnCurso();
+  if (!e) return null;
+  const series = e.hechas.filter((h) => h.tipo !== 'calentamiento').length;
+  const resta = e.descansoHasta ? Math.ceil((e.descansoHasta - Date.now()) / 1000) : 0;
+  const reloj = `${Math.floor(resta / 60)}:${String(resta % 60).padStart(2, '0')}`;
+  return {
+    id: 'entreno', ruta: '#/entrenamiento',
+    titulo: `Entrenando${e.plan?.nombre ? ` · ${e.plan.nombre}` : ''}`,
+    detalle: resta > 0 ? `Descanso ${reloj}` : series === 1 ? '1 serie hecha' : `${series} series hechas`,
+  };
+}
+
 export const moduloEntrenamiento: Modulo = {
   id: 'entrenamiento',
   nombre: 'Entreno',
@@ -82,4 +96,5 @@ export const moduloEntrenamiento: Modulo = {
   Resumen: ResumenEntreno,
   useSenales: useSenalesEntreno,
   useActividad: useActividadEntreno,
+  enCurso: entrenoEnCurso,
 };

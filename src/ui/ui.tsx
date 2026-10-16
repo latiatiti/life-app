@@ -16,6 +16,7 @@ export const Icono = {
   entreno: svg(<><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12" /></>),
   stock: svg(<><path d="M3 7l9-4 9 4-9 4z" /><path d="M3 7v10l9 4 9-4V7" /><path d="M12 11v10" /></>),
   comida: svg(<><path d="M7 3v8M5 3v5a2 2 0 004 0V3M7 11v10" /><path d="M17 21V3c-2 1-3 4-3 7h3" /></>),
+  modulos: svg(<><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></>),
   menos: svg(<path d="M5 12h14" />),
   mas: svg(<path d="M12 5v14M5 12h14" />),
   cerrar: svg(<path d="M6 6l12 12M18 6L6 18" />),

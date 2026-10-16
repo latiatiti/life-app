@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ConSesion } from './core/auth';
+import './tema/tema.css';
 import './styles.css';
 
 createRoot(document.getElementById('root')!).render(

@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { ir, useRuta } from '../../core/router';
+import { useCambios } from '../../ui/Actividad';
+import { empezarAlDia, leerAlDia, pagosParaPonerseAlDia, PonerseAlDia } from './AlDia';
 import { crear, eliminar, modificar } from '../../core/db';
 import { desdeISO, dinero, fechaCorta, hoy, parsearMonto, relativo, sumarDias } from '../../core/format';
 import { Campo, Estado, Icono, Modal, Tarjeta, Vacio } from '../../ui/ui';
@@ -185,6 +188,17 @@ export function PantallaPagos() {
   const resto = activos.filter((p) => p.proximo_vencimiento > sumarDias(hoy(), 30));
   const pausados = pagos.filter((p) => !p.activo);
 
+  // Modo "ponerse al día": se abre con el botón o desde el aviso flotante (#/pagos/al-dia).
+  const ruta = useRuta();
+  useCambios();
+  const alDia = leerAlDia();
+  const paraAlDia = pagosParaPonerseAlDia(pagos);
+  useEffect(() => {
+    if (ruta !== 'pagos/al-dia' || !cargado) return;
+    empezarAlDia(pagos);
+    ir('pagos');
+  }, [ruta, cargado, pagos]);
+
   const historial = movs.filter((m) => m.pago_id).sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 10);
   const nombrePago = new Map(pagos.map((p) => [p.id, p.nombre]));
 
@@ -198,9 +212,18 @@ export function PantallaPagos() {
 
   return (
     <div className="pila">
+      {alDia && !alDia.minimizada && <PonerseAlDia estado={alDia} />}
+
       <div className="barra-acciones">
         <p className="nota">Servicios, tarjetas, alquiler y todo lo que vence.</p>
-        <button className="btn btn-primario" onClick={() => setEditando('nuevo')}>{Icono.mas} Pago</button>
+        <div className="acciones">
+          {paraAlDia.length > 0 && (
+            <button className="btn btn-confirmar" onClick={() => empezarAlDia(pagos)}>
+              {alDia ? 'Seguir poniéndome al día' : `Ponerme al día (${paraAlDia.length})`}
+            </button>
+          )}
+          <button className="btn btn-primario" onClick={() => setEditando('nuevo')}>{Icono.mas} Pago</button>
+        </div>
       </div>
 
       {cargado && pagos.length === 0 && (
