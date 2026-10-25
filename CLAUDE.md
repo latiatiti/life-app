@@ -10,6 +10,11 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Comandos: `npm install`, `npm run dev`, `npm run build`. Ver `LEEME.md`.
 - `../LIFE-demo.html` es un build de un solo archivo (modo local) para abrir con doble clic.
 
+## Diseño (2026-10-25): pilares fijos
+- **Toda pantalla nueva o cambiada sigue `docs/pilares-de-diseno.md`** (10 pilares: estructura primero, PC y celu mismo sistema, celu = calle / PC = oficina, una cosa un solo lugar, lo diario adelante, cada aviso con su botón, DESHACER después de guardar, avisar lo raro, lenguaje simple, datos de verdad). Pasar la checklist de su sección 8 antes de darla por hecha.
+- `docs/mapa-estructura.md`: mapa de secciones, pestañas, objetos y piezas compartidas (fuente de verdad de dónde va cada cosa) + tandas pendientes. Si algo no entra en el mapa, primero se cambia el mapa.
+- Los colores de AquaFlow del archivo no se usan salvo que ella lo pida; los tokens siguen en `src/tema/tema.css`.
+
 ## Arquitectura
 - `src/core/types.ts`: contrato `Modulo` { id, nombre, icono, pantallas, Resumen (tarjeta del hub), useSenales(), useAgenda(), useActividad(), enHub }.
 - `src/core/juego.ts`: nivel, XP y racha (la usuaria pidió estética de juego). `useActividad()` devuelve una fecha por registro; 10 XP cada uno.

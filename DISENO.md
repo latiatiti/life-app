@@ -1,5 +1,7 @@
 # Diseño de LIFE
 
+> **Reglas fijas de diseño: [`docs/pilares-de-diseno.md`](docs/pilares-de-diseno.md)** (los 10 pilares, medidas, recetas de pantalla, método y checklist). Antes de diseñar o cambiar cualquier pantalla: leer los pilares, ubicarla en [`docs/mapa-estructura.md`](docs/mapa-estructura.md) y pasar la checklist de la sección 8. Los ejemplos de ese archivo son de AquaFlow (la sodería): en LIFE se reemplazan por sus módulos. Los colores de AquaFlow (sección 3) **no** se aplican salvo que ella lo decida; la paleta sigue saliendo de `src/tema/tema.css`.
+
 Todo el look de la app sale de **un solo archivo: `src/tema/tema.css`**. Si querés cambiar algo general (el color, las letras, las esquinas, la velocidad de las animaciones), se cambia ahí y se aplica en todas las pantallas, en el celu y en la compu.
 
 ## Cambios rápidos
