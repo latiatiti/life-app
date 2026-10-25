@@ -33,6 +33,7 @@ LIFE como el monitor de tu vida con pantalla de videojuego (HUD). Elegido entre 
 - Letras: Chakra Petch (títulos), IBM Plex Sans (texto), IBM Plex Mono (números, fechas y etiquetas).
 - Piezas de juego (al final de `styles.css`, bloque "Modo juego"): esquinas de mira en cada panel y títulos entre corchetes; línea de pulso en la tarjeta del día; nivel en hexágono y barra de experiencia por bloques; medidores por bloques; señales con barra de vida (rojo late, naranja avisa); pestaña y menú activos con brillo; botón principal con esquinas cortadas; líneas finas de pantalla vieja.
 - Para bajarle el tono: en `tema.css` sección 8, `--brillo: none`, `--mira: 0`, `--linea-pantalla: transparent`.
+- Inicio como tablero (boceto de ella): "LIFE" arriba y una tarjeta por área (`.vital`, estado en el borde: `es-ok`, `es-aviso`, `es-critico`, `es-xp`); compu 4 × 2, celu 2 × 4.
 - Se mantiene de antes: barra flotante en el celu, menú lateral en la compu, tira de días tocable, hojas que suben desde abajo, aviso "Guardado · DESHACER".
 
 ## Reglas

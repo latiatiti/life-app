@@ -1,5 +1,5 @@
 import { hoy } from '../../core/format';
-import type { ItemAgenda, Modulo, Senal } from '../../core/types';
+import type { ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
 import { Icono } from '../../ui/ui';
 import { faltantes, porVencer, useProductos } from './modelo';
 import { PantallaStock } from './Pantallas';
@@ -22,6 +22,18 @@ function useAgendaStock(): ItemAgenda[] {
   }));
 }
 
+function useVitalStock(): Vital {
+  const { filas: productos } = useProductos();
+  const falta = faltantes(productos);
+  const vencen = porVencer(productos);
+  return {
+    cifra: falta.length ? `${falta.length} faltan` : 'Nada falta',
+    sub: `${productos.length} productos en casa${vencen.length ? ` · ${vencen.length} se vence${vencen.length > 1 ? 'n' : ''} pronto` : ''}`,
+    barra: productos.length ? 1 - falta.length / productos.length : undefined,
+    accion: falta.length ? { texto: 'Sumar a la lista', ruta: '#/compras' } : { texto: 'Ver la casa', ruta: '#/stock' },
+  };
+}
+
 function ResumenStock() {
   const { filas: productos } = useProductos();
   const falta = faltantes(productos);
@@ -42,6 +54,7 @@ export const moduloStock: Modulo = {
     { ruta: '', titulo: 'En casa', componente: PantallaStock },
   ],
   Resumen: ResumenStock,
+  useVital: useVitalStock,
   useSenales: useSenalesStock,
   useAgenda: useAgendaStock,
 };

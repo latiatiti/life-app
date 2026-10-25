@@ -1,5 +1,5 @@
 import { hoy } from '../../core/format';
-import type { Modulo, Senal } from '../../core/types';
+import type { Modulo, Senal, Vital } from '../../core/types';
 import { Icono } from '../../ui/ui';
 import { entrenoHoy, useSesiones } from '../entrenamiento/modelo';
 import { metasDelDia, totalesDia, useComidas, useExtras, useMetas } from './modelo';
@@ -50,6 +50,20 @@ function ResumenComida() {
   );
 }
 
+function useVitalComida(): Vital {
+  const { filas: comidas } = useComidas();
+  const { filas: metas } = useMetas();
+  const { filas: sesiones } = useSesiones();
+  const meta = metasDelDia(metas, entrenoHoy(sesiones));
+  const t = totalesDia(comidas, hoy());
+  return {
+    cifra: `${Math.round(t.proteina)} / ${meta.proteina} g`,
+    sub: `Proteína de hoy · ${Math.round(t.kcal)} de ${meta.kcal} kcal`,
+    barra: meta.proteina ? Math.min(1, t.proteina / meta.proteina) : undefined,
+    accion: { texto: 'Comí', ruta: '#/alimentacion' },
+  };
+}
+
 function useActividadComida(): string[] {
   return useComidas().filas.map((c) => c.fecha);
 }
@@ -65,6 +79,7 @@ export const moduloAlimentacion: Modulo = {
     { ruta: 'metas', titulo: 'Metas', componente: PantallaMetas },
   ],
   Resumen: ResumenComida,
+  useVital: useVitalComida,
   useSenales: useSenalesComida,
   useActividad: useActividadComida,
 };

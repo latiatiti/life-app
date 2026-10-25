@@ -48,6 +48,18 @@ export interface ItemAgenda {
   ruta?: string;
 }
 
+/**
+ * El "signo vital" de un módulo para el tablero del Inicio: la cifra que importa, una línea que la explica,
+ * una barra opcional (0 a 1) y el botón de siempre. El estado (bien / atención / urgente) y el aviso salen
+ * de sus señales.
+ */
+export interface Vital {
+  cifra: string;
+  sub?: string;
+  barra?: number;
+  accion?: { texto: string; ruta: string };
+}
+
 export interface Pantalla {
   /** Ruta relativa al módulo: "" es la principal, "movimientos" queda en #/economia/movimientos. */
   ruta: string;
@@ -82,6 +94,8 @@ export interface Modulo {
    * cada segundo, así que tiene que ser liviano (leer localStorage, no la base).
    */
   enCurso?: () => ActividadEnCurso | null;
+  /** Hook con el signo vital del módulo para su tarjeta del tablero. */
+  useVital?: () => Vital;
   /** Si es false, se muestra en el menú pero no en el hub. */
   enHub?: boolean;
 }

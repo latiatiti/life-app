@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { hoy, sumarDias } from '../../core/format';
-import type { ItemAgenda, Modulo, Senal } from '../../core/types';
+import type { ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
 import { aMinutos, ahoraMinutos, armarDia, bloqueEn, FERIADOS, horaCorta, TIPOS, useDias, usePlantilla, useTareas } from './modelo';
 import { PantallaDia, PantallaSemana } from './Pantallas';
 
@@ -67,6 +67,20 @@ function ResumenDia() {
   );
 }
 
+function useVitalDia(): Vital {
+  const v = useHoy();
+  const min = ahoraMinutos();
+  const actual = bloqueEn(v.bloques, min);
+  const siguiente = v.bloques.find((x) => aMinutos(x.inicio) > min);
+  const pend = v.tareas.filter((t) => !t.hecho).length;
+  return {
+    cifra: siguiente ? horaCorta(siguiente.inicio) : actual ? actual.titulo : 'Libre',
+    sub: [siguiente ? `Después: ${siguiente.titulo}` : actual ? `Ahora: ${actual.titulo}` : '', pend ? `${pend} tarea${pend > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || undefined,
+    barra: min / (24 * 60),
+    accion: { texto: 'Ver mi día', ruta: '#/dia' },
+  };
+}
+
 export const moduloDia: Modulo = {
   id: 'dia',
   nombre: 'Día',
@@ -77,6 +91,7 @@ export const moduloDia: Modulo = {
     { ruta: 'semana', titulo: 'Semana tipo', componente: PantallaSemana },
   ],
   Resumen: ResumenDia,
+  useVital: useVitalDia,
   useSenales: useSenalesDia,
   useAgenda: useAgendaDia,
   useActividad: useActividadDia,

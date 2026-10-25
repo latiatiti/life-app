@@ -73,7 +73,7 @@ Reglas que se siguen: primero Inicio, después lo diario, al final lo que se ana
 
 | Sección | Compu | Celu | Pestañas | Objetos |
 |---|---|---|---|---|
-| **Inicio** | 1.º del menú | barra | (una) día elegido, "Para resolver", resúmenes | todos |
+| **Inicio** | 1.º del menú | barra | Tablero de 8 tarjetas (Día, Plata, Entreno, Comida, Compras, En casa, Mi partida, Para resolver) + agenda de 14 días | todos |
 | **Día** | menú | barra | Hoy · Semana · Semana tipo | `dia_*` |
 | **Plata** (Economía + Pagos) | menú | barra | Resumen · Pagos · Ingresos · Movimientos · ⋯ Proyección | `eco_*`, `pag_pagos` |
 | **Entreno** | menú | Más (o barra, ver pregunta) | Hoy · Progreso · Rutina · ⋯ Historial, Preparador | `ent_*` |

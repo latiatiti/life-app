@@ -1,5 +1,5 @@
 import { dinero, relativo } from '../../core/format';
-import type { ActividadEnCurso, Modulo, Senal } from '../../core/types';
+import type { ActividadEnCurso, Modulo, Senal, Vital } from '../../core/types';
 import './compras.css';
 import { PantallaEscanear } from './Carrito';
 import { PantallaComprando } from './Comprando';
@@ -57,6 +57,18 @@ function ResumenCompras() {
   );
 }
 
+function useVitalCompras(): Vital {
+  const { filas: items } = useItems();
+  const { filas: compras } = useCompras();
+  const lista = items.filter((i) => i.en_lista).length;
+  const ult = [...compras].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+  return {
+    cifra: lista === 1 ? '1 cosa' : `${lista} cosas`,
+    sub: `En la lista · última compra ${ult ? `${dinero(Number(ult.total))}, ${relativo(ult.fecha)}` : 'ninguna todavía'}`,
+    accion: lista ? { texto: 'Modo compra', ruta: '#/compras/escanear' } : { texto: 'Armar lista', ruta: '#/compras' },
+  };
+}
+
 /** Cada compra cerrada vale 3 registros (30 XP). */
 function useActividadCompras(): string[] {
   return useCompras().filas.flatMap((c) => Array(3).fill(c.fecha));
@@ -87,6 +99,7 @@ export const moduloCompras: Modulo = {
     { ruta: 'historial', titulo: 'Historial', componente: PantallaHistorial },
   ],
   Resumen: ResumenCompras,
+  useVital: useVitalCompras,
   useSenales: useSenalesCompras,
   useActividad: useActividadCompras,
   enCurso: compraEnCurso,
