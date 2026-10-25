@@ -25,6 +25,11 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `supabase/cuentas.sql`: `perfiles` (rol superadmin/usuario/lector, modulos, activo), reglas de escritura con `life_puede_escribir()` en toda tabla con `user_id`, `api_claves`, `api_registro`, `life_columnas()`. `usePerfil()` en `core/auth.tsx`.
 - Funciones: `cuentas` (superadmin: listar/crear/clave) y `life-mcp` (conector MCP para Claude con clave personal, sin JWT; leer/crear/modificar/borrar/deshacer con registro).
 
+## Grafo del código (Graphify, 2026-10-25)
+- `graphify-out/graph.json` es un mapa del código (archivos, funciones, quién llama a quién). **Consultarlo antes de abrir archivos** para gastar menos: `graphify query "pregunta" --budget 1500`, `graphify explain "useTabla"`, `graphify affected "hoy"` (qué se rompe si lo cambio), `graphify path "A" "B"`, `graphify god-nodes`. Resumen en `graphify-out/GRAPH_REPORT.md`; `graph.html` lo muestra dibujado.
+- Si el comando no existe: `pip install "graphifyy[sql]"`.
+- Al terminar cambios de código: `graphify update .` y `graphify cluster-only . --no-label` (sin costo, sin IA) y subir `graphify-out/` en el mismo PR.
+
 ## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql` + `dia.sql`, en ese orden)
 - `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
 - Compras (`supabase/compras.sql`, aplicado en la nube): `com_supers` (bloques jsonb = orden de pasillos de ese súper), `com_items` (catálogo propio; precios jsonb = último precio online por cadena; producto_id enlaza al stock), `com_precios` (historial: online/ticket/manual), `com_compras` (estimado vs total del ticket, items jsonb, reparto y ticket jsonb).
