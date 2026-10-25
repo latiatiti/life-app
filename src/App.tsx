@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { usePerfil, puedeEscribir, veModulo } from './core/auth';
 import { almacen, contarLocales, noSubirDatosLocales, subirDatosLocales } from './core/db';
 import { MODULOS } from './core/registry';
 import type { Modulo } from './core/types';
 import { useRuta } from './core/router';
+import { BotonCargar } from './hub/Cargar';
 import { Hub } from './hub/Hub';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
@@ -32,8 +33,8 @@ const GRUPOS: Array<{ id: string; nombre: string; icono: ReactNode; pestanas: Ar
 /** Cuántas pestañas entran en el celu antes de mandar el resto a "⋯". */
 const PESTANAS_CELU = 4;
 
-/** Secciones que van fijas en la barra flotante del celular (además de Inicio y "Más"). En la compu se ven todas. */
-const EN_BARRA = ['dia', 'plata', 'entrenamiento'];
+/** Secciones que van fijas en la barra flotante del celular (además de Inicio, el + y "Más"). En la compu se ven todas. */
+const EN_BARRA = ['dia', 'plata'];
 
 interface Pestana { modulo: string; ruta: string; titulo: string; href: string }
 interface Seccion { id: string; nombre: string; icono: ReactNode; pestanas: Pestana[] }
@@ -93,12 +94,16 @@ export function App() {
       <nav className="nav" aria-label="Principal">
         <a href="#/" className="marca"><span className="marca-logo" aria-hidden="true">L</span>LIFE</a>
         {nav.map((n) => (
-          <a key={n.id} href={n.href}
-            className={`nav-item ${actual === n.id ? 'activo' : ''} ${enBarra(n.id) ? '' : 'solo-compu'}`}
-            aria-current={actual === n.id ? 'page' : undefined}>
-            {n.icono}
-            <span>{n.nombre}</span>
-          </a>
+          <Fragment key={n.id}>
+            <a href={n.href}
+              className={`nav-item ${actual === n.id ? 'activo' : ''} ${enBarra(n.id) ? '' : 'solo-compu'}`}
+              aria-current={actual === n.id ? 'page' : undefined}>
+              {n.icono}
+              <span>{n.nombre}</span>
+            </a>
+            {/* El + va al medio de la barra del celu (después de Día); en la compu queda arriba del menú por el orden de CSS */}
+            {n.id === 'dia' && puedeEscribir(perfil) && <BotonCargar ve={(id) => visibles.some((m) => m.id === id)} />}
+          </Fragment>
         ))}
         <button type="button" className={`nav-mas ${enBarra(actual) ? '' : 'activo'}`} onClick={() => setVerMas(true)}>
           {Icono.modulos}

@@ -468,6 +468,29 @@ input.input-grande { font-size: 1.6rem; font-weight: 800; min-height: 56px; text
   .avisos { left: auto; right: 24px; top: 20px; width: 380px; }
 }
 
+/* ---------- Botón + "Cargar" (un solo lugar para cargar cualquier cosa) ----------
+   Compu: primer botón del menú lateral. Celu: al medio de la barra, más grande y relleno. */
+.nav-cargar {
+  order: -1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--alto-toque); margin: 0 0 12px;
+  border: 0; border-radius: var(--radio); background: var(--acento); color: var(--sobre-acento); cursor: pointer;
+  font: inherit; font-weight: 800; letter-spacing: var(--etiqueta-espacio); text-transform: var(--etiqueta-mayus); box-shadow: var(--brillo);
+}
+.marca { order: -2; }
+.nav-cargar svg { width: 20px; height: 20px; }
+@media (max-width: 760px) {
+  .nav-cargar { order: 0; flex: none; width: 58px; height: 100%; margin: 0; padding: 0; }
+  .nav-cargar span { display: none; }
+  .nav-cargar svg { width: 26px; height: 26px; }
+}
+.cargar-opciones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cargar-opciones button {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 76px; padding: 12px 14px; text-align: left; cursor: pointer;
+  border: 1px solid var(--borde-fuerte); border-radius: var(--radio); background: var(--capa-2); color: var(--texto); font: inherit;
+}
+.cargar-opciones button:hover, .cargar-opciones button:focus-visible { border-color: var(--acento); }
+.cargar-opciones strong { font-size: 1.05rem; }
+.cargar-opciones small { color: var(--texto-2); font-size: 0.82rem; }
+
 /* ---------- Aviso "Guardado · DESHACER" (pilar 7) ---------- */
 .deshacer {
   position: fixed; z-index: 70; left: 12px; right: 12px; bottom: calc(80px + env(safe-area-inset-bottom));

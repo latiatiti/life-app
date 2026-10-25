@@ -18,7 +18,7 @@ function momentoSugerido(): Momento {
   return h < 11 ? 'desayuno' : h < 15 ? 'almuerzo' : h < 19 ? 'merienda' : 'cena';
 }
 
-function FormComida({ onListo }: { onListo: () => void }) {
+export function FormComida({ onListo }: { onListo: () => void }) {
   const { filas: platos } = usePlatos();
   const { filas: productos } = useProductos();
   const [momento, setMomento] = useState<Momento>(momentoSugerido());
