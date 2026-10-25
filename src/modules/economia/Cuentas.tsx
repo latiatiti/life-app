@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { crear, eliminar, modificar } from '../../core/db';
 import { dinero, parsearMonto } from '../../core/format';
@@ -60,7 +61,7 @@ function FormCuenta({ inicial, onListo }: { inicial?: Cuenta; onListo: () => voi
           }}>{inicial.archivada ? 'Reactivar cuenta' : 'Archivar cuenta (tiene movimientos)'}</button>
         ) : (
           <button type="button" className="btn btn-peligro ancho" onClick={async () => {
-            if (!window.confirm('¿Borrar esta cuenta?')) return;
+            if (!await confirmar('¿Borrar esta cuenta?')) return;
             await eliminar(T.cuentas, inicial.id); onListo();
           }}>{Icono.borrar} Borrar cuenta</button>
         )
@@ -100,7 +101,7 @@ function FormCategoria({ inicial, onListo }: { inicial?: Categoria; onListo: () 
     if (!inicial) return;
     const usos = movs.filter((m) => m.categoria_id === inicial.id).length + pagos.filter((p) => p.categoria_id === inicial.id).length;
     const aviso = usos ? `Se usa en ${usos} movimientos o pagos, que quedarán “Sin categoría”. ` : '';
-    if (!window.confirm(`${aviso}¿Borrar la categoría?`)) return;
+    if (!await confirmar(`${aviso}¿Borrar la categoría?`)) return;
     for (const m of movs.filter((m) => m.categoria_id === inicial.id)) await modificar<Movimiento>(T.movimientos, m.id, { categoria_id: null });
     for (const p of pagos.filter((p) => p.categoria_id === inicial.id)) await modificar<Pago>(T.pagos, p.id, { categoria_id: null });
     await eliminar(T.categorias, inicial.id);

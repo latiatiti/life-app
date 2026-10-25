@@ -176,25 +176,77 @@ export function useTabla<T extends Fila>(tabla: string) {
   return { filas: e.filas as T[], cargado: e.cargado, error: e.error };
 }
 
+/* ---------- Deshacer (pilar 7: después de guardar, siempre se puede deshacer) ----------
+ * Cada escritura anota cómo volver atrás. Las que llegan seguidas (menos de VENTANA ms entre una y otra,
+ * por ej. "Pagar" crea el gasto y mueve el vencimiento) forman un solo paso, que el aviso de abajo
+ * ofrece deshacer. */
+
+type Inversa = () => Promise<void>;
+export interface Paso { id: number; tipo: 'guardado' | 'borrado'; deshacible: boolean; inversas: Inversa[] }
+
+const VENTANA = 1200;
+let abierto: Paso | null = null;
+let temporizador: ReturnType<typeof setTimeout> | undefined;
+let deshaciendo = false;
+let numeroPaso = 0;
+const oyentesPaso = new Set<(p: Paso) => void>();
+
+/** El aviso "Guardado · DESHACER" escucha acá cada paso que se cierra. */
+export function alCerrarPaso(fn: (p: Paso) => void) {
+  oyentesPaso.add(fn);
+  return () => { oyentesPaso.delete(fn); };
+}
+
+function anotar(tipo: Paso['tipo'], inversa: Inversa | null) {
+  if (deshaciendo) return;
+  if (!abierto) abierto = { id: ++numeroPaso, tipo, deshacible: true, inversas: [] };
+  if (tipo === 'guardado') abierto.tipo = 'guardado';
+  if (inversa) abierto.inversas.push(inversa);
+  else abierto.deshacible = false;
+  clearTimeout(temporizador);
+  temporizador = setTimeout(() => {
+    const p = abierto!;
+    abierto = null;
+    oyentesPaso.forEach((fn) => fn(p));
+  }, VENTANA);
+}
+
+/** Vuelve atrás un paso entero, de la última escritura a la primera. */
+export async function deshacer(p: Paso) {
+  deshaciendo = true;
+  try {
+    for (const inv of [...p.inversas].reverse()) await inv();
+  } finally {
+    deshaciendo = false;
+  }
+}
+
 /* ---------- Escrituras (actualizan la caché al instante) ---------- */
 
 export async function crear<T extends Fila>(tabla: string, datos: Omit<T, 'id'> & { id?: string }): Promise<T> {
   const fila = { ...datos, id: datos.id ?? uid() } as T;
   const guardada = await almacen.insertar(tabla, fila);
   fijar(tabla, { filas: [...estado(tabla).filas, guardada] });
+  anotar('guardado', () => eliminar(tabla, guardada.id));
   return guardada;
 }
 
 export async function modificar<T extends Fila>(tabla: string, id: string, cambios: Partial<T>) {
+  const antes = estado(tabla).filas.find((f) => f.id === id) as Record<string, unknown> | undefined;
   await almacen.actualizar(tabla, id, cambios);
   fijar(tabla, {
     filas: estado(tabla).filas.map((f) => (f.id === id ? { ...f, ...cambios } : f)),
   });
+  // Para volver atrás se guardan los valores que tenían los campos que cambiaron.
+  const previos = antes ? Object.fromEntries(Object.keys(cambios).map((k) => [k, antes[k] ?? null])) as Partial<T> : null;
+  anotar('guardado', previos ? () => modificar<T>(tabla, id, previos) : null);
 }
 
 export async function eliminar(tabla: string, id: string) {
+  const antes = estado(tabla).filas.find((f) => f.id === id);
   await almacen.borrar(tabla, id);
   fijar(tabla, { filas: estado(tabla).filas.filter((f) => f.id !== id) });
+  anotar('borrado', antes ? async () => { await crear(tabla, antes); } : null);
 }
 
 /* ---------- Respaldo: exportar / importar todo ---------- */

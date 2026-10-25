@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useEffect, useState } from 'react';
 import { Campo, Icono, Modal, Tarjeta } from '../../ui/ui';
 import { GRUPOS, infoEjercicio, nombreGrupo, todos, zonasDe, type Grupo } from './biblioteca';
@@ -148,8 +149,8 @@ export function PantallaRutina() {
           ))}
           <div className="acciones" style={{ marginTop: 8 }}>
             <button className="btn" onClick={() => setSelector({ modo: 'agregar' })}>{Icono.mas} Agregar ejercicio</button>
-            {borrador.length > 1 && <button className="btn btn-peligro" onClick={() => {
-              if (!window.confirm(`¿Quitar el día ${dia.id}?`)) return;
+            {borrador.length > 1 && <button className="btn btn-peligro" onClick={async () => {
+              if (!await confirmar(`¿Quitar el día ${dia.id}?`)) return;
               setBorrador((b) => b.filter((_, i) => i !== diaSel)); setDiaSel(0); setSucio(true);
             }}>Quitar día</button>}
           </div>
@@ -159,7 +160,7 @@ export function PantallaRutina() {
       <div className="acciones">
         <button className="btn btn-primario crece" disabled={!sucio} onClick={guardar}>Guardar rutina</button>
         {sucio && <button className="btn" onClick={() => { setBorrador(dias); setSucio(false); }}>Descartar cambios</button>}
-        <button className="btn" onClick={() => { if (window.confirm('¿Volver a la rutina base de 3 días?')) { setBorrador(RUTINA_BASE); setSucio(true); setDiaSel(0); } }}>Rutina base</button>
+        <button className="btn" onClick={async () => { if (await confirmar('¿Volver a la rutina base de 3 días?')) { setBorrador(RUTINA_BASE); setSucio(true); setDiaSel(0); } }}>Rutina base</button>
       </div>
       <Modal titulo={selector?.modo === 'cambiar' ? 'Cambiar ejercicio' : 'Agregar ejercicio'} abierto={!!selector} onCerrar={() => setSelector(null)}>
         {selector && (

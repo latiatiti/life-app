@@ -37,8 +37,8 @@ Estado: **relevamiento 2026-10-25 + propuesta para acordar**. Lo marcado "PROPUE
 | Bandeja única "Para resolver" | Señales del Inicio (`useTodasLasSenales`) + avisos flotantes. ✔ una sola fuente |
 | Alertas con botón | `Senal.accion` existe, pero solo lo usan Pagos y Entreno. ✖ el resto son avisos sin botón |
 | Formulario único por acción | Bastante: `FormMovimiento`, `FormItem`. Sin botón **+** global |
-| Historial con deshacer | ✖ Solo en el modo entrenando y en la conexión con Claude. Guardar o borrar no se puede deshacer |
-| Confirmar lo que no tiene vuelta | Parcial: 10 `window.confirm` (ventanita del navegador), no muestran qué va a pasar con el estilo de la app |
+| Historial con deshacer | ✔ (2026-10-25) Aviso "Guardado · DESHACER" 5 s después de cada guardado o borrado (`ui/Deshacer.tsx`, anotado en `core/db.ts`) |
+| Confirmar lo que no tiene vuelta | ✔ (2026-10-25) `confirmar()` de `ui/Deshacer.tsx`: ventana propia con la pregunta, qué pasa y el verbo en el botón |
 | Panel lateral (PC) | ✖ No existe: en la compu las pantallas son las del celu más anchas |
 | Buscador global | ✖ No existe |
 | Glosario de cifras (ⓘ) | ✖ No existe |
@@ -50,7 +50,7 @@ Estado: **relevamiento 2026-10-25 + propuesta para acordar**. Lo marcado "PROPUE
 2. **Dos "Cuentas":** Economía → "Cuentas y categorías" (plata) y Ajustes → cuentas de usuario. Mismo nombre, cosas distintas.
 3. **Plata partida en dos secciones:** Pagos está aparte de Economía, pero sus vencimientos viven también en la Proyección de Economía.
 4. **Demasiadas pestañas en el celu:** Compras tiene 6 y Entreno 5 (el pilar dice hasta 4, el resto en ⋯).
-5. **Nada se puede deshacer** después de guardar o borrar (pilar 7).
+5. ~~Nada se puede deshacer~~ → resuelto en la tanda 2.
 6. **Avisos sin botón:** la mayoría de las señales llevan a la sección pero no a la acción que lo resuelve (pilar 6).
 7. **Ajustes es una pantalla larga** sin grupos (pilar 5 y receta 8).
 8. **Compu = celu estirado:** sin fila de cifras, tabla ni panel de detalle (pilar 3).
@@ -99,7 +99,7 @@ Cambios que implica (cada uno sería una tanda chica):
 | # | Tanda | Pilar |
 |---|---|---|
 | 1 | ✔ Guardar los pilares, este mapa y las reglas en el repo | 1 |
-| 2 | Aviso abajo "Guardado · DESHACER" (5 s) al guardar o borrar, y ventana de confirmar propia (muestra qué va a pasar) en vez de la del navegador | 7 |
+| 2 | ✔ Aviso abajo "Guardado · DESHACER" (5 s) al guardar o borrar, y ventana de confirmar propia (muestra qué va a pasar) en vez de la del navegador | 7 |
 | 3 | Cada señal con su botón de acción | 6, 8 |
 | 4 | Medidas del celu: botón principal 60 px fijo abajo, campos 58 px y 17 px, filas 68 px, pestañas hasta 4 + ⋯ | 4 (medidas) |
 | 5 | Lista de compras única | 4 |

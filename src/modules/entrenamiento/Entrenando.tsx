@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useEffect, useState } from 'react';
 import { escribirStorage, leerStorage } from '../../core/config';
 import { fechaCorta, hoy } from '../../core/format';
@@ -233,8 +234,8 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
             <h2>Día {plan.id} · {plan.nombre}</h2>
             <small className="nota">{nEfectivas} de {totalSeries} series · {Math.round((ahora - st.inicio) / 60000)} min{ev ? ` · preparación ${ev.puntaje}/100` : ''}</small>
           </div>
-          <button className="btn chico btn-peligro" onClick={() => {
-            if (window.confirm('¿Cancelar el entreno? Se pierde lo anotado.')) { actualizar(null); onSalir(); }
+          <button className="btn chico btn-peligro" onClick={async () => {
+            if (await confirmar('¿Cancelar el entreno? Se pierde lo anotado.')) { actualizar(null); onSalir(); }
           }}>Cancelar</button>
         </div>
         <div className="barra-xp"><div style={{ width: `${Math.min(1, nEfectivas / totalSeries) * 100}%` }} /></div>

@@ -6,6 +6,7 @@ import { useRuta } from './core/router';
 import { Hub } from './hub/Hub';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
+import { AvisoDeshacer, VentanaConfirmar } from './ui/Deshacer';
 import { Icono, Modal } from './ui/ui';
 
 /**
@@ -99,6 +100,8 @@ export function App() {
 
       <Avisos />
       <BarraActividad />
+      <AvisoDeshacer />
+      <VentanaConfirmar />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { eliminar, modificar } from '../../core/db';
 import { dinero, hoy } from '../../core/format';
@@ -126,7 +127,7 @@ export function FormItem({ inicial, onListo }: { inicial?: Item; onListo: () => 
       <button className="btn btn-primario">Guardar</button>
       {inicial && (
         <button type="button" className="btn btn-peligro ancho" onClick={async () => {
-          if (!window.confirm('¿Borrar este producto del catálogo?')) return;
+          if (!await confirmar('¿Borrar este producto del catálogo?')) return;
           await eliminar(TC.items, inicial.id); onListo();
         }}>{Icono.borrar} Borrar</button>
       )}

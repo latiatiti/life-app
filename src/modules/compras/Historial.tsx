@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { eliminar } from '../../core/db';
 import { dinero, fechaLarga } from '../../core/format';
 import { Icono, Tarjeta, Vacio } from '../../ui/ui';
@@ -33,7 +34,7 @@ export function PantallaHistorial() {
         }
         return (
           <Tarjeta key={c.id} titulo={`${s?.nombre ?? 'Súper'} · ${fechaLarga(c.fecha)}`}
-            accion={<button className="btn-icono" aria-label="Borrar compra" onClick={async () => { if (window.confirm('¿Borrar esta compra del historial? (No borra el gasto ni los precios)')) await eliminar(TC.compras, c.id); }}>{Icono.borrar}</button>}>
+            accion={<button className="btn-icono" aria-label="Borrar compra" onClick={async () => { if (await confirmar('¿Borrar esta compra del historial? (No borra el gasto ni los precios)')) await eliminar(TC.compras, c.id); }}>{Icono.borrar}</button>}>
             <div className="grilla-cifras compacta">
               <div className="cifra"><span className="cifra-etq">Ticket</span><strong className="cifra-val">{dinero(Number(c.total))}</strong></div>
               <div className="cifra"><span className="cifra-etq">Estimado</span><strong className="cifra-val">{dinero(Number(c.estimado))}</strong>

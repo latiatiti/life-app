@@ -13,6 +13,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 ## Diseño (2026-10-25): pilares fijos
 - **Toda pantalla nueva o cambiada sigue `docs/pilares-de-diseno.md`** (10 pilares: estructura primero, PC y celu mismo sistema, celu = calle / PC = oficina, una cosa un solo lugar, lo diario adelante, cada aviso con su botón, DESHACER después de guardar, avisar lo raro, lenguaje simple, datos de verdad). Pasar la checklist de su sección 8 antes de darla por hecha.
 - `docs/mapa-estructura.md`: mapa de secciones, pestañas, objetos y piezas compartidas (fuente de verdad de dónde va cada cosa) + tandas pendientes. Si algo no entra en el mapa, primero se cambia el mapa.
+- DESHACER automático: `core/db.ts` anota la inversa de cada `crear`/`modificar`/`eliminar` y `ui/Deshacer.tsx` muestra "Guardado · DESHACER" 5 s. Confirmaciones con `confirmar()` (no `window.confirm`).
 - Los colores de AquaFlow del archivo no se usan salvo que ella lo pida; los tokens siguen en `src/tema/tema.css`.
 
 ## Arquitectura

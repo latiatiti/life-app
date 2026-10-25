@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { eliminar } from '../../core/db';
 import { Campo, Icono, Modal, Tarjeta } from '../../ui/ui';
@@ -130,7 +131,7 @@ export function MisEjercicios() {
               <small className="nota">{nombreGrupo(x.grupo)}{x.variantes?.length ? ` · ${x.variantes.length} variantes` : ''}</small>
             </div>
             <button className="btn-icono" aria-label="Editar" onClick={() => setEditando(x)}>{Icono.editar}</button>
-            <button className="btn-icono" aria-label="Borrar" onClick={async () => { if (window.confirm(`¿Borrar ${x.nombre}?`)) await eliminar(TE.ejercicios, x.id); }}>{Icono.borrar}</button>
+            <button className="btn-icono" aria-label="Borrar" onClick={async () => { if (await confirmar(`¿Borrar ${x.nombre}?`)) await eliminar(TE.ejercicios, x.id); }}>{Icono.borrar}</button>
           </li>
         ))}
       </ul>

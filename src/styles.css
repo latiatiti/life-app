@@ -462,6 +462,27 @@ input.input-grande { font-size: 1.6rem; font-weight: 800; min-height: 56px; text
   .avisos { left: auto; right: 24px; top: 20px; width: 380px; }
 }
 
+/* ---------- Aviso "Guardado · DESHACER" (pilar 7) ---------- */
+.deshacer {
+  position: fixed; z-index: 70; left: 12px; right: 12px; bottom: calc(80px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 6px 6px 6px 16px;
+  border-radius: var(--radio); background: var(--capa-3); border: 1px solid var(--borde-fuerte); box-shadow: var(--sombra-flota);
+  color: var(--texto); font-weight: 700; animation: deshacer-entra var(--dur) var(--curva);
+}
+.deshacer button {
+  min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--radio-chico); cursor: pointer;
+  background: var(--acento-suave); color: var(--acento-texto); font: inherit; font-weight: 800; letter-spacing: var(--etiqueta-espacio);
+}
+.con-actividad .deshacer { bottom: calc(96px + env(safe-area-inset-bottom)); }
+.con-barra .deshacer { bottom: calc(150px + env(safe-area-inset-bottom)); }
+@keyframes deshacer-entra { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (min-width: 761px) {
+  .deshacer, .con-barra .deshacer, .con-actividad .deshacer { left: 50%; right: auto; bottom: 24px; width: 420px; transform: translateX(-50%); }
+  @keyframes deshacer-entra { from { opacity: 0; } to { opacity: 1; } }
+}
+.confirmar-pregunta { font-size: 1.1rem; font-weight: 700; }
+.confirmar .acciones { justify-content: flex-end; }
+
 /* ---------- Barra de actividad (algo a medias, para volver con un toque) ---------- */
 .barra-actividad {
   position: fixed; z-index: 30; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom));

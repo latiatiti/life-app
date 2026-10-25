@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { eliminar } from '../../core/db';
 import { dinero, fechaCorta, mesActual } from '../../core/format';
@@ -36,7 +37,7 @@ export function PantallaMovimientos() {
   for (const m of lista) dias.set(m.fecha, [...(dias.get(m.fecha) ?? []), m]);
 
   async function borrar(m: Movimiento) {
-    if (!window.confirm('¿Borrar este movimiento?')) return;
+    if (!await confirmar('¿Borrar este movimiento?')) return;
     await eliminar(T.movimientos, m.id);
     setEditando(null);
   }

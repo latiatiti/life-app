@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { crear, modificar } from '../../core/db';
 import { dinero, parsearMonto } from '../../core/format';
@@ -221,7 +222,7 @@ export function PantallaComprando() {
 
       <p className="nota">Con ▲▼ ordenás los bloques como están en este súper; la próxima vez arranca en ese orden.</p>
       <div className="barra-acciones">
-        <button className="btn btn-peligro" onClick={() => { if (window.confirm('¿Cancelar esta compra? No se guarda nada.')) { cambiar(null); ir('compras'); } }}>Cancelar</button>
+        <button className="btn btn-peligro" onClick={async () => { if (await confirmar('¿Cancelar esta compra? No se guarda nada.')) { cambiar(null); ir('compras'); } }}>Cancelar</button>
         <button className="btn btn-primario" disabled={!lineas.length} onClick={() => setCerrando(true)}>Terminar compra ({lineas.length})</button>
       </div>
 

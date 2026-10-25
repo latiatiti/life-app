@@ -43,3 +43,4 @@ Tablero tipo Tiatiti (A) + capas que se deslizan (C):
 - En el celu, todo lo que se toca mide al menos 44 px (`--alto-toque`).
 - Estados siempre con ícono o texto, nunca solo color.
 - Textos cortos: etiquetas de 1 a 3 palabras.
+- **Deshacer y confirmar (pilar 7):** toda escritura con `crear`/`modificar`/`eliminar` muestra sola el aviso "Guardado · DESHACER" (las que llegan seguidas se deshacen juntas). Para lo que no tiene vuelta usar `await confirmar('¿Borrar X? Qué pasa.')` de `src/ui/Deshacer.tsx`, nunca `window.confirm`.

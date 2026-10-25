@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { crear, eliminar, modificar } from '../../core/db';
 import { hoy } from '../../core/format';
@@ -198,7 +199,7 @@ function FormPlato({ inicial, onListo }: { inicial?: Plato; onListo: () => void 
       </div>
       <Campo etiqueta="Minutos de preparación"><input inputMode="numeric" value={min} onChange={(e) => setMin(e.target.value)} /></Campo>
       <button className="btn btn-primario">Guardar</button>
-      {inicial && <button type="button" className="btn btn-peligro ancho" onClick={async () => { if (window.confirm('¿Borrar este plato?')) { await eliminar(TA.platos, inicial.id); onListo(); } }}>{Icono.borrar} Borrar</button>}
+      {inicial && <button type="button" className="btn btn-peligro ancho" onClick={async () => { if (await confirmar('¿Borrar este plato?')) { await eliminar(TA.platos, inicial.id); onListo(); } }}>{Icono.borrar} Borrar</button>}
     </form>
   );
 }
