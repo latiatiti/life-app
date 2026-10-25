@@ -4,7 +4,7 @@ import { eliminar, modificar } from '../../core/db';
 import { fechaCorta, relativo } from '../../core/format';
 import { Campo, Estado, Icono, Modal, Tarjeta, Vacio } from '../../ui/ui';
 import {
-  aComprar, ajustar, faltantes, LUGARES, nuevoProducto, PERSONAS, personaDe, porVencer, TS, UNIDADES, useProductos,
+  ajustar, LUGARES, nuevoProducto, PERSONAS, personaDe, porVencer, TS, UNIDADES, useProductos,
   type Persona,
   type Lugar, type Producto, type Unidad,
 } from './modelo';
@@ -96,6 +96,7 @@ export function PantallaStock() {
   const [quien, setQuien] = useState<Persona | 'todos'>('todos');
   const hayUlises = productos.some((p) => personaDe(p) !== 'yo');
   const visibles = quien === 'todos' ? productos : productos.filter((p) => personaDe(p) === quien);
+  const vencen = porVencer(productos);
   const grupos = Object.entries(LUGARES).map(([k, v]) => ({ k, v, lista: visibles.filter((p) => p.lugar === k).sort((a, b) => a.nombre.localeCompare(b.nombre)) }));
   return (
     <div className="pila">
@@ -110,6 +111,19 @@ export function PantallaStock() {
           ))}
         </div>
       )}
+      {/* Antes estaba en la pestaña "Lista de compras" de Stock: la lista ahora es una sola, en Casa → Lista. */}
+      {vencen.length > 0 && (
+        <Tarjeta titulo="Usalo pronto">
+          <ul className="lista">
+            {vencen.map((p) => (
+              <li key={p.id} className="lista-item">
+                <div className="crece"><strong>{p.nombre}</strong><small className="nota">Vence {fechaCorta(p.vence!)} ({relativo(p.vence!)})</small></div>
+                <span className="num">{Number(p.cantidad)} {p.unidad}</span>
+              </li>
+            ))}
+          </ul>
+        </Tarjeta>
+      )}
       {cargado && productos.length === 0 && (
         <Vacio titulo="Tu casa está vacía (en la app)">
           <p>Cargá tus básicos desde Ajustes → Cargar mi configuración, o agregá productos a mano.</p>
@@ -123,57 +137,6 @@ export function PantallaStock() {
       <Modal titulo={editando === 'nuevo' ? 'Nuevo producto' : 'Editar producto'} abierto={!!editando} onCerrar={() => setEditando(null)}>
         {editando && <FormProducto inicial={editando === 'nuevo' ? undefined : editando} onListo={() => setEditando(null)} />}
       </Modal>
-    </div>
-  );
-}
-
-export function PantallaLista() {
-  const { filas: productos } = useProductos();
-  const lista = faltantes(productos);
-  const vencen = porVencer(productos);
-  const [tildados, setTildados] = useState<Set<string>>(new Set());
-
-  async function guardarCompra() {
-    for (const p of lista.filter((x) => tildados.has(x.id))) await ajustar(p, aComprar(p));
-    setTildados(new Set());
-  }
-
-  return (
-    <div className="pila">
-      {lista.length === 0 ? (
-        <Vacio titulo="No falta nada"><p>Cuando algo baje del mínimo, aparece acá solo.</p></Vacio>
-      ) : (
-        <Tarjeta titulo={`Para comprar (${lista.length})`}>
-          <ul className="lista">
-            {lista.map((p) => (
-              <li key={p.id} className="lista-item">
-                <label className="crece lista-item" style={{ padding: 0 }}>
-                  <input type="checkbox" style={{ width: 'auto', minHeight: 0 }} checked={tildados.has(p.id)}
-                    onChange={(e) => { const s = new Set(tildados); if (e.target.checked) s.add(p.id); else s.delete(p.id); setTildados(s); }} />
-                  <span className="crece"><strong>{p.nombre}</strong><small className="nota">Hay {Number(p.cantidad)} {p.unidad} · {LUGARES[p.lugar]}</small></span>
-                </label>
-                <span className="num">{aComprar(p)} {p.unidad}</span>
-              </li>
-            ))}
-          </ul>
-          <button className="btn btn-primario ancho" style={{ marginTop: 12 }} disabled={!tildados.size} onClick={guardarCompra}>
-            Lo compré: sumar al stock ({tildados.size})
-          </button>
-          <p className="nota" style={{ marginTop: 8 }}>Para ir al súper usá <a href="#/compras">Compras</a>: suma lo que falta a la lista, compara precios y en el modo compra anota el gasto y el stock de una vez.</p>
-        </Tarjeta>
-      )}
-      {vencen.length > 0 && (
-        <Tarjeta titulo="Usalo pronto">
-          <ul className="lista">
-            {vencen.map((p) => (
-              <li key={p.id} className="lista-item">
-                <div className="crece"><strong>{p.nombre}</strong><small className="nota">Vence {fechaCorta(p.vence!)} ({relativo(p.vence!)})</small></div>
-                <span className="num">{Number(p.cantidad)} {p.unidad}</span>
-              </li>
-            ))}
-          </ul>
-        </Tarjeta>
-      )}
     </div>
   );
 }

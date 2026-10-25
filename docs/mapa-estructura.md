@@ -2,7 +2,7 @@
 
 Fuente de verdad de **dónde va cada cosa** (pilar 1 y sección 2 de `pilares-de-diseno.md`). Todo pedido de pantalla nueva dice en qué sección y pestaña va. Si no entra, primero se cambia este mapa.
 
-Estado: **relevamiento 2026-10-25 + propuesta para acordar**. Lo marcado "PROPUESTA" todavía no está hecho ni aprobado.
+Estado: relevamiento 2026-10-25. **Plata y Casa aprobados y hechos (2026-10-25)**; el botón + de la barra del celu, propuesto y pendiente.
 
 ---
 
@@ -57,7 +57,7 @@ Estado: **relevamiento 2026-10-25 + propuesta para acordar**. Lo marcado "PROPUE
 
 ---
 
-## 2. Mapa propuesto (PROPUESTA, para acordar)
+## 2. Mapa nuevo (Plata y Casa hechos; + pendiente)
 
 Reglas que se siguen: primero Inicio, después lo diario, al final lo que se analiza y Ajustes; en el celu solo lo diario en la barra.
 
@@ -88,7 +88,7 @@ Cambios que implica (cada uno sería una tanda chica):
 
 ### Preguntas abiertas
 
-1. ¿Juntar Economía + Pagos en **Plata** y Stock + Compras + Comida en **Casa**, o dejar los módulos como están?
+1. ~~Plata y Casa~~ → sí, hecho (2026-10-25).
 2. Celu: ¿barra con **+** al medio (Inicio · Día · + · Plata · Más) o seguir con Entreno en la barra?
 3. ~~Colores~~ → elegido "Signos vitales · modo juego" (2026-10-25).
 
@@ -101,9 +101,9 @@ Cambios que implica (cada uno sería una tanda chica):
 | 1 | ✔ Guardar los pilares, este mapa y las reglas en el repo | 1 |
 | 2 | ✔ Aviso abajo "Guardado · DESHACER" (5 s) al guardar o borrar, y ventana de confirmar propia (muestra qué va a pasar) en vez de la del navegador | 7 |
 | 3 | Cada señal con su botón de acción | 6, 8 |
-| 4 | Medidas del celu: botón principal 60 px fijo abajo, campos 58 px y 17 px, filas 68 px, pestañas hasta 4 + ⋯ | 4 (medidas) |
-| 5 | Lista de compras única | 4 |
+| 4 | Medidas del celu: botón principal 60 px fijo abajo, campos 58 px y 17 px, filas 68 px (✔ ya: pestañas hasta 4 + ⋯) | 4 (medidas) |
+| 5 | ✔ Lista de compras única (la de Stock se sacó; "Usalo pronto" pasó a En casa) | 4 |
 | 6 | Ajustes agrupado por tema + "Cuentas y categorías" adentro | 5 |
-| 7 | Estructura acordada (Plata / Casa / barra con +) | 1, 2 |
+| 7 | ✔ Plata y Casa (menú y pestañas; `GRUPOS` en `App.tsx`). Pendiente: botón + en la barra del celu | 1, 2 |
 | 8 | Compu: fila de 4 cifras, tabla y panel de detalle a la derecha (empezando por Movimientos y Pagos) | 3 |
 | 9 | ✔ Colores y letras: "Signos vitales · modo juego" (2026-10-25) | 3 (tokens) |
