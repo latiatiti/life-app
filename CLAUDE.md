@@ -98,8 +98,8 @@ Después: salud, hábitos, tareas programadas, auto, calendario con carga rápid
 - Sin Supabase, iOS guarda los datos solo en ese navegador/ícono: conectar Supabase para no perderlos.
 - App de tienda (más adelante, si hace falta): envolver con Capacitor; requiere cuenta de Apple Developer (USD 99/año) y compilar en una Mac o servicio en la nube.
 
-## Sonka (2026-10-25)
-- Sonka = el agente que propone mejoras (habilidad `sonka`). Revisa qué no se está midiendo y por qué, investiga novedades (IA, tecnología), arma un informe con propuestas y ella acepta, corrige o descarta. Su memoria (gustos de ella, aceptado/descartado, pendientes) vive en la memoria del proyecto, archivo `sonka.md`; los informes en project-files `sonka/`. Nada se implementa sin su OK.
+## Zonka (2026-10-25)
+- Zonka (con Z; si ella escribe Sonka es el mismo) = el agente que propone mejoras (habilidad `zonka`). Revisa qué no se está midiendo y por qué, investiga novedades (IA, tecnología), arma un informe con propuestas y ella acepta, corrige o descarta. Su memoria (gustos de ella, aceptado/descartado, pendientes) vive en la memoria del proyecto, archivo `zonka.md`; los informes son Claude Docs. Nada se implementa sin su OK.
 
 ## Reglas
 - Antes de dar algo por terminado: `npm run build` sin errores.
