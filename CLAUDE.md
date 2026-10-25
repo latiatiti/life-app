@@ -101,9 +101,13 @@ Después: salud, hábitos, tareas programadas, auto, calendario con carga rápid
 ## Zonka (2026-10-25)
 - Zonka (con Z; si ella escribe Sonka es el mismo) = el agente que propone mejoras (habilidad `zonka`). Revisa qué no se está midiendo y por qué, investiga novedades (IA, tecnología), arma un informe con propuestas y ella acepta, corrige o descarta. Su memoria (gustos de ella, aceptado/descartado, pendientes) vive en la memoria del proyecto, archivo `zonka.md`; los informes son Claude Docs. Nada se implementa sin su OK.
 
+## Gonza (2026-10-25)
+- Gonza = el ingeniero de ciberseguridad (habilidad `gonza`): audita código, Supabase (RLS, asesores, funciones, cuentas), Netlify y dependencias, arma un informe con hallazgos por gravedad y ella decide. Memoria en `gonza.md` (memoria del proyecto). Nunca cambia la nube sin su OK.
+
 ## Reglas
 - Antes de dar algo por terminado: `npm run build` sin errores.
 - Trabajar en entregas chicas y cerradas (pedido de la usuaria, para no quedar a medias si se cortan los créditos).
 - Para probar en este entorno: copiar la app a una carpeta de trabajo, `npm ci`, y volver a copiar `src/`, `supabase/`, `public/` y docs a la carpeta del proyecto (no subir `node_modules`). Regenerar `../LIFE-demo.html` con `npm run build:single`.
 - Cada módulo nuevo debe aportar al menos una señal o un ítem de agenda al hub (el valor está en los cruces).
+- **Conector para Claude siempre al día** (pedido de ella, 2026-10-25): `life-mcp` ve sola toda tabla nueva con `user_id` (vía `life_columnas()`), pero cada función nueva con cruces (pagar, cobrar, cerrar compra, chequeo…) suma también su herramienta propia al conector, para que Claude cargue igual que la app. Redesplegar `life-mcp` al cerrar la entrega.
 - Mantener este archivo actualizado cuando cambie la arquitectura o la hoja de ruta.
