@@ -154,7 +154,8 @@ function ListaSenales({ senales }: { senales: Senal[] }) {
   );
 }
 
-export function Hub() {
+/** abrirMenu: tocar el LIFE grande abre el menú con todo (en el Inicio no hay otro LIFE arriba). */
+export function Hub({ abrirMenu }: { abrirMenu?: () => void }) {
   const perfil = usePerfil();
   const senales = useTodasLasSenales();
   // Un hook por módulo, siempre en el mismo orden (la lista de módulos es fija).
@@ -180,7 +181,9 @@ export function Hub() {
     <div className="pila">
       <header className="tablero-cab">
         <span className="tablero-fecha">{saludo()} · {fechaLarga(h)}</span>
-        <h1 className="tablero-logo">LIF<span>E</span></h1>
+        <h1 className="tablero-logo">
+          <button type="button" onClick={abrirMenu} aria-haspopup="dialog" title="Abrir el menú">LIF<span>E</span><i aria-hidden="true">▾</i></button>
+        </h1>
       </header>
 
       <div className="tablero">

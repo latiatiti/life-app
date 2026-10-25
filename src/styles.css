@@ -714,3 +714,84 @@ p.vital-aviso { margin: 0; font-size: 0.8rem; color: var(--estado); border-left:
   .vital-accion { font-size: 0.7rem; }
 }
 @media (prefers-reduced-motion: reduce) { .vital-estado i { animation: none !important; } }
+
+/* ==========================================================================
+   Sin menú lateral (2026-10-25, pedido de ella): la pantalla es del módulo.
+   Arriba una barra fina: LIFE ▾ abre el menú con todo, a la derecha Cargar, Ajustes y Nube/Local.
+   En el celu sigue la barra flotante de abajo con lo diario (Inicio · Día · + · Plata · Más).
+   ========================================================================== */
+.app { display: block; }
+.contenido { max-width: 1400px; margin: 0 auto; padding-top: 20px; }
+.barra-sup {
+  position: sticky; top: 0; z-index: 25; display: flex; align-items: center; gap: 14px;
+  min-height: 60px; padding: 8px 32px; padding-top: calc(8px + env(safe-area-inset-top));
+  background: color-mix(in srgb, var(--fondo) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--borde);
+}
+.boton-life {
+  display: inline-flex; align-items: baseline; gap: 0; min-height: 44px; padding: 6px 12px 6px 4px; border: 0; background: none; cursor: pointer;
+  color: var(--texto); font-family: var(--letra-titulo); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.14em; line-height: 1.3;
+}
+.boton-life span { color: var(--acento); text-shadow: var(--brillo); }
+.boton-life i { font-style: normal; font-size: 0.8rem; color: var(--texto-2); margin-left: 6px; letter-spacing: 0; }
+.boton-life:hover i, .boton-life:focus-visible i { color: var(--acento); }
+/* Los avisos flotantes bajan para no tapar la barra de arriba */
+.avisos { top: calc(64px + env(safe-area-inset-top)); }
+@media (min-width: 761px) { .avisos { top: 72px; } }
+.barra-sup-der { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.barra-sup .modo { margin: 0; align-self: center; }
+.barra-sup .nav-cargar { order: 0; margin: 0; padding: 0 18px; }
+.barra-sup-ajustes { display: grid; place-items: center; width: 44px; height: 44px; color: var(--texto-2); }
+.barra-sup-ajustes.activo { color: var(--acento); }
+.barra-sup-ajustes svg { width: 22px; height: 22px; }
+.solo-compu-flex { display: flex; }
+.en-inicio .barra-sup { border-bottom-color: transparent; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* El LIFE grande del Inicio también abre el menú */
+.tablero-logo button { font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0 0 0 0.3em; cursor: pointer; display: inline-flex; align-items: baseline; }
+.tablero-logo i { font-style: normal; font-size: 0.32em; color: var(--texto-2); margin-left: 0.3em; letter-spacing: 0; }
+.tablero-logo button:hover i, .tablero-logo button:focus-visible i { color: var(--acento); }
+.en-inicio .contenido { padding-top: 0; }
+
+/* Menú de LIFE: pantalla completa, una tarjeta por sección con sus pestañas */
+.menu-life {
+  border: 0; padding: 0; margin: 0; width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh;
+  background: color-mix(in srgb, var(--fondo) 96%, transparent); color: var(--texto);
+}
+.menu-life[open] { animation: vista-entra var(--dur) var(--curva); }
+.menu-life::backdrop { background: rgba(0, 0, 0, 0.6); }
+.menu-life-cuerpo { max-width: 1400px; margin: 0 auto; padding: calc(8px + env(safe-area-inset-top)) 32px 40px; display: flex; flex-direction: column; gap: 18px; }
+.menu-life-cab { display: flex; align-items: center; justify-content: space-between; min-height: 52px; }
+.menu-life-grilla { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.menu-life-seccion {
+  position: relative; display: flex; flex-direction: column; gap: 12px; padding: 18px; min-height: 150px;
+  background: var(--capa-1); border: 1px solid var(--borde); color: var(--texto);
+}
+.menu-life-seccion.activo { border-color: var(--acento-borde); box-shadow: inset 0 2px 0 var(--acento); }
+.menu-life-nombre { display: flex; align-items: center; gap: 10px; font-family: var(--letra-titulo); font-weight: 700; font-size: 1.25rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto); }
+.menu-life-nombre svg { width: 24px; height: 24px; color: var(--acento); flex: none; }
+.menu-life-seccion small { color: var(--texto-2); }
+.menu-life-pestanas { display: flex; flex-wrap: wrap; gap: 6px; }
+.menu-life-pestanas a {
+  min-height: 36px; display: inline-flex; align-items: center; padding: 0 10px; border: 1px solid var(--borde-fuerte);
+  color: var(--texto-2); font-size: 0.85rem; font-weight: 600;
+}
+.menu-life-pestanas a:hover, .menu-life-pestanas a:focus-visible { color: var(--texto); border-color: var(--acento); }
+.menu-life-pestanas a.activa { color: var(--sobre-acento); background: var(--acento); border-color: var(--acento); }
+.menu-life-inicio:hover, .menu-life-inicio:focus-visible { border-color: var(--acento); }
+@media (max-width: 1100px) and (min-width: 761px) { .menu-life-grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (min-width: 761px) {
+  .nav { display: none; }
+}
+@media (max-width: 760px) {
+  .solo-compu-flex { display: none; }
+  .barra-sup { position: relative; padding: 4px 12px 4px 16px; padding-top: calc(4px + env(safe-area-inset-top)); min-height: 52px; }
+  .boton-life { font-size: 1.2rem; }
+  .contenido { padding-top: 12px; }
+  .en-inicio .contenido { padding-top: 0; }
+  .menu-life-cuerpo { padding: calc(8px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
+  .menu-life-grilla { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .menu-life-seccion { min-height: 0; padding: 14px; }
+  .menu-life-pestanas a { min-height: 44px; }
+}
