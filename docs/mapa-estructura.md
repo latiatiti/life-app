@@ -65,7 +65,7 @@ Reglas que se siguen: primero Inicio, después lo diario, al final lo que se ana
 
 | | Compu | Celu |
 |---|---|---|
-| Dónde | Menú lateral (se mantiene; LIFE ya lo tiene y anda bien en pantallas anchas) | Barra flotante abajo |
+| Dónde | **Sin menú lateral** (2026-10-25): barra fina arriba, "LIFE ▾" abre el menú con todas las secciones y pestañas; la pantalla es del módulo | Barra fina arriba (LIFE ▾, ⚙) + barra flotante abajo |
 | Qué lleva | INICIO · DÍA · PLATA · ENTRENO · CASA · ⚙ AJUSTES | INICIO · DÍA · **+** · PLATA · MÁS |
 | Extras | Botón **+ NUEVO**, buscador (Ctrl K), Nube/Local | **+** abre "¿Qué querés cargar?" (gasto, pago, tarea, comida, compra) |
 

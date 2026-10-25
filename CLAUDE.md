@@ -19,7 +19,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 ## Arquitectura
 - `src/core/types.ts`: contrato `Modulo` { id, nombre, icono, pantallas, Resumen, useSenales(), useAgenda(), useActividad(), useVital() (tarjeta del tablero), enHub }.
 - `src/core/juego.ts`: nivel, XP y racha (la usuaria pidió estética de juego). `useActividad()` devuelve una fecha por registro; 10 XP cada uno.
-- Tema: siempre oscuro. **Todo el look sale de `src/tema/tema.css`** (color principal `--acento`, capas, letras Chakra Petch / IBM Plex, esquinas `--radio`, animación, sección 8 "modo juego"); `styles.css` arma las piezas con esos tokens, sin colores sueltos. Guía en `DISENO.md`. Estilo "Signos vitales · modo juego" (2026-10-25, elegido por ella): HUD de videojuego en verde menta, piezas de juego al final de `styles.css`; estructura de "A + C" (2026-10-15): en el celu barra flotante (Inicio + `EN_BARRA` en `App.tsx` + "Más"), en la compu menú lateral; Inicio con tira de días `ui/Semana.tsx` y tarjeta del día.
+- Tema: siempre oscuro. **Todo el look sale de `src/tema/tema.css`** (color principal `--acento`, capas, letras Chakra Petch / IBM Plex, esquinas `--radio`, animación, sección 8 "modo juego"); `styles.css` arma las piezas con esos tokens, sin colores sueltos. Guía en `DISENO.md`. Estilo "Signos vitales · modo juego" (2026-10-25, elegido por ella): HUD de videojuego en verde menta, piezas de juego al final de `styles.css`; estructura: **sin menú lateral** (2026-10-25, pedido de ella): barra fina arriba en compu y celu (`barra-sup`: "LIFE ▾" abre `MenuLife` = todas las secciones con sus pestañas; a la derecha + Cargar (compu), ⚙ Ajustes y Nube/Local); en el Inicio el LIFE grande del tablero es el que abre el menú; en el celu sigue la barra flotante de abajo (Inicio + `EN_BARRA` + "Más" = mismo menú); Inicio con tira de días `ui/Semana.tsx` y tarjeta del día.
 - Menú por secciones (2026-10-25): `GRUPOS` en `App.tsx` junta módulos sin tocar sus rutas: **Plata** = Economía + Pagos, **Casa** = Stock + Compras + Comida (lista de compras única en Compras). Barra del celu = Inicio, Día, **+**, Plata, Más (`EN_BARRA` usa ids de sección; Entreno quedó en Más). El **+** (`hub/Cargar.tsx`, en la compu "+ Cargar" arriba del menú) abre "¿Qué cargás?": Gasto y Comí con su formulario de siempre ahí mismo, el resto lleva a su pantalla. Toda carga rápida nueva se suma a `OPCIONES` de ese archivo. En el celu, 4 pestañas y el resto en "⋯".
 - `src/core/registry.ts`: lista de módulos. **Sumar un módulo** = crear `src/modules/<x>/index.tsx` y registrarlo acá.
 - `src/core/db.ts`: capa de datos (`useTabla`, `crear`, `modificar`, `eliminar`, exportar/importar respaldo). Agregar las tablas nuevas a `TABLAS`.
@@ -97,6 +97,9 @@ Después: salud, hábitos, tareas programadas, auto, calendario con carga rápid
 - iOS: `apple-touch-icon` (icon-180.png), `apple-mobile-web-app-capable`, barra translúcida con `safe-area-inset-top`. Íconos PNG generados desde `public/icon.svg`.
 - Sin Supabase, iOS guarda los datos solo en ese navegador/ícono: conectar Supabase para no perderlos.
 - App de tienda (más adelante, si hace falta): envolver con Capacitor; requiere cuenta de Apple Developer (USD 99/año) y compilar en una Mac o servicio en la nube.
+
+## Sonka (2026-10-25)
+- Sonka = el agente que propone mejoras (habilidad `sonka`). Revisa qué no se está midiendo y por qué, investiga novedades (IA, tecnología), arma un informe con propuestas y ella acepta, corrige o descarta. Su memoria (gustos de ella, aceptado/descartado, pendientes) vive en la memoria del proyecto, archivo `sonka.md`; los informes en project-files `sonka/`. Nada se implementa sin su OK.
 
 ## Reglas
 - Antes de dar algo por terminado: `npm run build` sin errores.
