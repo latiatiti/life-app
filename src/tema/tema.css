@@ -2,51 +2,53 @@
    TEMA DE LIFE: el único lugar donde se decide cómo se ve la app.
    Cambiar algo acá lo cambia en todas las pantallas. Ver DISENO.md.
 
-   Estilo actual (2026-10-15, "A + C"): tablero tipo Tiatiti (tarjetas con borde
-   fino y esquinas casi rectas, etiquetas en mayúscula, una tarjeta destacada
-   rellena de color, botones grandes) + capas que se deslizan (semana tocable,
-   barra flotante en el celu).
+   Estilo actual (2026-10-25, "Signos vitales · modo juego"): LIFE como el monitor
+   de tu vida con pantalla de videojuego (HUD). Negro de pantalla, verde menta de
+   señal, celeste de experiencia, esquinas de mira en los paneles, línea de pulso,
+   nivel en hexágono y barras por bloques. Las piezas de juego están al final de
+   styles.css ("Modo juego"); cada una se apaga desde sus tokens (sección 8).
+   Antes: "A + C" violeta (2026-10-15).
    ========================================================================== */
 
 :root {
   /* ---------- 1. Color principal (identidad) ----------
-     Cambiando SOLO esta línea cambia el violeta en toda la app: botones,
+     Cambiando SOLO esta línea cambia el verde menta en toda la app: botones,
      pestañas, la tarjeta destacada, el menú. Los tonos suaves salen solos. */
-  --acento: #7c3aed;
+  --acento: #3cffc0;
   /* Texto que va encima del color principal (blanco para colores oscuros, negro para claros). */
-  --sobre-acento: #ffffff;
+  --sobre-acento: #00140d;
   /* Versión clara del principal, para texto y links sobre fondo oscuro. */
-  --acento-texto: #c4b5fd;
+  --acento-texto: #5effcd;
 
   /* Segundo color: experiencia, progreso y el botón "+" del celu. */
-  --xp: #22d3ee;
-  --sobre-xp: #04262c;
+  --xp: #4cc9ff;
+  --sobre-xp: #001a26;
 
   /* ---------- 2. Fondos y capas (de atrás hacia adelante) ---------- */
-  --fondo: #0b0b0f;        /* la pantalla */
-  --capa-1: #14141a;       /* tarjetas */
-  --capa-2: #1c1c24;       /* cosas dentro de una tarjeta, botones */
-  --capa-3: #26262f;       /* lo que queda arriba de todo (avisos, menú flotante) */
-  --borde: #26262f;        /* borde fino de tarjetas */
-  --borde-fuerte: #34343f; /* borde de botones y chips */
+  --fondo: #030605;        /* la pantalla */
+  --capa-1: #07100d;       /* tarjetas */
+  --capa-2: #0c1a16;       /* cosas dentro de una tarjeta, botones */
+  --capa-3: #11241e;       /* lo que queda arriba de todo (avisos, menú flotante) */
+  --borde: #123029;        /* borde fino de tarjetas */
+  --borde-fuerte: #1c4a3d; /* borde de botones y chips */
 
   /* ---------- 3. Texto ---------- */
-  --texto: #f2f2f5;
-  --texto-2: #b4b4c0;      /* secundario */
-  --texto-3: #8c8c99;      /* notas chicas */
+  --texto: #dcfbf0;
+  --texto-2: #8fc4b3;      /* secundario */
+  --texto-3: #5a8c7d;      /* notas chicas */
 
   /* ---------- 4. Estados (siempre con ícono o texto, nunca solo color) ---------- */
-  --bien: #22c55e;
-  --bien-texto: #4ade80;
-  --atencion: #fbbf24;
-  --atencion-texto: #fcd34d;
-  --sobre-atencion: #1c1300;
-  --urgente: #ef4444;
-  --urgente-texto: #fca5a5;
+  --bien: #3cffc0;
+  --bien-texto: #5effcd;
+  --atencion: #ffb547;
+  --atencion-texto: #ffc670;
+  --sobre-atencion: #2a1800;
+  --urgente: #ff4d6d;
+  --urgente-texto: #ff8098;
 
   /* ---------- 5. Letras ---------- */
-  --letra: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --letra-titulo: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+  --letra: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --letra-titulo: 'Chakra Petch', 'IBM Plex Sans', system-ui, sans-serif;
   --tam-base: 16px;
   /* Etiquetas tipo tablero: chicas, en mayúscula y separadas. Para sacarlas, poné none. */
   --etiqueta-mayus: uppercase;
@@ -54,14 +56,23 @@
 
   /* ---------- 6. Formas ----------
      Esquinas: 4px = tablero recto (Tiatiti). Subilo a 14px para algo más redondeado. */
-  --radio: 6px;
-  --radio-chico: 4px;
-  --radio-grande: 16px;    /* hojas que suben desde abajo, barra flotante */
+  --radio: 0px;
+  --radio-chico: 0px;
+  --radio-grande: 0px;    /* hojas que suben desde abajo, barra flotante */
   --alto-toque: 48px;      /* alto mínimo de botones en el celu (Apple pide 44) */
 
   /* ---------- 7. Movimiento ---------- */
   --dur: 220ms;
   --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ---------- 8. Modo juego ---------- */
+  --letra-dato: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace; /* números, fechas y etiquetas */
+  --brillo: 0 0 10px color-mix(in srgb, var(--acento) 55%, transparent);   /* resplandor de lo activo; none = sin brillo */
+  --brillo-xp: 0 0 10px color-mix(in srgb, var(--xp) 60%, transparent);
+  --linea-pantalla: rgba(0, 0, 0, 0.22); /* líneas de pantalla vieja (transparent = sin textura) */
+  --oscuro-borde: rgba(0, 0, 0, 0.55);   /* sombra de los bordes de la pantalla (transparent = sin sombra) */
+  --resplandor-arriba: #0b3a2d;          /* luz verde suave arriba de todo */
+  --mira: 12px;             /* largo de las esquinas de mira de cada panel (0 = sin esquinas) */
 
   /* ---------- Derivados (no hace falta tocarlos) ---------- */
   --acento-suave: color-mix(in srgb, var(--acento) 18%, transparent);

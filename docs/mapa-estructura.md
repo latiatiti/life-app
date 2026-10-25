@@ -90,7 +90,7 @@ Cambios que implica (cada uno sería una tanda chica):
 
 1. ¿Juntar Economía + Pagos en **Plata** y Stock + Compras + Comida en **Casa**, o dejar los módulos como están?
 2. Celu: ¿barra con **+** al medio (Inicio · Día · + · Plata · Más) o seguir con Entreno en la barra?
-3. Colores: ¿adoptar los de AquaFlow (amarillo acción, verde destacado, naranja riesgo) o mantener la paleta de LIFE (violeta)? Las medidas, reglas y estructura se aplican igual.
+3. ~~Colores~~ → elegido "Signos vitales · modo juego" (2026-10-25).
 
 ---
 
@@ -106,4 +106,4 @@ Cambios que implica (cada uno sería una tanda chica):
 | 6 | Ajustes agrupado por tema + "Cuentas y categorías" adentro | 5 |
 | 7 | Estructura acordada (Plata / Casa / barra con +) | 1, 2 |
 | 8 | Compu: fila de 4 cifras, tabla y panel de detalle a la derecha (empezando por Movimientos y Pagos) | 3 |
-| 9 | Colores y letras, según lo que elijas | 3 (tokens) |
+| 9 | ✔ Colores y letras: "Signos vitales · modo juego" (2026-10-25) | 3 (tokens) |

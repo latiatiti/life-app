@@ -14,12 +14,12 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - **Toda pantalla nueva o cambiada sigue `docs/pilares-de-diseno.md`** (10 pilares: estructura primero, PC y celu mismo sistema, celu = calle / PC = oficina, una cosa un solo lugar, lo diario adelante, cada aviso con su botón, DESHACER después de guardar, avisar lo raro, lenguaje simple, datos de verdad). Pasar la checklist de su sección 8 antes de darla por hecha.
 - `docs/mapa-estructura.md`: mapa de secciones, pestañas, objetos y piezas compartidas (fuente de verdad de dónde va cada cosa) + tandas pendientes. Si algo no entra en el mapa, primero se cambia el mapa.
 - DESHACER automático: `core/db.ts` anota la inversa de cada `crear`/`modificar`/`eliminar` y `ui/Deshacer.tsx` muestra "Guardado · DESHACER" 5 s. Confirmaciones con `confirmar()` (no `window.confirm`).
-- Los colores de AquaFlow del archivo no se usan salvo que ella lo pida; los tokens siguen en `src/tema/tema.css`.
+- Los colores de AquaFlow del archivo NO se usan: ella eligió "Signos vitales · modo juego" (tokens en `src/tema/tema.css`).
 
 ## Arquitectura
 - `src/core/types.ts`: contrato `Modulo` { id, nombre, icono, pantallas, Resumen (tarjeta del hub), useSenales(), useAgenda(), useActividad(), enHub }.
 - `src/core/juego.ts`: nivel, XP y racha (la usuaria pidió estética de juego). `useActividad()` devuelve una fecha por registro; 10 XP cada uno.
-- Tema: siempre oscuro. **Todo el look sale de `src/tema/tema.css`** (color principal `--acento`, capas, letras Barlow, esquinas `--radio`, animación); `styles.css` arma las piezas con esos tokens, sin colores sueltos. Guía en `DISENO.md`. Estilo "A + C" (2026-10-15): tablero tipo Tiatiti + capas deslizables; en el celu barra flotante (Inicio + `EN_BARRA` en `App.tsx` + "Más"), en la compu menú lateral; Inicio con tira de días `ui/Semana.tsx` y tarjeta del día.
+- Tema: siempre oscuro. **Todo el look sale de `src/tema/tema.css`** (color principal `--acento`, capas, letras Chakra Petch / IBM Plex, esquinas `--radio`, animación, sección 8 "modo juego"); `styles.css` arma las piezas con esos tokens, sin colores sueltos. Guía en `DISENO.md`. Estilo "Signos vitales · modo juego" (2026-10-25, elegido por ella): HUD de videojuego en verde menta, piezas de juego al final de `styles.css`; estructura de "A + C" (2026-10-15): en el celu barra flotante (Inicio + `EN_BARRA` en `App.tsx` + "Más"), en la compu menú lateral; Inicio con tira de días `ui/Semana.tsx` y tarjeta del día.
 - `src/core/registry.ts`: lista de módulos. **Sumar un módulo** = crear `src/modules/<x>/index.tsx` y registrarlo acá.
 - `src/core/db.ts`: capa de datos (`useTabla`, `crear`, `modificar`, `eliminar`, exportar/importar respaldo). Agregar las tablas nuevas a `TABLAS`.
 - `src/hub/Hub.tsx`: junta señales (ordenadas por nivel) y agenda compartida (14 días) de todos los módulos.

@@ -508,3 +508,111 @@ input.input-grande { font-size: 1.6rem; font-weight: 800; min-height: 56px; text
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }
+
+/* ==========================================================================
+   Modo juego (2026-10-25, "Signos vitales · modo juego")
+   LIFE como la pantalla de un videojuego (HUD). Todo sale de los tokens de la
+   sección 8 de tema.css: para bajarle el tono, tocá --brillo, --mira y
+   --linea-pantalla ahí, no acá.
+   ========================================================================== */
+
+/* Pantalla: líneas finas de monitor viejo, bordes oscurecidos y luz suave arriba */
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 200;
+  background: repeating-linear-gradient(0deg, var(--linea-pantalla) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, var(--oscuro-borde) 100%);
+}
+.app { background: radial-gradient(ellipse at 50% -20%, var(--resplandor-arriba) 0, transparent 55%), var(--fondo); }
+
+/* Títulos de pantalla en mayúscula, con flecha de menú de juego y brillo */
+h1 { font-family: var(--letra-titulo); letter-spacing: 0.06em; text-transform: uppercase; text-shadow: var(--brillo); }
+.hub-cab h1::before, .modulo-cab h1::before { content: '▸ '; color: var(--acento); }
+
+/* Datos (números, fechas, etiquetas) en letra de máquina */
+.num, .cifra-val, .dia-fecha strong, .semana strong, .racha, .jugador strong, .grande,
+.nota, .cifra-etq, .chip, .etiqueta, .subtitulo, .semana small, .dia-fecha small, .jugador-nivel small, .chip-fecha, .racha small, .estado {
+  font-family: var(--letra-dato);
+}
+.cifra-val { color: var(--acento-texto); text-shadow: var(--brillo); }
+
+/* Paneles con esquinas de mira y título entre corchetes */
+.tarjeta { position: relative; border-color: color-mix(in srgb, var(--borde-fuerte) 70%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--capa-2) 60%, transparent), var(--capa-1) 40%); }
+.tarjeta::before {
+  content: ''; position: absolute; inset: -1px; pointer-events: none;
+  --l: linear-gradient(var(--acento), var(--acento));
+  background:
+    var(--l) top left / var(--mira) 2px no-repeat, var(--l) top left / 2px var(--mira) no-repeat,
+    var(--l) top right / var(--mira) 2px no-repeat, var(--l) top right / 2px var(--mira) no-repeat,
+    var(--l) bottom left / var(--mira) 2px no-repeat, var(--l) bottom left / 2px var(--mira) no-repeat,
+    var(--l) bottom right / var(--mira) 2px no-repeat, var(--l) bottom right / 2px var(--mira) no-repeat;
+}
+.tarjeta-cab { border-bottom-style: dashed; border-bottom-color: var(--borde-fuerte); }
+.tarjeta-cab h2 { font-family: var(--letra-titulo); letter-spacing: 0.1em; }
+.tarjeta-cab h2::before { content: '['; color: var(--acento); }
+.tarjeta-cab h2::after { content: ']'; color: var(--acento); }
+
+/* Lo destacado: pantalla de signo vital con línea de pulso, en vez de relleno */
+.destacada, .dia-cab {
+  position: relative; color: var(--acento);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--acento) 16%, transparent), transparent);
+}
+.destacada { border-color: var(--acento); box-shadow: inset 0 0 24px color-mix(in srgb, var(--acento) 18%, transparent); }
+.destacada .nota, .destacada .cifra-etq, .destacada .cifra-nota { color: var(--texto-2); }
+.dia-cab { border-bottom: 1px solid var(--acento); }
+.dia-cab::after {
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 240px; max-width: 70%; pointer-events: none; opacity: 0.4;
+  background: var(--acento);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='60' viewBox='0 0 240 60'%3E%3Cpolyline fill='none' stroke='black' stroke-width='2' points='0,34 72,34 78,22 84,46 92,6 100,54 106,34 130,34 140,28 150,34 240,34'/%3E%3C/svg%3E") right center / 240px 60px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='60' viewBox='0 0 240 60'%3E%3Cpolyline fill='none' stroke='black' stroke-width='2' points='0,34 72,34 78,22 84,46 92,6 100,54 106,34 130,34 140,28 150,34 240,34'/%3E%3C/svg%3E") right center / 240px 60px no-repeat;
+}
+.dia-cab > * { position: relative; z-index: 1; }
+.dia-fecha { border-right-color: var(--acento); text-shadow: var(--brillo); }
+
+/* Tira de días y pestañas: lo elegido brilla */
+.semana button.elegido { box-shadow: var(--brillo); }
+.semana button.hoy:not(.elegido) { border-color: var(--acento); }
+.pestanas { background: transparent; }
+.pestanas .activa { background: color-mix(in srgb, var(--acento) 14%, transparent); color: var(--acento); box-shadow: inset 0 0 0 1px var(--acento), var(--brillo); }
+.pestanas .activa::before { content: '▸\00a0'; }
+
+/* Botón principal: placa con esquinas cortadas */
+.btn-primario {
+  box-shadow: var(--brillo); font-family: var(--letra-titulo); letter-spacing: 0.08em; text-transform: uppercase;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.btn-primario:focus-visible { outline-offset: -4px; outline-color: var(--sobre-acento); }
+
+/* Jugador: nivel en hexágono, experiencia por bloques, racha encendida */
+.jugador { background: linear-gradient(90deg, color-mix(in srgb, var(--xp) 10%, transparent), transparent 60%), var(--capa-1); }
+.jugador-nivel {
+  width: 62px; height: 62px; border: 0; background: var(--xp); color: var(--sobre-xp); font-family: var(--letra-titulo); font-size: 1.6rem;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+.jugador-nivel small { color: var(--sobre-xp); }
+.jugador strong { color: var(--xp); text-shadow: var(--brillo-xp); }
+.barra-xp { height: 12px; border: 1px solid color-mix(in srgb, var(--xp) 45%, transparent); }
+.barra-xp > div { background: repeating-linear-gradient(90deg, var(--xp) 0 8px, transparent 8px 10px); box-shadow: var(--brillo-xp); }
+.racha { color: var(--atencion-texto); }
+
+/* Medidores por bloques, como barras de energía */
+.medidor { height: 10px; border: 1px solid var(--borde-fuerte); }
+.medidor-barra { -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); }
+
+/* Señales con barra de vida: rojo late, naranja avisa */
+.senales li:has(.estado-critico) .senal { box-shadow: inset 3px 0 0 var(--urgente); padding-left: 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--urgente) 12%, transparent), transparent 70%); }
+.senales li:has(.estado-aviso) .senal { box-shadow: inset 3px 0 0 var(--atencion); padding-left: 12px; }
+.senal .estado-critico { animation: latido 1.4s ease-in-out infinite; }
+.contador { box-shadow: 0 0 8px var(--atencion); }
+
+/* Menú: activo encendido; en el celu, barra de juego con esquinas cortadas */
+.nav-item.activo { text-shadow: var(--brillo); }
+.nav-item.activo svg { filter: drop-shadow(0 0 6px var(--acento)); }
+@media (max-width: 760px) {
+  .nav { border-radius: 0; clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px); }
+  .nav-item, .nav-mas { border-radius: 0; font-family: var(--letra-dato); text-transform: uppercase; font-size: 0.6rem; }
+  .nav-item.activo { background: transparent; color: var(--acento); box-shadow: inset 0 -2px 0 var(--acento); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .senal .estado-critico { animation: none; }
+}
