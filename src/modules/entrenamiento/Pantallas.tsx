@@ -81,13 +81,13 @@ export function PantallaHoy() {
   useBiblioteca();
   const { filas: sesiones } = useSesiones();
   const { filas: series } = useSeries();
-  const { dias, perfil, semana } = useRutina();
+  const { dias, perfil, semana, fila } = useRutina();
   const [enCurso, setEnCurso] = useState(() => !!leerEnCurso());
   const [elegido, setElegido] = useState<string | null>(null);
   const [otro, setOtro] = useState(false);
   if (enCurso) return <Entrenando onSalir={() => setEnCurso(false)} />;
 
-  const sugerido = proximoDia(sesiones, dias);
+  const sugerido = proximoDia(sesiones, dias, fila?.inicio);
   const plan = ajustarDia(dias.find((d) => d.id === elegido) ?? sugerido, semana);
   const ult = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
   const descarga = necesitaDescarga(sesiones, series);

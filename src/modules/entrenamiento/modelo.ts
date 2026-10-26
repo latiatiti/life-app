@@ -194,9 +194,12 @@ export const efectivas = (series: Serie[]) => series.filter((s) => s.tipo !== 'c
 
 const ordenSesion = (a: Sesion, b: Sesion) => b.fecha.localeCompare(a.fecha) || (b.created_at ?? '').localeCompare(a.created_at ?? '');
 
-/** El próximo día de la rutina es el que sigue al último entrenado (A → B → C → A). */
-export function proximoDia(sesiones: Sesion[], dias: DiaPlan[] = RUTINA_BASE): DiaPlan {
-  const ult = [...sesiones].filter((s) => s.dia !== 'otro').sort(ordenSesion)[0];
+/**
+ * El próximo día de la rutina es el que sigue al último entrenado (A → B → C → A).
+ * Con `desde` (inicio de la rutina activa) solo cuentan los entrenos de esa rutina: una rutina nueva arranca por el primer día.
+ */
+export function proximoDia(sesiones: Sesion[], dias: DiaPlan[] = RUTINA_BASE, desde?: string | null): DiaPlan {
+  const ult = [...sesiones].filter((s) => s.dia !== 'otro' && (!desde || s.fecha >= desde)).sort(ordenSesion)[0];
   if (!ult) return dias[0];
   const i = dias.findIndex((d) => d.id === ult.dia);
   return dias[(i + 1) % dias.length];
