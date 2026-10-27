@@ -64,9 +64,9 @@ function ResumenEntreno() {
 
 function useVitalEntreno(): Vital {
   const { filas: sesiones } = useSesiones();
-  const { dias } = useRutina();
+  const { dias, fila } = useRutina();
   const semana = sesiones.filter((s) => diasEntre(s.fecha, hoy()) < 7).length;
-  const p = proximoDia(sesiones, dias);
+  const p = proximoDia(sesiones, dias, fila?.inicio);
   return {
     cifra: `Día ${p.id}`,
     sub: `${p.nombre} · ${semana} de ${dias.length} esta semana`,
