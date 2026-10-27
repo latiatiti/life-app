@@ -12,7 +12,7 @@ function useSenalesEntreno(): Senal[] {
   useBiblioteca();
   const { filas: sesiones, cargado } = useSesiones();
   const { filas: series } = useSeries();
-  const { dias, estado, ciclo } = useRutina();
+  const { dias, estado, ciclo, fila } = useRutina();
   if (!cargado) return [];
   const senales: Senal[] = [];
   if (estado?.terminado) {
@@ -26,7 +26,7 @@ function useSenalesEntreno(): Senal[] {
     const ult = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
     const hace = ult ? diasEntre(ult.fecha, hoy()) : null;
     if (hace == null || hace >= 2) {
-      const p = proximoDia(sesiones, dias);
+      const p = proximoDia(sesiones, dias, fila?.inicio);
       senales.push({
         id: 'ent-toca', modulo: 'entrenamiento', nivel: hace != null && hace >= 4 ? 'aviso' : 'info',
         titulo: `Hoy toca: Día ${p.id} · ${p.nombre}`,
@@ -51,9 +51,9 @@ function useSenalesEntreno(): Senal[] {
 
 function ResumenEntreno() {
   const { filas: sesiones } = useSesiones();
-  const { dias } = useRutina();
+  const { dias, fila } = useRutina();
   const semana = sesiones.filter((s) => diasEntre(s.fecha, hoy()) < 7).length;
-  const p = proximoDia(sesiones, dias);
+  const p = proximoDia(sesiones, dias, fila?.inicio);
   return (
     <div className="grilla-cifras compacta">
       <div className="cifra"><span className="cifra-etq">Esta semana</span><strong className="cifra-val">{semana}/{dias.length}</strong><span className="cifra-nota">entrenos</span></div>
