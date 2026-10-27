@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { fechaCorta, hoy, sumarDias } from '../../core/format';
 import { Campo, Tarjeta } from '../../ui/ui';
@@ -110,7 +111,7 @@ export function PantallaPreparador() {
         {ciclo?.objetivo && <p className="nota">Objetivo: {ciclo.objetivo}</p>}
         <p className="nota" style={{ marginTop: 8 }}>Cada ciclo sube el esfuerzo tres semanas y la cuarta descarga. Al terminar, la app te propone los cambios para el siguiente según cómo te fue.</p>
         {fila && <button className="btn chico" style={{ marginTop: 8 }} onClick={async () => {
-          if (!window.confirm('¿Reiniciar el ciclo desde este lunes? El historial no se toca.')) return;
+          if (!await confirmar('¿Reiniciar el ciclo desde este lunes? El historial no se toca.')) return;
           await guardarRutina(dias, { inicio: lunesDe(hoy()), ciclo: ciclo ?? { semanas: CICLO_BASE } }, fila);
         }}>Reiniciar ciclo desde este lunes</button>}
       </Tarjeta>

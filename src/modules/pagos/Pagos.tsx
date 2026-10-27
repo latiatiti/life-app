@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useEffect, useState } from 'react';
 import { ir, useRuta } from '../../core/router';
 import { useCambios } from '../../ui/Actividad';
@@ -87,7 +88,7 @@ function FormPago({ inicial, onListo }: { inicial?: Pago; onListo: () => void })
             await modificar<Pago>(T.pagos, inicial.id, { activo: !inicial.activo }); onListo();
           }}>{inicial.activo ? 'Pausar (ya no lo pago)' : 'Reactivar'}</button>
           <button type="button" className="btn btn-peligro ancho" onClick={async () => {
-            if (!window.confirm('¿Borrar este pago? Los gastos ya registrados se conservan.')) return;
+            if (!await confirmar('¿Borrar este pago? Los gastos ya registrados se conservan.')) return;
             await eliminar(T.pagos, inicial.id); onListo();
           }}>{Icono.borrar} Borrar pago</button>
         </>
@@ -141,7 +142,7 @@ export function FormPagar({ pago, onListo }: { pago: Pago; onListo: () => void }
       <button className="btn btn-primario" disabled={guardando}>{guardando ? 'Registrando…' : 'Registrar pago'}</button>
       {pago.frecuencia !== 'unico' && (
         <button type="button" className="btn ancho" onClick={async () => {
-          if (!window.confirm('¿Saltear este vencimiento sin registrar gasto?')) return;
+          if (!await confirmar('¿Saltear este vencimiento sin registrar gasto?')) return;
           await saltearVencimiento(pago); onListo();
         }}>Saltear este vencimiento</button>
       )}

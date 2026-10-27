@@ -10,14 +10,21 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Comandos: `npm install`, `npm run dev`, `npm run build`. Ver `LEEME.md`.
 - `../LIFE-demo.html` es un build de un solo archivo (modo local) para abrir con doble clic.
 
+## Diseño (2026-10-25): pilares fijos
+- **Toda pantalla nueva o cambiada sigue `docs/pilares-de-diseno.md`** (10 pilares: estructura primero, PC y celu mismo sistema, celu = calle / PC = oficina, una cosa un solo lugar, lo diario adelante, cada aviso con su botón, DESHACER después de guardar, avisar lo raro, lenguaje simple, datos de verdad). Pasar la checklist de su sección 8 antes de darla por hecha.
+- `docs/mapa-estructura.md`: mapa de secciones, pestañas, objetos y piezas compartidas (fuente de verdad de dónde va cada cosa) + tandas pendientes. Si algo no entra en el mapa, primero se cambia el mapa.
+- DESHACER automático: `core/db.ts` anota la inversa de cada `crear`/`modificar`/`eliminar` y `ui/Deshacer.tsx` muestra "Guardado · DESHACER" 5 s. Confirmaciones con `confirmar()` (no `window.confirm`).
+- Los colores de AquaFlow del archivo NO se usan: ella eligió "Signos vitales · modo juego" (tokens en `src/tema/tema.css`).
+
 ## Arquitectura
-- `src/core/types.ts`: contrato `Modulo` { id, nombre, icono, pantallas, Resumen (tarjeta del hub), useSenales(), useAgenda(), useActividad(), enHub }.
+- `src/core/types.ts`: contrato `Modulo` { id, nombre, icono, pantallas, Resumen, useSenales(), useAgenda(), useActividad(), useVital() (tarjeta del tablero), enHub }.
 - `src/core/juego.ts`: nivel, XP y racha (la usuaria pidió estética de juego). `useActividad()` devuelve una fecha por registro; 10 XP cada uno.
-- Tema: siempre oscuro. **Todo el look sale de `src/tema/tema.css`** (color principal `--acento`, capas, letras Barlow, esquinas `--radio`, animación); `styles.css` arma las piezas con esos tokens, sin colores sueltos. Guía en `DISENO.md`. Estilo "A + C" (2026-10-15): tablero tipo Tiatiti + capas deslizables; en el celu barra flotante (Inicio + `EN_BARRA` en `App.tsx` + "Más"), en la compu menú lateral; Inicio con tira de días `ui/Semana.tsx` y tarjeta del día.
+- Tema: siempre oscuro. **Todo el look sale de `src/tema/tema.css`** (color principal `--acento`, capas, letras Chakra Petch / IBM Plex, esquinas `--radio`, animación, sección 8 "modo juego"); `styles.css` arma las piezas con esos tokens, sin colores sueltos. Guía en `DISENO.md`. Estilo "Signos vitales · modo juego" (2026-10-25, elegido por ella): HUD de videojuego en verde menta, piezas de juego al final de `styles.css`; estructura: **sin menú lateral** (2026-10-25, pedido de ella): barra fina arriba en compu y celu (`barra-sup`: "LIFE ▾" abre `MenuLife` = todas las secciones con sus pestañas; a la derecha + Cargar (compu), ⚙ Ajustes y Nube/Local); en el Inicio el LIFE grande del tablero es el que abre el menú; en el celu sigue la barra flotante de abajo (Inicio + `EN_BARRA` + "Más" = mismo menú); Inicio con tira de días `ui/Semana.tsx` y tarjeta del día.
+- Menú por secciones (2026-10-25): `GRUPOS` en `App.tsx` junta módulos sin tocar sus rutas: **Plata** = Economía + Pagos, **Casa** = Stock + Compras + Comida (lista de compras única en Compras). Barra del celu = Inicio, Día, **+**, Plata, Más (`EN_BARRA` usa ids de sección; Entreno quedó en Más). El **+** (`hub/Cargar.tsx`, en la compu "+ Cargar" arriba del menú) abre "¿Qué cargás?": Gasto y Comí con su formulario de siempre ahí mismo, el resto lleva a su pantalla. Toda carga rápida nueva se suma a `OPCIONES` de ese archivo. En el celu, 4 pestañas y el resto en "⋯".
 - `src/core/registry.ts`: lista de módulos. **Sumar un módulo** = crear `src/modules/<x>/index.tsx` y registrarlo acá.
 - `src/core/db.ts`: capa de datos (`useTabla`, `crear`, `modificar`, `eliminar`, exportar/importar respaldo). Agregar las tablas nuevas a `TABLAS`.
-- `src/hub/Hub.tsx`: junta señales (ordenadas por nivel) y agenda compartida (14 días) de todos los módulos.
-- Rutas por hash: `#/dia` (+ `/semana`), `#/economia` (+ `/movimientos`, `/ingresos`, `/proyeccion`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock` (+ `/lista`), `#/compras` (+ `/escanear`, `/comprando`, `/ticket`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
+- `src/hub/Hub.tsx` (2026-10-25, boceto de ella): Inicio = **tablero** con "LIFE" arriba y 8 tarjetas tipo signo vital (compu 4 × 2, celu 2 × 4): Día, Plata, Entreno, Comida, Compras, En casa (de `AREAS`), Mi partida (nivel/XP) y Para resolver (bandeja única de señales en una ventana). Cada módulo aporta `useVital()` {cifra, sub, barra, accion}; el estado y el aviso salen de sus señales (y `Senal.accion` gana sobre la acción de siempre). Debajo, la agenda de 14 días.
+- Rutas por hash: `#/dia` (+ `/semana`), `#/economia` (+ `/movimientos`, `/ingresos`, `/proyeccion`, `/cuentas`), `#/pagos`, `#/entrenamiento` (+ `/progreso`, `/historial`, `/rutina`, `/entrenador`), `#/stock`, `#/compras` (+ `/escanear`, `/comprando`, `/ticket`, `/precios`, `/historial`), `#/alimentacion` (+ `/platos`, `/metas`), `#/ajustes`.
 - `src/modules/ajustes/semilla.ts`: botón "Cargar mi configuración" con los datos reales de la usuaria (ingresos, fijos, básicos, platos). Idempotente por nombre.
 
 ## Cuentas y conexión con Claude (2026-10-15, `docs/cuentas-y-conexiones.md`)
@@ -92,9 +99,16 @@ Después: salud, hábitos, tareas programadas, auto, calendario con carga rápid
 - Sin Supabase, iOS guarda los datos solo en ese navegador/ícono: conectar Supabase para no perderlos.
 - App de tienda (más adelante, si hace falta): envolver con Capacitor; requiere cuenta de Apple Developer (USD 99/año) y compilar en una Mac o servicio en la nube.
 
+## Zonka (2026-10-25)
+- Zonka (con Z; si ella escribe Sonka es el mismo) = el agente que propone mejoras (habilidad `zonka`). Revisa qué no se está midiendo y por qué, investiga novedades (IA, tecnología), arma un informe con propuestas y ella acepta, corrige o descarta. Su memoria (gustos de ella, aceptado/descartado, pendientes) vive en la memoria del proyecto, archivo `zonka.md`; los informes son Claude Docs. Nada se implementa sin su OK.
+
+## Gonza (2026-10-25)
+- Gonza = el ingeniero de ciberseguridad (habilidad `gonza`): audita código, Supabase (RLS, asesores, funciones, cuentas), Netlify y dependencias, arma un informe con hallazgos por gravedad y ella decide. Memoria en `gonza.md` (memoria del proyecto). Nunca cambia la nube sin su OK.
+
 ## Reglas
 - Antes de dar algo por terminado: `npm run build` sin errores.
 - Trabajar en entregas chicas y cerradas (pedido de la usuaria, para no quedar a medias si se cortan los créditos).
 - Para probar en este entorno: copiar la app a una carpeta de trabajo, `npm ci`, y volver a copiar `src/`, `supabase/`, `public/` y docs a la carpeta del proyecto (no subir `node_modules`). Regenerar `../LIFE-demo.html` con `npm run build:single`.
 - Cada módulo nuevo debe aportar al menos una señal o un ítem de agenda al hub (el valor está en los cruces).
+- **Conector para Claude siempre al día** (pedido de ella, 2026-10-25): `life-mcp` ve sola toda tabla nueva con `user_id` (vía `life_columnas()`), pero cada función nueva con cruces (pagar, cobrar, cerrar compra, chequeo…) suma también su herramienta propia al conector, para que Claude cargue igual que la app. Redesplegar `life-mcp` al cerrar la entrega.
 - Mantener este archivo actualizado cuando cambie la arquitectura o la hoja de ruta.

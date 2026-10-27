@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useRef, useState } from 'react';
 import { configDesdeEntorno, configGuardada, guardarConfigNube } from '../../core/config';
 import { almacen, borrarPrueba, contarPrueba, exportarTodo, importarTodo, supabase } from '../../core/db';
@@ -39,7 +40,7 @@ function PantallaAjustes() {
   }
 
   async function cargarPrueba() {
-    if (!window.confirm('¿Cargar un historial de entrenamiento simulado (13 semanas, 4 ciclos)? Se suma a tus datos y después lo podés borrar con un toque.')) return;
+    if (!await confirmar('¿Cargar un historial de entrenamiento simulado (13 semanas, 4 ciclos)? Se suma a tus datos y después lo podés borrar con un toque.')) return;
     setMsg('Cargando historial de prueba…');
     try {
       const json = await (await fetch(`${import.meta.env.BASE_URL}historial-prueba.json`)).json();
@@ -53,7 +54,7 @@ function PantallaAjustes() {
   async function quitarPrueba() {
     const n = await contarPrueba();
     if (!n) { setMsg('No hay datos de prueba cargados.'); return; }
-    if (!window.confirm(`¿Borrar ${n} registros de prueba? Lo que cargaste vos no se toca.`)) return;
+    if (!await confirmar(`¿Borrar ${n} registros de prueba? Lo que cargaste vos no se toca.`)) return;
     setMsg('Borrando…');
     await borrarPrueba();
     setMsg(`Listo: se borraron ${n} registros de prueba.`);

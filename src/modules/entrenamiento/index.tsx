@@ -1,5 +1,5 @@
 import { diasEntre, hoy } from '../../core/format';
-import type { ActividadEnCurso, Modulo, Senal } from '../../core/types';
+import type { ActividadEnCurso, Modulo, Senal, Vital } from '../../core/types';
 import { Icono } from '../../ui/ui';
 import { leerEnCurso } from './Entrenando';
 import { necesitaDescarga } from './analisis';
@@ -62,6 +62,19 @@ function ResumenEntreno() {
   );
 }
 
+function useVitalEntreno(): Vital {
+  const { filas: sesiones } = useSesiones();
+  const { dias } = useRutina();
+  const semana = sesiones.filter((s) => diasEntre(s.fecha, hoy()) < 7).length;
+  const p = proximoDia(sesiones, dias);
+  return {
+    cifra: `Día ${p.id}`,
+    sub: `${p.nombre} · ${semana} de ${dias.length} esta semana`,
+    barra: dias.length ? Math.min(1, semana / dias.length) : undefined,
+    accion: { texto: entrenoHoy(sesiones) ? 'Ver progreso' : 'Empezar', ruta: entrenoHoy(sesiones) ? '#/entrenamiento/progreso' : '#/entrenamiento' },
+  };
+}
+
 /** Cada entreno vale 5 registros (50 XP). */
 function useActividadEntreno(): string[] {
   return useSesiones().filas.flatMap((s) => Array(5).fill(s.fecha));
@@ -94,6 +107,7 @@ export const moduloEntrenamiento: Modulo = {
     { ruta: 'entrenador', titulo: 'Preparador', componente: PantallaPreparador },
   ],
   Resumen: ResumenEntreno,
+  useVital: useVitalEntreno,
   useSenales: useSenalesEntreno,
   useActividad: useActividadEntreno,
   enCurso: entrenoEnCurso,

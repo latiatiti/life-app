@@ -1,6 +1,6 @@
 import './economia.css';
 import { dinero, hoy, mesActual, sumarDias } from '../../core/format';
-import type { ItemAgenda, Modulo, Senal } from '../../core/types';
+import type { ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
 import { Icono } from '../../ui/ui';
 import { PantallaCuentas } from './Cuentas';
 import { PantallaIngresos } from './Ingresos';
@@ -8,9 +8,22 @@ import { PantallaMovimientos } from './Movimientos';
 import { PantallaProyeccion } from './Proyeccion';
 import { PantallaResumen, ResumenHub } from './Resumen';
 import {
-  cobrosEsperados, FRECUENCIAS_COBRO, gastoPorCategoria, proyectar, totalesMes,
+  cobrosEsperados, disponible, FRECUENCIAS_COBRO, gastoPorCategoria, proyectar, totalesMes,
   useCategorias, useCuentas, useIngresos, useMovimientos, usePagos,
 } from './modelo';
+
+/** Tarjeta Plata del tablero: lo disponible hoy en pesos. */
+function useVitalEconomia(): Vital {
+  const { filas: cuentas } = useCuentas();
+  const { filas: movs } = useMovimientos();
+  if (!cuentas.length) return { cifra: '—', sub: 'Cargá tus cuentas para ver tu plata', accion: { texto: 'Empezar', ruta: '#/economia/cuentas' } };
+  const { ingresos, gastos } = totalesMes(movs, cuentas, mesActual(), 'ARS');
+  return {
+    cifra: dinero(disponible(cuentas, movs, 'ARS')),
+    sub: `Disponible hoy · balance del mes ${dinero(ingresos - gastos)}`,
+    accion: { texto: 'Ver plata', ruta: '#/economia' },
+  };
+}
 
 /** Agenda: los cobros esperados de los próximos 60 días. */
 function useAgendaEconomia(): ItemAgenda[] {
@@ -106,6 +119,7 @@ export const moduloEconomia: Modulo = {
     { ruta: 'cuentas', titulo: 'Cuentas y categorías', componente: PantallaCuentas },
   ],
   Resumen: ResumenHub,
+  useVital: useVitalEconomia,
   useSenales: useSenalesEconomia,
   useAgenda: useAgendaEconomia,
   useActividad: useActividadEconomia,

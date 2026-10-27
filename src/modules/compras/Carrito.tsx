@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { dinero, fechaCorta, parsearMonto, uid } from '../../core/format';
 import { ir } from '../../core/router';
@@ -332,10 +333,10 @@ export function PantallaEscanear() {
       )}
 
       <div className="barra-acciones">
-        <button className="btn btn-peligro" disabled={!c.lineas.length} onClick={() => {
-          if (window.confirm('¿Vaciar el carro? No se guarda nada.')) cambiar(vacio(c.super_id, c.ultimoPara));
+        <button className="btn btn-peligro" disabled={!c.lineas.length} onClick={async () => {
+          if (await confirmar('¿Vaciar el carro? No se guarda nada.')) cambiar(vacio(c.super_id, c.ultimoPara));
         }}>Vaciar</button>
-        <button className="btn btn-primario" disabled={!c.lineas.length} onClick={() => { setCamara(false); setCerrando(true); }}>Terminar compra</button>
+        <button className="btn btn-primario" disabled={!c.lineas.length} onClick={async () => { setCamara(false); setCerrando(true); }}>Terminar compra</button>
       </div>
 
       <Modal titulo={nueva?.ean ? 'Escaneado' : 'Agregar'} abierto={!!nueva} onCerrar={() => { setNueva(null); setBuscando(false); }}>

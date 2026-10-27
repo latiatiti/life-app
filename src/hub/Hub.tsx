@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { MODULOS } from '../core/registry';
 import { dinero, desdeISO, fechaLarga, hoy, relativo, sumarDias } from '../core/format';
 import { calcularProgreso } from '../core/juego';
+import { usePerfil, veModulo } from '../core/auth';
 import { useTodasLasSenales } from '../core/senales';
-import type { ItemAgenda } from '../core/types';
+import type { ItemAgenda, NivelSenal, Senal, Vital } from '../core/types';
 import { Semana } from '../ui/Semana';
-import { Estado, Tarjeta } from '../ui/ui';
+import { Estado, Modal } from '../ui/ui';
 
 const DIAS_AGENDA = 14;
 
@@ -79,63 +80,149 @@ function Dia({ dia, items, atrasados, nombreModulo }: {
   );
 }
 
-export function Hub() {
+/**
+ * Tablero del Inicio (2026-10-25, a pedido de ella): "LIFE" arriba y una tarjeta por área, cada una como un
+ * signo vital (estado, la cifra que importa, lo raro y su botón). Tocar la tarjeta lleva al área completa.
+ * Compu 4 × 2, celu 2 × 4. Debajo queda la agenda de los próximos días.
+ */
+const AREAS: Array<{ id: string; nombre: string; modulos: string[]; ruta: string }> = [
+  { id: 'dia', nombre: 'Día', modulos: ['dia'], ruta: '#/dia' },
+  { id: 'plata', nombre: 'Plata', modulos: ['economia', 'pagos'], ruta: '#/economia' },
+  { id: 'entreno', nombre: 'Entreno', modulos: ['entrenamiento'], ruta: '#/entrenamiento' },
+  { id: 'comida', nombre: 'Comida', modulos: ['alimentacion'], ruta: '#/alimentacion' },
+  { id: 'compras', nombre: 'Compras', modulos: ['compras'], ruta: '#/compras' },
+  { id: 'casa', nombre: 'En casa', modulos: ['stock'], ruta: '#/stock' },
+];
+
+type EstadoVital = 'critico' | 'aviso' | 'ok' | 'xp';
+const ETIQUETA: Record<EstadoVital, string> = { critico: 'Urgente', aviso: 'Atención', ok: 'Bien', xp: 'Tu partida' };
+
+function estadoDe(senales: Senal[]): EstadoVital {
+  if (senales.some((x) => x.nivel === 'critico')) return 'critico';
+  if (senales.some((x) => x.nivel === 'aviso')) return 'aviso';
+  return 'ok';
+}
+
+const IMPORTA: NivelSenal[] = ['critico', 'aviso'];
+
+/** Una tarjeta del tablero. Toda la tarjeta lleva al área (o abre su ventana); el botón de abajo hace la acción. */
+function TarjetaVital({ nombre, estado, etiqueta, vital, aviso, ruta, onAbrir, accion }: {
+  nombre: string; estado: EstadoVital; etiqueta?: string; vital: Vital; aviso?: string;
+  ruta?: string; onAbrir?: () => void; accion?: { texto: string; ruta?: string; onClick?: () => void };
+}) {
+  return (
+    <article className={`vital es-${estado}`}>
+      {ruta
+        ? <a className="vital-entrar" href={ruta} aria-label={`Entrar a ${nombre}`} />
+        : <button type="button" className="vital-entrar" aria-label={`Ver ${nombre}`} onClick={onAbrir} />}
+      <header className="vital-cab">
+        <h2 className="vital-nombre">{nombre}</h2>
+        <span className="vital-estado"><i aria-hidden="true" /><span>{etiqueta ?? ETIQUETA[estado]}</span></span>
+      </header>
+      <strong className="vital-cifra">{vital.cifra}</strong>
+      {vital.sub && <p className="vital-sub">{vital.sub}</p>}
+      {vital.barra != null && (
+        <div className="vital-barra" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(vital.barra * 100)}>
+          <b style={{ width: `${Math.max(0, Math.min(1, vital.barra)) * 100}%` }} />
+        </div>
+      )}
+      {aviso && <p className="vital-aviso">{aviso}</p>}
+      {accion && (accion.ruta
+        ? <a className="vital-accion" href={accion.ruta}>{accion.texto}</a>
+        : <button type="button" className="vital-accion" onClick={accion.onClick}>{accion.texto}</button>)}
+    </article>
+  );
+}
+
+function ListaSenales({ senales }: { senales: Senal[] }) {
+  if (!senales.length) return <p className="nota">Todo en orden. A medida que cargues datos, acá aparecen alertas y sugerencias.</p>;
+  return (
+    <ul className="senales">
+      {senales.map((s) => (
+        <li key={s.id}>
+          <a href={s.accion?.ruta ?? s.ruta ?? '#/'} className="senal">
+            <Estado nivel={s.nivel} />
+            <div className="crece">
+              <strong>{s.titulo}</strong>
+              {s.detalle && <small>{s.detalle}</small>}
+            </div>
+            {s.accion && <span className="btn chico">{s.accion.texto}</span>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** abrirMenu: tocar el LIFE grande abre el menú con todo (en el Inicio no hay otro LIFE arriba). */
+export function Hub({ abrirMenu }: { abrirMenu?: () => void }) {
+  const perfil = usePerfil();
   const senales = useTodasLasSenales();
+  // Un hook por módulo, siempre en el mismo orden (la lista de módulos es fija).
+  const vitales = new Map<string, Vital>();
+  for (const m of MODULOS) if (m.useVital) vitales.set(m.id, m.useVital());
+  const p = calcularProgreso(useActividad());
   const h = hoy();
   const limite = sumarDias(h, DIAS_AGENDA - 1);
   const agenda = useAgenda().filter((i) => i.fecha <= limite);
   const nombreModulo = new Map(MODULOS.map((m) => [m.id, m.nombre]));
   const [elegido, setElegido] = useState(h);
+  const [ventana, setVentana] = useState<'resolver' | 'partida' | null>(null);
 
   const conAlgo = new Set(agenda.map((i) => i.fecha));
   const delDia = agenda.filter((i) => i.fecha === elegido);
   const atrasados = elegido === h ? agenda.filter((i) => i.fecha < h && !i.hecho) : [];
 
+  const urgentes = senales.filter((x) => x.nivel === 'critico').length;
+  const mirar = senales.filter((x) => x.nivel === 'aviso').length;
+  const conBoton = senales.find((x) => IMPORTA.includes(x.nivel) && x.accion);
+
   return (
     <div className="pila">
-      <header className="hub-cab">
-        <div>
-          <h1>{saludo()}</h1>
-          <p className="nota">{fechaLarga(h)}</p>
-        </div>
-        {senales.length > 0 && <span className="chip-fecha">{senales.length} {senales.length === 1 ? 'señal' : 'señales'}</span>}
+      <header className="tablero-cab">
+        <span className="tablero-fecha">{saludo()} · {fechaLarga(h)}</span>
+        <h1 className="tablero-logo">
+          <button type="button" onClick={abrirMenu} aria-haspopup="dialog" title="Abrir el menú">LIF<span>E</span><i aria-hidden="true">▾</i></button>
+        </h1>
       </header>
 
+      <div className="tablero">
+        {AREAS.filter((a) => a.modulos.some((id) => veModulo(perfil, id))).map((a) => {
+          const v = vitales.get(a.modulos[0]);
+          if (!v) return null;
+          const propias = senales.filter((x) => a.modulos.includes(x.modulo));
+          const top = propias.find((x) => IMPORTA.includes(x.nivel));
+          const accion = top?.accion ?? v.accion;
+          return (
+            <TarjetaVital key={a.id} nombre={a.nombre} estado={estadoDe(propias)} vital={v} aviso={top?.titulo}
+              ruta={a.ruta} accion={accion ? { texto: accion.texto, ruta: accion.ruta } : undefined} />
+          );
+        })}
+        <TarjetaVital nombre="Mi partida" estado="xp" etiqueta={`Nivel ${p.nivel}`}
+          vital={{ cifra: `${p.xp} XP`, sub: p.racha > 0 ? `Racha: ${p.racha} ${p.racha === 1 ? 'día' : 'días seguidos'}` : 'Cargá algo hoy para empezar la racha', barra: p.enNivel / p.paraSubir }}
+          aviso={`Faltan ${p.paraSubir - p.enNivel} XP para el nivel ${p.nivel + 1}`}
+          onAbrir={() => setVentana('partida')} accion={{ texto: 'Ver mi partida', onClick: () => setVentana('partida') }} />
+        <TarjetaVital nombre="Para resolver" estado={estadoDe(senales)}
+          etiqueta={urgentes ? `${urgentes} urgente${urgentes > 1 ? 's' : ''}` : undefined}
+          vital={{ cifra: senales.length === 1 ? '1 aviso' : `${senales.length} avisos`, sub: senales.length ? `${urgentes} urgente${urgentes === 1 ? '' : 's'} · ${mirar} para mirar · ${senales.length - urgentes - mirar} info` : 'Todo en orden' }}
+          aviso={senales.find((x) => IMPORTA.includes(x.nivel))?.titulo}
+          onAbrir={() => setVentana('resolver')}
+          accion={conBoton?.accion ? { texto: conBoton.accion.texto, ruta: conBoton.accion.ruta } : { texto: 'Ver todo', onClick: () => setVentana('resolver') }} />
+      </div>
+
+      <h2 className="tablero-sub">Próximos días</h2>
       <Semana desde={h} cantidad={DIAS_AGENDA} elegido={elegido} onElegir={setElegido} conAlgo={conAlgo} />
       <Dia dia={elegido} items={delDia} atrasados={atrasados} nombreModulo={nombreModulo} />
 
-      <Jugador />
-
-      <Tarjeta titulo={<>Señales {senales.length > 0 && <span className="contador">{senales.length}</span>}</>}>
-        {senales.length === 0 ? (
-          <p className="nota">Todo en orden. A medida que cargues datos, acá aparecen alertas y sugerencias.</p>
-        ) : (
-          <ul className="senales">
-            {senales.map((s) => (
-              <li key={s.id}>
-                <a href={s.ruta ?? '#/'} className="senal">
-                  <Estado nivel={s.nivel} />
-                  <div>
-                    <strong>{s.titulo}</strong>
-                    {s.detalle && <small>{s.detalle}</small>}
-                  </div>
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Tarjeta>
-
-      <div className="carrusel" aria-label="Resumen de cada módulo">
-        {MODULOS.filter((m) => m.enHub !== false && m.Resumen).map((m) => {
-          const R = m.Resumen!;
-          return (
-            <Tarjeta key={m.id} titulo={<a href={`#/${m.id}`} className="tit-link">{m.icono}{m.nombre}</a>}>
-              <R />
-            </Tarjeta>
-          );
-        })}
-      </div>
+      <Modal titulo="Para resolver" abierto={ventana === 'resolver'} onCerrar={() => setVentana(null)}>
+        <ListaSenales senales={senales} />
+      </Modal>
+      <Modal titulo="Mi partida" abierto={ventana === 'partida'} onCerrar={() => setVentana(null)}>
+        <div className="pila">
+          <Jugador />
+          <p className="nota">Cada cosa que cargás suma 10 XP (un entreno, 50; una compra cerrada, 30). La racha cuenta los días seguidos en que cargaste algo.</p>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { crear, eliminar } from '../../core/db';
 import { fechaCorta, hoy, relativo } from '../../core/format';
@@ -256,7 +257,7 @@ export function PantallaHistorial() {
                       {s.notas && <span className="ent-hist-nota">“{s.notas}”</span>}
                     </button>
                     <button className="btn-icono" aria-label="Borrar" onClick={async () => {
-                      if (!window.confirm('¿Borrar este entreno?')) return;
+                      if (!await confirmar('¿Borrar este entreno?')) return;
                       for (const x of propias) await eliminar(TE.series, x.id);
                       await eliminar(TE.sesiones, s.id);
                     }}>{Icono.borrar}</button>

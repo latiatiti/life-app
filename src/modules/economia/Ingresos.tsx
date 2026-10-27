@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { ir } from '../../core/router';
 import { crear, eliminar, modificar } from '../../core/db';
@@ -95,7 +96,7 @@ function FormIngreso({ inicial, onListo }: { inicial?: Ingreso; onListo: () => v
             await modificar<Ingreso>(T.ingresos, inicial.id, { activo: !inicial.activo }); onListo();
           }}>{inicial.activo ? 'Pausar' : 'Reactivar'}</button>
           <button type="button" className="btn btn-peligro ancho" onClick={async () => {
-            if (!window.confirm('¿Borrar este ingreso? Los cobros ya registrados se conservan.')) return;
+            if (!await confirmar('¿Borrar este ingreso? Los cobros ya registrados se conservan.')) return;
             await eliminar(T.ingresos, inicial.id); onListo();
           }}>{Icono.borrar} Borrar</button>
         </>
@@ -192,7 +193,7 @@ function FormAdeudado({ ingreso, onListo }: { ingreso: Ingreso; onListo: () => v
       {error && <p className="error">{error}</p>}
       <button className="btn btn-primario">Registrar</button>
       <button type="button" className="btn ancho" onClick={async () => {
-        if (!window.confirm('¿Borrar la deuda sin registrar ingreso? (ej. ya no te la van a pagar)')) return;
+        if (!await confirmar('¿Borrar la deuda sin registrar ingreso? (ej. ya no te la van a pagar)')) return;
         await fijarAdeudado(ingreso, 0); onListo();
       }}>Ya no me lo deben</button>
     </form>
@@ -282,7 +283,7 @@ export function PantallaIngresos() {
                       {atrasado && <Estado nivel="aviso" texto="Sin registrar" />}
                       <button className="btn btn-primario" onClick={() => setCobrando(i)}>Cobré</button>
                       <button className="btn" onClick={async () => {
-                        if (window.confirm(`¿El cobro del ${fechaCorta(i.proximo_cobro)} de ${i.nombre} quedó pendiente? Se suma a lo que te debe.`)) await quedoPendiente(i);
+                        if (await confirmar(`¿El cobro del ${fechaCorta(i.proximo_cobro)} de ${i.nombre} quedó pendiente? Se suma a lo que te debe.`, 'Quedó pendiente')) await quedoPendiente(i);
                       }}>Quedó pendiente</button>
                     </div>
                   )}

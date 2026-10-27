@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useEffect, useState } from 'react';
 import { eliminar } from '../../core/db';
 import { dinero, fechaCorta, parsearMonto, uid } from '../../core/format';
@@ -231,7 +232,7 @@ function VerTicket({ t, onVolver }: { t: Ticket; onVolver: () => void }) {
           {t.texto && (
             <details><summary className="nota">Texto leído</summary><pre className="com-texto">{t.texto}</pre></details>
           )}
-          <button className="btn btn-peligro" onClick={async () => { if (window.confirm('¿Borrar este ticket guardado? (no borra la compra si ya la guardaste)')) { await eliminar('com_tickets', t.id); onVolver(); } }}>
+          <button className="btn btn-peligro" onClick={async () => { if (await confirmar('¿Borrar este ticket guardado? (no borra la compra si ya la guardaste)')) { await eliminar('com_tickets', t.id); onVolver(); } }}>
             {Icono.borrar} Borrar ticket
           </button>
         </>

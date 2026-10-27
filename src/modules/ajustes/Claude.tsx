@@ -1,3 +1,4 @@
+import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { usePerfil, puedeEscribir } from '../../core/auth';
 import { configNube } from '../../core/config';
@@ -111,8 +112,8 @@ export function ConexionClaude() {
                 <strong>{c.prefijo}…</strong> · {c.permiso === 'leer' ? 'solo lee' : 'lee y carga'}
                 <small className="nota"> · {c.ultimo_uso ? `usado ${fechaCorta(c.ultimo_uso.slice(0, 10))}` : 'sin usar'}</small>
               </span>
-              <button className="btn btn-peligro" onClick={() => {
-                if (window.confirm('¿Cortar este link? Claude deja de tener acceso con él.')) void modificar<Clave>('api_claves', c.id, { revocada: true });
+              <button className="btn btn-peligro" onClick={async () => {
+                if (await confirmar('¿Cortar este link? Claude deja de tener acceso con él.')) void modificar<Clave>('api_claves', c.id, { revocada: true });
               }}>Cortar</button>
             </li>
           ))}

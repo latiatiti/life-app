@@ -133,6 +133,12 @@ small.nota { display: block; font-size: 0.82rem; color: var(--texto-3); }
 }
 .pestanas a:hover, .pestanas button:hover { color: var(--texto); }
 .pestanas .activa { background: var(--acento); color: var(--sobre-acento); }
+/* En el celu entran 4 pestañas; las demás van en "⋯" (pilar: hasta 4, el resto en ⋯). En la compu se ven todas. */
+.pestanas .pestanas-mas { display: none; font-size: 1.1rem; letter-spacing: 0.1em; }
+@media (max-width: 760px) {
+  .pestanas .extra { display: none; }
+  .pestanas .pestanas-mas { display: inline-flex; }
+}
 
 /* Deslizable: en el celu las tarjetas quedan en fila y se pasan con el dedo; en la compu, en grilla */
 .carrusel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
@@ -462,6 +468,50 @@ input.input-grande { font-size: 1.6rem; font-weight: 800; min-height: 56px; text
   .avisos { left: auto; right: 24px; top: 20px; width: 380px; }
 }
 
+/* ---------- Botón + "Cargar" (un solo lugar para cargar cualquier cosa) ----------
+   Compu: primer botón del menú lateral. Celu: al medio de la barra, más grande y relleno. */
+.nav-cargar {
+  order: -1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--alto-toque); margin: 0 0 12px;
+  border: 0; border-radius: var(--radio); background: var(--acento); color: var(--sobre-acento); cursor: pointer;
+  font: inherit; font-weight: 800; letter-spacing: var(--etiqueta-espacio); text-transform: var(--etiqueta-mayus); box-shadow: var(--brillo);
+}
+.marca { order: -2; }
+.nav-cargar svg { width: 20px; height: 20px; }
+@media (max-width: 760px) {
+  .nav-cargar { order: 0; flex: none; width: 58px; height: 100%; margin: 0; padding: 0; }
+  .nav-cargar span { display: none; }
+  .nav-cargar svg { width: 26px; height: 26px; }
+}
+.cargar-opciones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cargar-opciones button {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 76px; padding: 12px 14px; text-align: left; cursor: pointer;
+  border: 1px solid var(--borde-fuerte); border-radius: var(--radio); background: var(--capa-2); color: var(--texto); font: inherit;
+}
+.cargar-opciones button:hover, .cargar-opciones button:focus-visible { border-color: var(--acento); }
+.cargar-opciones strong { font-size: 1.05rem; }
+.cargar-opciones small { color: var(--texto-2); font-size: 0.82rem; }
+
+/* ---------- Aviso "Guardado · DESHACER" (pilar 7) ---------- */
+.deshacer {
+  position: fixed; z-index: 70; left: 12px; right: 12px; bottom: calc(80px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 6px 6px 6px 16px;
+  border-radius: var(--radio); background: var(--capa-3); border: 1px solid var(--borde-fuerte); box-shadow: var(--sombra-flota);
+  color: var(--texto); font-weight: 700; animation: deshacer-entra var(--dur) var(--curva);
+}
+.deshacer button {
+  min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--radio-chico); cursor: pointer;
+  background: var(--acento-suave); color: var(--acento-texto); font: inherit; font-weight: 800; letter-spacing: var(--etiqueta-espacio);
+}
+.con-actividad .deshacer { bottom: calc(96px + env(safe-area-inset-bottom)); }
+.con-barra .deshacer { bottom: calc(150px + env(safe-area-inset-bottom)); }
+@keyframes deshacer-entra { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (min-width: 761px) {
+  .deshacer, .con-barra .deshacer, .con-actividad .deshacer { left: 50%; right: auto; bottom: 24px; width: 420px; transform: translateX(-50%); }
+  @keyframes deshacer-entra { from { opacity: 0; } to { opacity: 1; } }
+}
+.confirmar-pregunta { font-size: 1.1rem; font-weight: 700; }
+.confirmar .acciones { justify-content: flex-end; }
+
 /* ---------- Barra de actividad (algo a medias, para volver con un toque) ---------- */
 .barra-actividad {
   position: fixed; z-index: 30; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom));
@@ -486,4 +536,262 @@ input.input-grande { font-size: 1.6rem; font-weight: 800; min-height: 56px; text
 /* Quien pidió menos movimiento en el teléfono no ve animaciones */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}
+
+/* ==========================================================================
+   Modo juego (2026-10-25, "Signos vitales · modo juego")
+   LIFE como la pantalla de un videojuego (HUD). Todo sale de los tokens de la
+   sección 8 de tema.css: para bajarle el tono, tocá --brillo, --mira y
+   --linea-pantalla ahí, no acá.
+   ========================================================================== */
+
+/* Pantalla: líneas finas de monitor viejo, bordes oscurecidos y luz suave arriba */
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 200;
+  background: repeating-linear-gradient(0deg, var(--linea-pantalla) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, var(--oscuro-borde) 100%);
+}
+.app { background: radial-gradient(ellipse at 50% -20%, var(--resplandor-arriba) 0, transparent 55%), var(--fondo); }
+
+/* Títulos de pantalla en mayúscula, con flecha de menú de juego y brillo */
+h1 { font-family: var(--letra-titulo); letter-spacing: 0.06em; text-transform: uppercase; text-shadow: var(--brillo); }
+.hub-cab h1::before, .modulo-cab h1::before { content: '▸ '; color: var(--acento); }
+
+/* Datos (números, fechas, etiquetas) en letra de máquina */
+.num, .cifra-val, .dia-fecha strong, .semana strong, .racha, .jugador strong, .grande,
+.nota, .cifra-etq, .chip, .etiqueta, .subtitulo, .semana small, .dia-fecha small, .jugador-nivel small, .chip-fecha, .racha small, .estado {
+  font-family: var(--letra-dato);
+}
+.cifra-val { color: var(--acento-texto); text-shadow: var(--brillo); }
+
+/* Paneles con esquinas de mira y título entre corchetes */
+.tarjeta { position: relative; border-color: color-mix(in srgb, var(--borde-fuerte) 70%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--capa-2) 60%, transparent), var(--capa-1) 40%); }
+.tarjeta::before {
+  content: ''; position: absolute; inset: -1px; pointer-events: none;
+  --l: linear-gradient(var(--acento), var(--acento));
+  background:
+    var(--l) top left / var(--mira) 2px no-repeat, var(--l) top left / 2px var(--mira) no-repeat,
+    var(--l) top right / var(--mira) 2px no-repeat, var(--l) top right / 2px var(--mira) no-repeat,
+    var(--l) bottom left / var(--mira) 2px no-repeat, var(--l) bottom left / 2px var(--mira) no-repeat,
+    var(--l) bottom right / var(--mira) 2px no-repeat, var(--l) bottom right / 2px var(--mira) no-repeat;
+}
+.tarjeta-cab { border-bottom-style: dashed; border-bottom-color: var(--borde-fuerte); }
+.tarjeta-cab h2 { font-family: var(--letra-titulo); letter-spacing: 0.1em; }
+.tarjeta-cab h2::before { content: '['; color: var(--acento); }
+.tarjeta-cab h2::after { content: ']'; color: var(--acento); }
+
+/* Lo destacado: pantalla de signo vital con línea de pulso, en vez de relleno */
+.destacada, .dia-cab {
+  position: relative; color: var(--acento);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--acento) 16%, transparent), transparent);
+}
+.destacada { border-color: var(--acento); box-shadow: inset 0 0 24px color-mix(in srgb, var(--acento) 18%, transparent); }
+.destacada .nota, .destacada .cifra-etq, .destacada .cifra-nota { color: var(--texto-2); }
+.dia-cab { border-bottom: 1px solid var(--acento); }
+.dia-cab::after {
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 240px; max-width: 70%; pointer-events: none; opacity: 0.4;
+  background: var(--acento);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='60' viewBox='0 0 240 60'%3E%3Cpolyline fill='none' stroke='black' stroke-width='2' points='0,34 72,34 78,22 84,46 92,6 100,54 106,34 130,34 140,28 150,34 240,34'/%3E%3C/svg%3E") right center / 240px 60px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='60' viewBox='0 0 240 60'%3E%3Cpolyline fill='none' stroke='black' stroke-width='2' points='0,34 72,34 78,22 84,46 92,6 100,54 106,34 130,34 140,28 150,34 240,34'/%3E%3C/svg%3E") right center / 240px 60px no-repeat;
+}
+.dia-cab > * { position: relative; z-index: 1; }
+.dia-fecha { border-right-color: var(--acento); text-shadow: var(--brillo); }
+
+/* Tira de días y pestañas: lo elegido brilla */
+.semana button.elegido { box-shadow: var(--brillo); }
+.semana button.hoy:not(.elegido) { border-color: var(--acento); }
+.pestanas { background: transparent; }
+.pestanas .activa { background: color-mix(in srgb, var(--acento) 14%, transparent); color: var(--acento); box-shadow: inset 0 0 0 1px var(--acento), var(--brillo); }
+.pestanas .activa::before { content: '▸\00a0'; }
+
+/* Botón principal: placa con esquinas cortadas */
+.btn-primario {
+  box-shadow: var(--brillo); font-family: var(--letra-titulo); letter-spacing: 0.08em; text-transform: uppercase;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.btn-primario:focus-visible { outline-offset: -4px; outline-color: var(--sobre-acento); }
+
+/* Jugador: nivel en hexágono, experiencia por bloques, racha encendida */
+.jugador { background: linear-gradient(90deg, color-mix(in srgb, var(--xp) 10%, transparent), transparent 60%), var(--capa-1); }
+.jugador-nivel {
+  width: 62px; height: 62px; border: 0; background: var(--xp); color: var(--sobre-xp); font-family: var(--letra-titulo); font-size: 1.6rem;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+.jugador-nivel small { color: var(--sobre-xp); }
+.jugador strong { color: var(--xp); text-shadow: var(--brillo-xp); }
+.barra-xp { height: 12px; border: 1px solid color-mix(in srgb, var(--xp) 45%, transparent); }
+.barra-xp > div { background: repeating-linear-gradient(90deg, var(--xp) 0 8px, transparent 8px 10px); box-shadow: var(--brillo-xp); }
+.racha { color: var(--atencion-texto); }
+
+/* Medidores por bloques, como barras de energía */
+.medidor { height: 10px; border: 1px solid var(--borde-fuerte); }
+.medidor-barra { -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); }
+
+/* Señales con barra de vida: rojo late, naranja avisa */
+.senales li:has(.estado-critico) .senal { box-shadow: inset 3px 0 0 var(--urgente); padding-left: 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--urgente) 12%, transparent), transparent 70%); }
+.senales li:has(.estado-aviso) .senal { box-shadow: inset 3px 0 0 var(--atencion); padding-left: 12px; }
+.senal .estado-critico { animation: latido 1.4s ease-in-out infinite; }
+.contador { box-shadow: 0 0 8px var(--atencion); }
+
+/* Menú: activo encendido; en el celu, barra de juego con esquinas cortadas */
+.nav-item.activo { text-shadow: var(--brillo); }
+.nav-item.activo svg { filter: drop-shadow(0 0 6px var(--acento)); }
+@media (max-width: 760px) {
+  .nav { border-radius: 0; clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px); }
+  .nav-item, .nav-mas { border-radius: 0; font-family: var(--letra-dato); text-transform: uppercase; font-size: 0.6rem; }
+  .nav-item.activo { background: transparent; color: var(--acento); box-shadow: inset 0 -2px 0 var(--acento); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .senal .estado-critico { animation: none; }
+}
+
+/* ==========================================================================
+   Tablero del Inicio (2026-10-25): "LIFE" arriba y una tarjeta por área.
+   Compu 4 × 2, celu 2 × 4. Cada tarjeta es un signo vital: el color del borde
+   dice el estado (bien / atención / urgente / experiencia).
+   ========================================================================== */
+.tablero-cab { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 4px; }
+.tablero-fecha { font-family: var(--letra-dato); font-size: 0.78rem; color: var(--texto-2); letter-spacing: 0.04em; }
+.tablero-logo { margin: 0; font-family: var(--letra-titulo); font-weight: 700; font-size: 3rem; letter-spacing: 0.14em; line-height: 1; }
+.tablero-logo::before { content: none !important; }
+.tablero-logo span { color: var(--acento); }
+.tablero-sub { margin: 10px 0 0; font-family: var(--letra-titulo); font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto-2); }
+
+.tablero { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1100px) and (min-width: 761px) { .tablero { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .tablero { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .tablero-logo { font-size: 2.2rem; } }
+
+.vital {
+  --estado: var(--acento);
+  position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 220px; padding: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--capa-2) 70%, transparent), var(--capa-1) 45%);
+  border: 1px solid var(--borde-fuerte); transition: border-color var(--dur) var(--curva), box-shadow var(--dur) var(--curva), transform 120ms;
+}
+.vital::before {
+  content: ''; position: absolute; inset: -1px; pointer-events: none;
+  --l: linear-gradient(var(--estado), var(--estado));
+  background:
+    var(--l) top left / var(--mira) 2px no-repeat, var(--l) top left / 2px var(--mira) no-repeat,
+    var(--l) top right / var(--mira) 2px no-repeat, var(--l) top right / 2px var(--mira) no-repeat,
+    var(--l) bottom left / var(--mira) 2px no-repeat, var(--l) bottom left / 2px var(--mira) no-repeat,
+    var(--l) bottom right / var(--mira) 2px no-repeat, var(--l) bottom right / 2px var(--mira) no-repeat;
+}
+.vital.es-critico { --estado: var(--urgente); }
+.vital.es-aviso { --estado: var(--atencion); }
+.vital.es-xp { --estado: var(--xp); }
+.vital:hover, .vital:focus-within { border-color: var(--estado); box-shadow: 0 0 18px color-mix(in srgb, var(--estado) 28%, transparent); }
+.vital:active { transform: scale(0.98); }
+
+/* Toda la tarjeta es tocable; el botón de abajo queda por encima */
+.vital-entrar { position: absolute; inset: 0; z-index: 1; border: 0; background: none; cursor: pointer; padding: 0; }
+.vital-entrar:focus-visible { outline: 2px solid var(--estado); outline-offset: 2px; }
+.vital-cab { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.vital-nombre { margin: 0; font-family: var(--letra-titulo); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.1em; text-transform: uppercase; min-width: 0; }
+.vital-nombre::before { content: '['; color: var(--estado); margin-right: 3px; }
+.vital-nombre::after { content: ']'; color: var(--estado); margin-left: 3px; }
+.vital-estado { display: inline-flex; align-items: center; gap: 5px; flex: none; font-family: var(--letra-dato); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--estado); }
+.vital-estado i { width: 8px; height: 8px; border-radius: 50%; background: var(--estado); box-shadow: 0 0 8px var(--estado); }
+.es-critico .vital-estado i, .es-aviso .vital-estado i { animation: latido 1.6s ease-in-out infinite; }
+.vital-cifra { font-family: var(--letra-dato); font-weight: 700; font-size: 1.55rem; line-height: 1.1; color: var(--estado); text-shadow: 0 0 10px color-mix(in srgb, var(--estado) 45%, transparent); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.vital-sub { margin: 0; font-size: 0.82rem; color: var(--texto-2); }
+.vital-barra { height: 10px; border: 1px solid var(--borde-fuerte); background: var(--capa-2); }
+.vital-barra b { display: block; height: 100%; background: var(--estado); -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); }
+p.vital-aviso { margin: 0; font-size: 0.8rem; color: var(--estado); border-left: 3px solid var(--estado); padding-left: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vital-accion {
+  position: relative; z-index: 2; margin-top: auto; display: flex; align-items: center; justify-content: center; min-height: var(--alto-toque); padding: 0 10px;
+  border: 0; cursor: pointer; font: inherit; font-family: var(--letra-titulo); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; text-align: center;
+  background: var(--estado); color: var(--sobre-acento);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.vital-accion:focus-visible { outline: 2px solid var(--texto); outline-offset: -4px; }
+@media (max-width: 760px) {
+  .vital { min-height: 196px; padding: 12px; gap: 6px; }
+  .vital-nombre { font-size: 0.78rem; }
+  .vital-estado span { display: none; }
+  .vital-cifra { font-size: 1.2rem; }
+  .vital-sub, p.vital-aviso { font-size: 0.74rem; }
+  .vital-accion { font-size: 0.7rem; }
+}
+@media (prefers-reduced-motion: reduce) { .vital-estado i { animation: none !important; } }
+
+/* ==========================================================================
+   Sin menú lateral (2026-10-25, pedido de ella): la pantalla es del módulo.
+   Arriba una barra fina: LIFE ▾ abre el menú con todo, a la derecha Cargar, Ajustes y Nube/Local.
+   En el celu sigue la barra flotante de abajo con lo diario (Inicio · Día · + · Plata · Más).
+   ========================================================================== */
+.app { display: block; }
+.contenido { max-width: 1400px; margin: 0 auto; padding-top: 20px; }
+.barra-sup {
+  position: sticky; top: 0; z-index: 25; display: flex; align-items: center; gap: 14px;
+  min-height: 60px; padding: 8px 32px; padding-top: calc(8px + env(safe-area-inset-top));
+  background: color-mix(in srgb, var(--fondo) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--borde);
+}
+.boton-life {
+  display: inline-flex; align-items: baseline; gap: 0; min-height: 44px; padding: 6px 12px 6px 4px; border: 0; background: none; cursor: pointer;
+  color: var(--texto); font-family: var(--letra-titulo); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.14em; line-height: 1.3;
+}
+.boton-life span { color: var(--acento); text-shadow: var(--brillo); }
+.boton-life i { font-style: normal; font-size: 0.8rem; color: var(--texto-2); margin-left: 6px; letter-spacing: 0; }
+.boton-life:hover i, .boton-life:focus-visible i { color: var(--acento); }
+/* Los avisos flotantes bajan para no tapar la barra de arriba */
+.avisos { top: calc(64px + env(safe-area-inset-top)); }
+@media (min-width: 761px) { .avisos { top: 72px; } }
+.barra-sup-der { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.barra-sup .modo { margin: 0; align-self: center; }
+.barra-sup .nav-cargar { order: 0; margin: 0; padding: 0 18px; }
+.barra-sup-ajustes { display: grid; place-items: center; width: 44px; height: 44px; color: var(--texto-2); }
+.barra-sup-ajustes.activo { color: var(--acento); }
+.barra-sup-ajustes svg { width: 22px; height: 22px; }
+.solo-compu-flex { display: flex; }
+.en-inicio .barra-sup { border-bottom-color: transparent; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* El LIFE grande del Inicio también abre el menú */
+.tablero-logo button { font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0 0 0 0.3em; cursor: pointer; display: inline-flex; align-items: baseline; }
+.tablero-logo i { font-style: normal; font-size: 0.32em; color: var(--texto-2); margin-left: 0.3em; letter-spacing: 0; }
+.tablero-logo button:hover i, .tablero-logo button:focus-visible i { color: var(--acento); }
+.en-inicio .contenido { padding-top: 0; }
+
+/* Menú de LIFE: pantalla completa, una tarjeta por sección con sus pestañas */
+.menu-life {
+  border: 0; padding: 0; margin: 0; width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh;
+  background: color-mix(in srgb, var(--fondo) 96%, transparent); color: var(--texto);
+}
+.menu-life[open] { animation: vista-entra var(--dur) var(--curva); }
+.menu-life::backdrop { background: rgba(0, 0, 0, 0.6); }
+.menu-life-cuerpo { max-width: 1400px; margin: 0 auto; padding: calc(8px + env(safe-area-inset-top)) 32px 40px; display: flex; flex-direction: column; gap: 18px; }
+.menu-life-cab { display: flex; align-items: center; justify-content: space-between; min-height: 52px; }
+.menu-life-grilla { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.menu-life-seccion {
+  position: relative; display: flex; flex-direction: column; gap: 12px; padding: 18px; min-height: 150px;
+  background: var(--capa-1); border: 1px solid var(--borde); color: var(--texto);
+}
+.menu-life-seccion.activo { border-color: var(--acento-borde); box-shadow: inset 0 2px 0 var(--acento); }
+.menu-life-nombre { display: flex; align-items: center; gap: 10px; font-family: var(--letra-titulo); font-weight: 700; font-size: 1.25rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto); }
+.menu-life-nombre svg { width: 24px; height: 24px; color: var(--acento); flex: none; }
+.menu-life-seccion small { color: var(--texto-2); }
+.menu-life-pestanas { display: flex; flex-wrap: wrap; gap: 6px; }
+.menu-life-pestanas a {
+  min-height: 36px; display: inline-flex; align-items: center; padding: 0 10px; border: 1px solid var(--borde-fuerte);
+  color: var(--texto-2); font-size: 0.85rem; font-weight: 600;
+}
+.menu-life-pestanas a:hover, .menu-life-pestanas a:focus-visible { color: var(--texto); border-color: var(--acento); }
+.menu-life-pestanas a.activa { color: var(--sobre-acento); background: var(--acento); border-color: var(--acento); }
+.menu-life-inicio:hover, .menu-life-inicio:focus-visible { border-color: var(--acento); }
+@media (max-width: 1100px) and (min-width: 761px) { .menu-life-grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (min-width: 761px) {
+  .nav { display: none; }
+}
+@media (max-width: 760px) {
+  .solo-compu-flex { display: none; }
+  .barra-sup { position: relative; padding: 4px 12px 4px 16px; padding-top: calc(4px + env(safe-area-inset-top)); min-height: 52px; }
+  .boton-life { font-size: 1.2rem; }
+  .contenido { padding-top: 12px; }
+  .en-inicio .contenido { padding-top: 0; }
+  .menu-life-cuerpo { padding: calc(8px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
+  .menu-life-grilla { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .menu-life-seccion { min-height: 0; padding: 14px; }
+  .menu-life-pestanas a { min-height: 44px; }
 }

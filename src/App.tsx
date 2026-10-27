@@ -1,18 +1,61 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePerfil, puedeEscribir, veModulo } from './core/auth';
 import { almacen, contarLocales, noSubirDatosLocales, subirDatosLocales } from './core/db';
 import { MODULOS } from './core/registry';
+import type { Modulo } from './core/types';
 import { useRuta } from './core/router';
+import { BotonCargar } from './hub/Cargar';
 import { Hub } from './hub/Hub';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
+import { AvisoDeshacer, VentanaConfirmar } from './ui/Deshacer';
 import { Icono, Modal } from './ui/ui';
 
 /**
- * Módulos que van fijos en la barra flotante del celular (además de Inicio y "Más").
- * El resto queda en "Más". En la compu se ven todos en el menú lateral.
+ * Secciones que juntan varios módulos (pilar 4 y mapa de estructura, docs/mapa-estructura.md).
+ * Las rutas de cada módulo siguen iguales (#/economia, #/pagos…); solo cambia el menú y las pestañas.
+ * Pestañas: [módulo, ruta de la pantalla, nombre]. En el celu se ven las primeras 4; el resto, en "⋯".
  */
-const EN_BARRA = ['dia', 'economia', 'entrenamiento'];
+const GRUPOS: Array<{ id: string; nombre: string; icono: ReactNode; pestanas: Array<[string, string, string]> }> = [
+  {
+    id: 'plata', nombre: 'Plata', icono: Icono.economia,
+    pestanas: [['economia', '', 'Resumen'], ['pagos', '', 'Pagos'], ['economia', 'ingresos', 'Ingresos'], ['economia', 'movimientos', 'Movimientos'],
+      ['economia', 'proyeccion', 'Proyección'], ['economia', 'cuentas', 'Cuentas y categorías']],
+  },
+  {
+    id: 'casa', nombre: 'Casa', icono: Icono.stock,
+    pestanas: [['stock', '', 'En casa'], ['compras', '', 'Lista'], ['compras', 'escanear', 'Comprar'], ['alimentacion', '', 'Comida'],
+      ['compras', 'comprando', 'Por pasillos'], ['compras', 'ticket', 'Ticket'], ['compras', 'precios', 'Precios'], ['compras', 'historial', 'Compras hechas'],
+      ['alimentacion', 'platos', 'Platos'], ['alimentacion', 'metas', 'Metas de comida']],
+  },
+];
+
+/** Cuántas pestañas entran en el celu antes de mandar el resto a "⋯". */
+const PESTANAS_CELU = 4;
+
+/** Secciones que van fijas en la barra flotante del celular (además de Inicio, el + y "Más"). En la compu se ven todas. */
+const EN_BARRA = ['dia', 'plata'];
+
+interface Pestana { modulo: string; ruta: string; titulo: string; href: string }
+interface Seccion { id: string; nombre: string; icono: ReactNode; pestanas: Pestana[] }
+
+const enlace = (modulo: string, ruta: string) => `#/${modulo}${ruta ? `/${ruta}` : ''}`;
+
+/** Arma el menú: cada módulo es su propia sección, salvo los que se juntan en GRUPOS. Respeta el orden del registro. */
+function armarSecciones(visibles: Modulo[]): Seccion[] {
+  const ids = new Set(visibles.map((m) => m.id));
+  const salida: Seccion[] = [];
+  for (const m of visibles) {
+    const g = GRUPOS.find((x) => x.pestanas.some(([mod]) => mod === m.id));
+    if (!g) {
+      salida.push({ id: m.id, nombre: m.nombre, icono: m.icono, pestanas: m.pantallas.map((p) => ({ modulo: m.id, ruta: p.ruta, titulo: p.titulo, href: enlace(m.id, p.ruta) })) });
+    } else if (!salida.some((x) => x.id === g.id)) {
+      const pestanas = g.pestanas.filter(([mod]) => ids.has(mod)).map(([mod, ruta, titulo]) => ({ modulo: mod, ruta, titulo, href: enlace(mod, ruta) }));
+      salida.push({ id: g.id, nombre: g.nombre, icono: g.icono, pestanas });
+    }
+  }
+  return salida;
+}
 
 export function App() {
   const ruta = useRuta();
@@ -24,10 +67,16 @@ export function App() {
   const pantalla = modulo?.pantallas.find((p) => p.ruta === subruta) ?? modulo?.pantallas[0];
   const Componente = pantalla?.componente;
   const [verMas, setVerMas] = useState(false);
+  const [verPestanas, setVerPestanas] = useState(false);
+
+  const secciones = armarSecciones(visibles);
+  const seccion = secciones.find((x) => x.pestanas.some((p) => p.modulo === modulo?.id));
+  const activa = seccion?.pestanas.find((p) => p.modulo === modulo?.id && p.ruta === pantalla?.ruta);
 
   // Cada pantalla nueva arranca desde arriba (con el hash el navegador deja el scroll donde estaba).
   useEffect(() => {
     window.scrollTo(0, 0);
+    setVerPestanas(false);
     // En el celu las pestañas se deslizan: que la elegida quede a la vista.
     const a = document.querySelector<HTMLElement>('.pestanas .activa');
     const tira = a?.parentElement;
@@ -35,41 +84,63 @@ export function App() {
   }, [ruta]);
 
   const hayBarra = useHayBarra();
-  const actual = modulo?.id ?? '';
-  const nav = [{ id: '', nombre: 'Inicio', icono: Icono.inicio }, ...visibles.map((m) => ({ id: m.id, nombre: m.nombre, icono: m.icono }))];
+  const actual = seccion?.id ?? '';
+  const nav = [{ id: '', nombre: 'Inicio', icono: Icono.inicio, href: '#/' }, ...secciones.map((x) => ({ id: x.id, nombre: x.nombre, icono: x.icono, href: x.pestanas[0]?.href ?? '#/' }))];
   const enBarra = (id: string) => id === '' || EN_BARRA.includes(id);
+  const extras = seccion ? seccion.pestanas.slice(PESTANAS_CELU) : [];
+
+  const esInicio = !modulo;
+  const menu = { abierto: verMas, abrir: () => setVerMas(true), cerrar: () => setVerMas(false) };
 
   return (
-    <div className={`app ${hayBarra ? 'con-barra' : ''}`}>
+    <div className={`app ${hayBarra ? 'con-barra' : ''} ${esInicio ? 'en-inicio' : ''}`}>
+      {/* Arriba (compu y celu): LIFE abre el menú con todo; a la derecha, cargar, ajustes y dónde se guarda */}
+      <header className="barra-sup">
+        {!esInicio && (
+          <button type="button" className="boton-life" onClick={menu.abrir} aria-haspopup="dialog">
+            LIF<span>E</span><i aria-hidden="true">▾</i>
+          </button>
+        )}
+        <div className="barra-sup-der">
+          {puedeEscribir(perfil) && <span className="solo-compu-flex"><BotonCargar ve={(id) => visibles.some((m) => m.id === id)} /></span>}
+          {visibles.some((m) => m.id === 'ajustes') && (
+            <a href="#/ajustes" className={`btn-icono barra-sup-ajustes ${idModulo === 'ajustes' ? 'activo' : ''}`} aria-label="Ajustes" title="Ajustes">{Icono.ajustes}</a>
+          )}
+          <span className={`modo modo-${almacen.tipo}`} title={almacen.tipo === 'nube' ? 'Sincronizado con Supabase' : 'Datos solo en este navegador'}>
+            {almacen.tipo === 'nube' ? 'Nube' : 'Local'}
+          </span>
+        </div>
+      </header>
+
+      {/* Celu: barra flotante abajo con lo diario. En la compu no hay menú fijo: todo sale de LIFE */}
       <nav className="nav" aria-label="Principal">
-        <a href="#/" className="marca"><span className="marca-logo" aria-hidden="true">L</span>LIFE</a>
-        {nav.map((n) => (
-          <a key={n.id} href={`#/${n.id}`}
-            className={`nav-item ${actual === n.id ? 'activo' : ''} ${enBarra(n.id) ? '' : 'solo-compu'}`}
-            aria-current={actual === n.id ? 'page' : undefined}>
-            {n.icono}
-            <span>{n.nombre}</span>
-          </a>
+        {nav.filter((n) => enBarra(n.id)).map((n) => (
+          <Fragment key={n.id}>
+            <a href={n.href} className={`nav-item ${actual === n.id ? 'activo' : ''}`} aria-current={actual === n.id ? 'page' : undefined}>
+              {n.icono}
+              <span>{n.nombre}</span>
+            </a>
+            {/* El + va al medio de la barra del celu (después de Día) */}
+            {n.id === 'dia' && puedeEscribir(perfil) && <BotonCargar ve={(id) => visibles.some((m) => m.id === id)} />}
+          </Fragment>
         ))}
-        <button type="button" className={`nav-mas ${enBarra(actual) ? '' : 'activo'}`} onClick={() => setVerMas(true)}>
+        <button type="button" className={`nav-mas ${enBarra(actual) ? '' : 'activo'}`} onClick={menu.abrir}>
           {Icono.modulos}
           <span>Más</span>
         </button>
-        <span className={`modo modo-${almacen.tipo}`} title={almacen.tipo === 'nube' ? 'Sincronizado con Supabase' : 'Datos solo en este navegador'}>
-          {almacen.tipo === 'nube' ? 'Nube' : 'Modo local'}
-        </span>
       </nav>
 
-      <Modal titulo="Todo" abierto={verMas} onCerrar={() => setVerMas(false)}>
-        <div className="hoja-mas">
-          {nav.map((n) => (
-            <a key={n.id} href={`#/${n.id}`} className={actual === n.id ? 'activo' : ''} onClick={() => setVerMas(false)}>
-              {n.icono}
-              {n.nombre}
-            </a>
-          ))}
-        </div>
-      </Modal>
+      <MenuLife abierto={menu.abierto} onCerrar={menu.cerrar} secciones={secciones} actual={actual} ruta={ruta} />
+
+      {seccion && (
+        <Modal titulo={`Más de ${seccion.nombre}`} abierto={verPestanas} onCerrar={() => setVerPestanas(false)}>
+          <div className="hoja-mas">
+            {extras.map((p) => (
+              <a key={p.href} href={p.href} className={p === activa ? 'activo' : ''} onClick={() => setVerPestanas(false)}>{p.titulo}</a>
+            ))}
+          </div>
+        </Modal>
+      )}
 
       <main className="contenido">
         <AvisoLocales />
@@ -79,26 +150,32 @@ export function App() {
           {modulo && Componente ? (
             <>
               <header className="modulo-cab">
-                <h1>{modulo.nombre}</h1>
-                {modulo.pantallas.length > 1 && (
-                  <nav className="pestanas" aria-label={`Secciones de ${modulo.nombre}`}>
-                    {modulo.pantallas.map((p) => (
-                      <a key={p.ruta} href={`#/${modulo.id}${p.ruta ? `/${p.ruta}` : ''}`}
-                        className={p === pantalla ? 'activa' : ''} aria-current={p === pantalla ? 'page' : undefined}>{p.titulo}</a>
+                <h1>{seccion?.nombre ?? modulo.nombre}</h1>
+                {seccion && seccion.pestanas.length > 1 && (
+                  <nav className="pestanas" aria-label={`Secciones de ${seccion.nombre}`}>
+                    {seccion.pestanas.map((p, i) => (
+                      <a key={p.href} href={p.href}
+                        className={`${p === activa ? 'activa' : ''} ${i >= PESTANAS_CELU && p !== activa ? 'extra' : ''}`}
+                        aria-current={p === activa ? 'page' : undefined}>{p.titulo}</a>
                     ))}
+                    {extras.length > 0 && (
+                      <button type="button" className="pestanas-mas" aria-label={`Más de ${seccion.nombre}`} onClick={() => setVerPestanas(true)}>⋯</button>
+                    )}
                   </nav>
                 )}
               </header>
               <Componente />
             </>
           ) : (
-            <Hub />
+            <Hub abrirMenu={menu.abrir} />
           )}
         </div>
       </main>
 
       <Avisos />
       <BarraActividad />
+      <AvisoDeshacer />
+      <VentanaConfirmar />
     </div>
   );
 }
@@ -128,5 +205,53 @@ function AvisoLocales() {
         <button className="btn" onClick={() => { noSubirDatosLocales(); setN(0); }}>No, gracias</button>
       </div>
     </section>
+  );
+}
+
+/**
+ * Menú de LIFE: se abre tocando "LIFE" (arriba, o el grande del Inicio) o "Más" en el celu.
+ * Una tarjeta por sección con todas sus pestañas, para ir directo a cualquier pantalla.
+ */
+function MenuLife({ abierto, onCerrar, secciones, actual, ruta }: {
+  abierto: boolean; onCerrar: () => void; secciones: Seccion[]; actual: string; ruta: string;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (abierto && !d.open) d.showModal();
+    if (!abierto && d.open) d.close();
+  }, [abierto]);
+  // Al navegar se cierra solo
+  useEffect(() => { onCerrar(); }, [ruta]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <dialog ref={ref} className="menu-life" onClose={onCerrar} onClick={(e) => { if (e.target === ref.current) onCerrar(); }} aria-label="Menú de LIFE">
+      <div className="menu-life-cuerpo">
+        <header className="menu-life-cab">
+          <a href="#/" className="boton-life" onClick={onCerrar}>LIF<span>E</span></a>
+          <button className="btn-icono" onClick={onCerrar} aria-label="Cerrar">{Icono.cerrar}</button>
+        </header>
+        <div className="menu-life-grilla">
+          <a href="#/" className={`menu-life-seccion menu-life-inicio ${actual === '' ? 'activo' : ''}`} onClick={onCerrar}>
+            <span className="menu-life-nombre">{Icono.inicio}Inicio</span>
+            <small>El tablero con todas las áreas</small>
+          </a>
+          {secciones.map((x) => (
+            <section key={x.id} className={`menu-life-seccion ${actual === x.id ? 'activo' : ''}`}>
+              <a href={x.pestanas[0]?.href ?? '#/'} className="menu-life-nombre" onClick={onCerrar}>{x.icono}{x.nombre}</a>
+              {x.pestanas.length <= 1 && <small>Abrir {x.nombre.toLowerCase()}</small>}
+              {x.pestanas.length > 1 && (
+                <div className="menu-life-pestanas">
+                  {x.pestanas.map((p) => (
+                    <a key={p.href} href={p.href} onClick={onCerrar} className={`#/${ruta}` === p.href ? 'activa' : ''}>{p.titulo}</a>
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
+      </div>
+    </dialog>
   );
 }
