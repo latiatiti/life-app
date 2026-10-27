@@ -1,0 +1,525 @@
+{
+  "package.json": {
+    "mtime": 1792952768.6492574,
+    "seen": 1792958293.3758645,
+    "ast_hash": "4bec69311accbfeccdb0b3a75bbf3ef6",
+    "semantic_hash": "4bec69311accbfeccdb0b3a75bbf3ef6"
+  },
+  "public/historial-prueba.json": {
+    "mtime": 1792952768.6529698,
+    "seen": 1792958293.3759308,
+    "ast_hash": "815b17836732d2182731fd5c3f6dcd13",
+    "semantic_hash": "815b17836732d2182731fd5c3f6dcd13",
+    "ast_empty": true
+  },
+  "public/sw.js": {
+    "mtime": 1792952768.6529698,
+    "seen": 1792958293.3759346,
+    "ast_hash": "83bad1729acda53f5bd366b99ef023ba",
+    "semantic_hash": "83bad1729acda53f5bd366b99ef023ba"
+  },
+  "scripts/gen-historial.mjs": {
+    "mtime": 1792952768.6529698,
+    "seen": 1792958293.375967,
+    "ast_hash": "40c1b804007c984fe93a7cffb8e78307",
+    "semantic_hash": "40c1b804007c984fe93a7cffb8e78307"
+  },
+  "src/App.tsx": {
+    "mtime": 1792952768.6529698,
+    "seen": 1792958293.3759947,
+    "ast_hash": "b59932afbfcfc56acb89122dd9ff1612",
+    "semantic_hash": "b59932afbfcfc56acb89122dd9ff1612"
+  },
+  "src/core/auth.tsx": {
+    "mtime": 1792952768.6550848,
+    "seen": 1792958293.3760178,
+    "ast_hash": "06018683135ac706fd95f808e3363b96",
+    "semantic_hash": "06018683135ac706fd95f808e3363b96"
+  },
+  "src/core/config.ts": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.376044,
+    "ast_hash": "de412c599f23ac8eb2aaf7796b7b837d",
+    "semantic_hash": "de412c599f23ac8eb2aaf7796b7b837d"
+  },
+  "src/core/db.ts": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.376108,
+    "ast_hash": "ea17543eecbb2d4668c2983b51da3099",
+    "semantic_hash": "ea17543eecbb2d4668c2983b51da3099"
+  },
+  "src/core/format.ts": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.376135,
+    "ast_hash": "2d9f239a12a101bdd42f957f51487ef5",
+    "semantic_hash": "2d9f239a12a101bdd42f957f51487ef5"
+  },
+  "src/core/juego.ts": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.3761601,
+    "ast_hash": "3076deacb7c119abe4178903543f8b44",
+    "semantic_hash": "3076deacb7c119abe4178903543f8b44"
+  },
+  "src/core/registry.ts": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.3761945,
+    "ast_hash": "d822ab7f4976db659115d34e6e09545c",
+    "semantic_hash": "d822ab7f4976db659115d34e6e09545c"
+  },
+  "src/core/router.ts": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.376232,
+    "ast_hash": "36e375633f6fc5a292ddbcd128f3e796",
+    "semantic_hash": "36e375633f6fc5a292ddbcd128f3e796"
+  },
+  "src/core/senales.ts": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.3762774,
+    "ast_hash": "eda1913f614c29a03669ef2af96acfaa",
+    "semantic_hash": "eda1913f614c29a03669ef2af96acfaa"
+  },
+  "src/core/types.ts": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.3763068,
+    "ast_hash": "9c5871668bde2d77cb6148fda0151f89",
+    "semantic_hash": "9c5871668bde2d77cb6148fda0151f89"
+  },
+  "src/hub/Hub.tsx": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.376347,
+    "ast_hash": "dfe1e9c7f3876b9bc0bb4ad53e2b9149",
+    "semantic_hash": "dfe1e9c7f3876b9bc0bb4ad53e2b9149"
+  },
+  "src/main.tsx": {
+    "mtime": 1792952768.6551309,
+    "seen": 1792958293.3763945,
+    "ast_hash": "be068fbbeea0e2b4e1f9f609a6e9727b",
+    "semantic_hash": "be068fbbeea0e2b4e1f9f609a6e9727b"
+  },
+  "src/modules/ajustes/Claude.tsx": {
+    "mtime": 1792952768.6556406,
+    "seen": 1792958293.376431,
+    "ast_hash": "ff6b3cb7d58c59886431704bc93393ff",
+    "semantic_hash": "ff6b3cb7d58c59886431704bc93393ff"
+  },
+  "src/modules/ajustes/Cuentas.tsx": {
+    "mtime": 1792952768.6557052,
+    "seen": 1792958293.3764784,
+    "ast_hash": "22f32ccf8d6d6e68031dbbfec4fd7a35",
+    "semantic_hash": "22f32ccf8d6d6e68031dbbfec4fd7a35"
+  },
+  "src/modules/ajustes/index.tsx": {
+    "mtime": 1792952768.6557052,
+    "seen": 1792958293.3765233,
+    "ast_hash": "2dfa0fe826ff68c28691b92871e8610a",
+    "semantic_hash": "2dfa0fe826ff68c28691b92871e8610a"
+  },
+  "src/modules/ajustes/semilla.ts": {
+    "mtime": 1792952768.6557052,
+    "seen": 1792958293.3765588,
+    "ast_hash": "9238a454f4ac0787ddade6787e4b1ad1",
+    "semantic_hash": "9238a454f4ac0787ddade6787e4b1ad1"
+  },
+  "src/modules/alimentacion/Pantallas.tsx": {
+    "mtime": 1792952768.6557052,
+    "seen": 1792958293.3765852,
+    "ast_hash": "66c9061cbc2a9373c2e59825748d216f",
+    "semantic_hash": "66c9061cbc2a9373c2e59825748d216f"
+  },
+  "src/modules/alimentacion/index.tsx": {
+    "mtime": 1792952768.655979,
+    "seen": 1792958293.3766203,
+    "ast_hash": "4591fe799575f2d10af17f1ace01c320",
+    "semantic_hash": "4591fe799575f2d10af17f1ace01c320"
+  },
+  "src/modules/alimentacion/modelo.ts": {
+    "mtime": 1792952768.655979,
+    "seen": 1792958293.3766465,
+    "ast_hash": "ccf647d35dd7729ac7895e315847610e",
+    "semantic_hash": "ccf647d35dd7729ac7895e315847610e"
+  },
+  "src/modules/compras/Carrito.tsx": {
+    "mtime": 1792952768.655979,
+    "seen": 1792958293.3766718,
+    "ast_hash": "cd111f66b84dd12d63029205f6977a44",
+    "semantic_hash": "cd111f66b84dd12d63029205f6977a44"
+  },
+  "src/modules/compras/Comprando.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3766975,
+    "ast_hash": "45068767430e2b9828f6d7d5bce33635",
+    "semantic_hash": "45068767430e2b9828f6d7d5bce33635"
+  },
+  "src/modules/compras/Escaner.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3767223,
+    "ast_hash": "dd7690a47bacadc96fcbd10eaf579337",
+    "semantic_hash": "dd7690a47bacadc96fcbd10eaf579337"
+  },
+  "src/modules/compras/FormItem.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3767474,
+    "ast_hash": "12596bc48d7e86c7f56b3b758bb73c29",
+    "semantic_hash": "12596bc48d7e86c7f56b3b758bb73c29"
+  },
+  "src/modules/compras/Historial.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3767724,
+    "ast_hash": "1a134ae5da0d0bc8149004dffdbcffef",
+    "semantic_hash": "1a134ae5da0d0bc8149004dffdbcffef"
+  },
+  "src/modules/compras/Lista.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3767967,
+    "ast_hash": "1b454f2e4883e5b0ff32a8ace83c87b6",
+    "semantic_hash": "1b454f2e4883e5b0ff32a8ace83c87b6"
+  },
+  "src/modules/compras/Precios.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3768215,
+    "ast_hash": "4bfbc3ccf77e336f6bf5e35cda332e44",
+    "semantic_hash": "4bfbc3ccf77e336f6bf5e35cda332e44"
+  },
+  "src/modules/compras/Ticket.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3768458,
+    "ast_hash": "b36dda72f4f7219c4fdf78223baca92e",
+    "semantic_hash": "b36dda72f4f7219c4fdf78223baca92e"
+  },
+  "src/modules/compras/index.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3768706,
+    "ast_hash": "92071e6719a63293ea824100454dd60e",
+    "semantic_hash": "92071e6719a63293ea824100454dd60e"
+  },
+  "src/modules/compras/modelo.ts": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.376894,
+    "ast_hash": "95a60688135008294d774fd7ddc09825",
+    "semantic_hash": "95a60688135008294d774fd7ddc09825"
+  },
+  "src/modules/compras/ticket.ts": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3769176,
+    "ast_hash": "4323186938a8a0fd440f96a539647e87",
+    "semantic_hash": "4323186938a8a0fd440f96a539647e87"
+  },
+  "src/modules/dia/Pantallas.tsx": {
+    "mtime": 1792952768.6562316,
+    "seen": 1792958293.3769417,
+    "ast_hash": "92c08a86aa519bf42bd27ac3b9d11ba8",
+    "semantic_hash": "92c08a86aa519bf42bd27ac3b9d11ba8"
+  },
+  "src/modules/dia/index.tsx": {
+    "mtime": 1792952768.657542,
+    "seen": 1792958293.3769674,
+    "ast_hash": "8b67d43ac23e26f701545662dd413ebf",
+    "semantic_hash": "8b67d43ac23e26f701545662dd413ebf"
+  },
+  "src/modules/dia/modelo.ts": {
+    "mtime": 1792952768.657542,
+    "seen": 1792958293.3769917,
+    "ast_hash": "4ec3cfcd63992bf9f9f1838264fba07c",
+    "semantic_hash": "4ec3cfcd63992bf9f9f1838264fba07c"
+  },
+  "src/modules/economia/Cuentas.tsx": {
+    "mtime": 1792952768.657542,
+    "seen": 1792958293.3770154,
+    "ast_hash": "39fe0e0ca3c48d37a1fa137c3d04b340",
+    "semantic_hash": "39fe0e0ca3c48d37a1fa137c3d04b340"
+  },
+  "src/modules/economia/FormMovimiento.tsx": {
+    "mtime": 1792952768.6578746,
+    "seen": 1792958293.3770413,
+    "ast_hash": "8892ac43c65c909609ce51ccbe8742f1",
+    "semantic_hash": "8892ac43c65c909609ce51ccbe8742f1"
+  },
+  "src/modules/economia/Ingresos.tsx": {
+    "mtime": 1792952768.6578746,
+    "seen": 1792958293.377116,
+    "ast_hash": "26400ae23103db04775983d77d2c585f",
+    "semantic_hash": "26400ae23103db04775983d77d2c585f"
+  },
+  "src/modules/economia/Movimientos.tsx": {
+    "mtime": 1792952768.6578746,
+    "seen": 1792958293.3771448,
+    "ast_hash": "fde4f3b20db6b9855aaf980721ff7df4",
+    "semantic_hash": "fde4f3b20db6b9855aaf980721ff7df4"
+  },
+  "src/modules/economia/Proyeccion.tsx": {
+    "mtime": 1792952768.6578746,
+    "seen": 1792958293.3771715,
+    "ast_hash": "9a7793e5701fdce0278944c6d82e26af",
+    "semantic_hash": "9a7793e5701fdce0278944c6d82e26af"
+  },
+  "src/modules/economia/Resumen.tsx": {
+    "mtime": 1792952768.6578746,
+    "seen": 1792958293.3771968,
+    "ast_hash": "7df1ec59c4a6086a5e1a2e815793e9e5",
+    "semantic_hash": "7df1ec59c4a6086a5e1a2e815793e9e5"
+  },
+  "src/modules/economia/index.tsx": {
+    "mtime": 1792952768.6578746,
+    "seen": 1792958293.37723,
+    "ast_hash": "d609c3948b03fe5458e4b00c0ea154d0",
+    "semantic_hash": "d609c3948b03fe5458e4b00c0ea154d0"
+  },
+  "src/modules/economia/modelo.ts": {
+    "mtime": 1792952768.6578746,
+    "seen": 1792958293.3772547,
+    "ast_hash": "755a277090289248afba92cd72ea6a7f",
+    "semantic_hash": "755a277090289248afba92cd72ea6a7f"
+  },
+  "src/modules/entrenamiento/Controles.tsx": {
+    "mtime": 1792952768.6578746,
+    "seen": 1792958293.377279,
+    "ast_hash": "6c0b7724c3eb21934fe8350d5b5a3a93",
+    "semantic_hash": "6c0b7724c3eb21934fe8350d5b5a3a93"
+  },
+  "src/modules/entrenamiento/Ejercicios.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.377305,
+    "ast_hash": "eb9d5c659579cc0bc535413f0a5862e9",
+    "semantic_hash": "eb9d5c659579cc0bc535413f0a5862e9"
+  },
+  "src/modules/entrenamiento/Entrenando.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3773296,
+    "ast_hash": "1d69bab042d9d6d12075eabe720238f3",
+    "semantic_hash": "1d69bab042d9d6d12075eabe720238f3"
+  },
+  "src/modules/entrenamiento/Graficos.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3773541,
+    "ast_hash": "6ac33bfcadbd0b01935150cdcb772ad8",
+    "semantic_hash": "6ac33bfcadbd0b01935150cdcb772ad8"
+  },
+  "src/modules/entrenamiento/MapaMuscular.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3773801,
+    "ast_hash": "a2e10ae9fc955589ca2bd29197d34c1b",
+    "semantic_hash": "a2e10ae9fc955589ca2bd29197d34c1b"
+  },
+  "src/modules/entrenamiento/Pantallas.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.377405,
+    "ast_hash": "3fa341953b9f1ebb2f38289113f04dea",
+    "semantic_hash": "3fa341953b9f1ebb2f38289113f04dea"
+  },
+  "src/modules/entrenamiento/Preparador.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3774288,
+    "ast_hash": "2e4c1d3e7c6d4fa7cdccd3be1ccfd2c4",
+    "semantic_hash": "2e4c1d3e7c6d4fa7cdccd3be1ccfd2c4"
+  },
+  "src/modules/entrenamiento/Resumen.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3774526,
+    "ast_hash": "c358ee01b8eceab4173cb4addd96a23d",
+    "semantic_hash": "c358ee01b8eceab4173cb4addd96a23d"
+  },
+  "src/modules/entrenamiento/Rutina.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3774757,
+    "ast_hash": "18e10291198ff643e98151d13983cf6a",
+    "semantic_hash": "18e10291198ff643e98151d13983cf6a"
+  },
+  "src/modules/entrenamiento/analisis.ts": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3775005,
+    "ast_hash": "225cbf16c7d07b5840f50a11df6d3fe2",
+    "semantic_hash": "225cbf16c7d07b5840f50a11df6d3fe2"
+  },
+  "src/modules/entrenamiento/biblioteca.ts": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3775237,
+    "ast_hash": "477be636797d9977ac429df262e8b4bf",
+    "semantic_hash": "477be636797d9977ac429df262e8b4bf"
+  },
+  "src/modules/entrenamiento/ciclo.ts": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3775465,
+    "ast_hash": "a61a10d3c8c06e4de6e41e586f74e6a4",
+    "semantic_hash": "a61a10d3c8c06e4de6e41e586f74e6a4"
+  },
+  "src/modules/entrenamiento/index.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3775702,
+    "ast_hash": "184bc6988cfb4341c31a39ad4f929802",
+    "semantic_hash": "184bc6988cfb4341c31a39ad4f929802"
+  },
+  "src/modules/entrenamiento/modelo.ts": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3775935,
+    "ast_hash": "b1c93346965d15096a4d3e88f3abb2a6",
+    "semantic_hash": "b1c93346965d15096a4d3e88f3abb2a6"
+  },
+  "src/modules/entrenamiento/tabla.ts": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3776228,
+    "ast_hash": "ec2cb829e2371fdfe34a2bec955c5cef",
+    "semantic_hash": "ec2cb829e2371fdfe34a2bec955c5cef"
+  },
+  "src/modules/pagos/AlDia.tsx": {
+    "mtime": 1792952768.658636,
+    "seen": 1792958293.3776474,
+    "ast_hash": "7f375bc1b844e767220becdfcd61c9d2",
+    "semantic_hash": "7f375bc1b844e767220becdfcd61c9d2"
+  },
+  "src/modules/pagos/Pagos.tsx": {
+    "mtime": 1792952768.6603818,
+    "seen": 1792958293.3776731,
+    "ast_hash": "c922dd3ce1abe6606ec0a01ea10f981b",
+    "semantic_hash": "c922dd3ce1abe6606ec0a01ea10f981b"
+  },
+  "src/modules/pagos/index.tsx": {
+    "mtime": 1792952768.6603818,
+    "seen": 1792958293.3776987,
+    "ast_hash": "2b149ed7b0e7770984ec7318982c9b9c",
+    "semantic_hash": "2b149ed7b0e7770984ec7318982c9b9c"
+  },
+  "src/modules/stock/Pantallas.tsx": {
+    "mtime": 1792952768.6603818,
+    "seen": 1792958293.377722,
+    "ast_hash": "63ebe17759f7c9798c6488fc9fc0ada4",
+    "semantic_hash": "63ebe17759f7c9798c6488fc9fc0ada4"
+  },
+  "src/modules/stock/index.tsx": {
+    "mtime": 1792952768.660697,
+    "seen": 1792958293.3777473,
+    "ast_hash": "6ceea44782c0697ed77bbf3154caa638",
+    "semantic_hash": "6ceea44782c0697ed77bbf3154caa638"
+  },
+  "src/modules/stock/modelo.ts": {
+    "mtime": 1792952768.660697,
+    "seen": 1792958293.3777714,
+    "ast_hash": "ee5958005b665dc47f5292a643f6de58",
+    "semantic_hash": "ee5958005b665dc47f5292a643f6de58"
+  },
+  "src/ui/Actividad.tsx": {
+    "mtime": 1792952768.660697,
+    "seen": 1792958293.3777947,
+    "ast_hash": "eb8aab7f7aaf3dab6e3fccfc3013236a",
+    "semantic_hash": "eb8aab7f7aaf3dab6e3fccfc3013236a"
+  },
+  "src/ui/Avisos.tsx": {
+    "mtime": 1792952768.66123,
+    "seen": 1792958293.3778183,
+    "ast_hash": "b9625f20cc46eb1e22169d284c81a0cb",
+    "semantic_hash": "b9625f20cc46eb1e22169d284c81a0cb"
+  },
+  "src/ui/Semana.tsx": {
+    "mtime": 1792952768.66123,
+    "seen": 1792958293.3778415,
+    "ast_hash": "38859f47fa59ac33ea1bebc84bf327d6",
+    "semantic_hash": "38859f47fa59ac33ea1bebc84bf327d6"
+  },
+  "src/ui/ui.tsx": {
+    "mtime": 1792952768.66123,
+    "seen": 1792958293.3778636,
+    "ast_hash": "6c3b30900dadd62060297672e7d7990c",
+    "semantic_hash": "6c3b30900dadd62060297672e7d7990c"
+  },
+  "supabase/functions/cuentas/index.ts": {
+    "mtime": 1792952768.6617963,
+    "seen": 1792958293.3778865,
+    "ast_hash": "456e818825a0c0bec749372c3c883c73",
+    "semantic_hash": "456e818825a0c0bec749372c3c883c73"
+  },
+  "supabase/functions/life-mcp/index.ts": {
+    "mtime": 1792952768.6617963,
+    "seen": 1792958293.377916,
+    "ast_hash": "62f6f45ccf772295d012672e45e93104",
+    "semantic_hash": "62f6f45ccf772295d012672e45e93104"
+  },
+  "supabase/functions/precios/index.ts": {
+    "mtime": 1792952768.6617963,
+    "seen": 1792958293.3779423,
+    "ast_hash": "60753f5be4fdc0a740c685f365c03d46",
+    "semantic_hash": "60753f5be4fdc0a740c685f365c03d46"
+  },
+  "supabase/functions/ticket/index.ts": {
+    "mtime": 1792952768.6617963,
+    "seen": 1792958293.3779693,
+    "ast_hash": "59188399e56509937bf45e296f732f0a",
+    "semantic_hash": "59188399e56509937bf45e296f732f0a"
+  },
+  "tsconfig.json": {
+    "mtime": 1792952768.6617963,
+    "seen": 1792958293.3779955,
+    "ast_hash": "b652223a1f99af1a0964041df8263d56",
+    "semantic_hash": "b652223a1f99af1a0964041df8263d56"
+  },
+  "vite.config.ts": {
+    "mtime": 1792952768.6617963,
+    "seen": 1792958293.3780153,
+    "ast_hash": "647a92250853a61c5b1cecded7e2cbbb",
+    "semantic_hash": "647a92250853a61c5b1cecded7e2cbbb"
+  },
+  "supabase/compras-personas.sql": {
+    "mtime": 1792952768.66123,
+    "seen": 1792958304.9541776,
+    "ast_hash": "87f9b53c3eee42b661056fd4ff5f2a44",
+    "semantic_hash": "87f9b53c3eee42b661056fd4ff5f2a44"
+  },
+  "supabase/compras-ticket.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.9542258,
+    "ast_hash": "05413fce5412614e3c1069e44a569563",
+    "semantic_hash": "05413fce5412614e3c1069e44a569563"
+  },
+  "supabase/compras-tickets.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.9542692,
+    "ast_hash": "01af83e85c340f0d4ae4245da39c5b5d",
+    "semantic_hash": "01af83e85c340f0d4ae4245da39c5b5d"
+  },
+  "supabase/compras.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.9543178,
+    "ast_hash": "4caff4c7c8f2271d47990c6804452da9",
+    "semantic_hash": "4caff4c7c8f2271d47990c6804452da9"
+  },
+  "supabase/cuentas.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.9543602,
+    "ast_hash": "0cb35ee064c0287e2b27e36366204e89",
+    "semantic_hash": "0cb35ee064c0287e2b27e36366204e89"
+  },
+  "supabase/dia.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.9544024,
+    "ast_hash": "bcf9f1a7106bdfcdb678e3ed09bf4abe",
+    "semantic_hash": "bcf9f1a7106bdfcdb678e3ed09bf4abe"
+  },
+  "supabase/economia-cobros.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.9544456,
+    "ast_hash": "940a5509e6f8d89a4aa84d18514a62a1",
+    "semantic_hash": "940a5509e6f8d89a4aa84d18514a62a1"
+  },
+  "supabase/entreno-ciclos.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.9544857,
+    "ast_hash": "42383fe6b7bfd78b25421af97ad355f3",
+    "semantic_hash": "42383fe6b7bfd78b25421af97ad355f3"
+  },
+  "supabase/entreno-ejercicios.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.9545252,
+    "ast_hash": "f94e5c72dae16acf871d622aa52023d2",
+    "semantic_hash": "f94e5c72dae16acf871d622aa52023d2"
+  },
+  "supabase/entreno-v2.sql": {
+    "mtime": 1792952768.6613343,
+    "seen": 1792958304.954567,
+    "ast_hash": "38cda36c61d27b31ac4b1107ef98be78",
+    "semantic_hash": "38cda36c61d27b31ac4b1107ef98be78"
+  },
+  "supabase/schema.sql": {
+    "mtime": 1792952768.6617963,
+    "seen": 1792958304.9551482,
+    "ast_hash": "b64ed16f806f3162f027da10b80fe46b",
+    "semantic_hash": "b64ed16f806f3162f027da10b80fe46b"
+  }
+}
