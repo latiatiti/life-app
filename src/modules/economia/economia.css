@@ -55,5 +55,29 @@
 .eco-tl-ev .cobro { color: var(--good-text); }
 .eco-tl-ev .pago { color: var(--critical-text); }
 
+/* Con Ulises: saldo grande con el estado en el borde (bien = te debe, ámbar = le debés), y lista con saldo corrido. */
+.eco-saldo { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border-left: 4px solid var(--borde-fuerte);
+  animation: eco-entra var(--dur) var(--curva) both; }
+.eco-saldo.te-debe { border-left-color: var(--bien); }
+.eco-saldo.debes { border-left-color: var(--atencion); }
+.eco-saldo-val { font-family: var(--letra-dato); font-size: 2.2rem; font-weight: 700; line-height: 1.1; color: var(--texto); }
+.eco-saldo.te-debe .eco-saldo-val { color: var(--bien-texto); }
+.eco-saldo.debes .eco-saldo-val { color: var(--atencion-texto); }
+.eco-saldo-txt { color: var(--texto-2); font-weight: 600; }
+.eco-saldo-acciones { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; margin-top: 10px; }
+.eco-saldo-acciones .btn { flex: 1 1 140px; min-height: var(--alto-toque); }
+.eco-compartidos .eco-ev-signo { background: var(--capa-3); color: var(--texto-2); }
+.eco-comp-montos { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; white-space: nowrap; }
+.eco-partes { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.eco-partes .btn.activo { border-color: var(--acento); color: var(--acento-texto); }
+.eco-parte-input { display: inline-flex; align-items: center; gap: 6px; color: var(--texto-2); }
+.eco-parte-input input { width: 80px; text-align: right; }
+.eco-efecto { margin: 0; padding: 10px 12px; border-radius: var(--radio-chico); font-weight: 600; background: var(--capa-2); }
+.eco-efecto.te-debe { color: var(--bien-texto); }
+.eco-efecto.debes { color: var(--atencion-texto); }
+.eco-aviso-linea { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--borde); border-left: 3px solid var(--atencion); border-radius: var(--radio-chico); background: var(--capa-1); }
+@media (prefers-reduced-motion: reduce) { .eco-saldo { animation: none; } }
+
 @keyframes eco-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .eco-fuente { animation: none; } }

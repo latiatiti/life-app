@@ -12,6 +12,7 @@ interface Opcion { id: string; texto: string; ayuda: string; modulo: string; rut
 
 const OPCIONES: Opcion[] = [
   { id: 'gasto', texto: 'Gasto', ayuda: 'Anotar algo que pagaste', modulo: 'economia', form: 'gasto' },
+  { id: 'ulises', texto: 'Con Ulises', ayuda: 'Gasto compartido, préstamo o saldar', modulo: 'economia', ruta: 'economia/ulises' },
   { id: 'cobre', texto: 'Cobré', ayuda: 'Reparto, fábrica u otro ingreso', modulo: 'economia', ruta: 'economia/ingresos' },
   { id: 'pague', texto: 'Pagué', ayuda: 'Un vencimiento de Pagos', modulo: 'pagos', ruta: 'pagos/al-dia' },
   { id: 'tarea', texto: 'Tarea', ayuda: 'Algo para hacer hoy o otro día', modulo: 'dia', ruta: 'dia' },

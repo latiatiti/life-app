@@ -20,7 +20,7 @@ const GRUPOS: Array<{ id: string; nombre: string; icono: ReactNode; pestanas: Ar
   {
     id: 'plata', nombre: 'Plata', icono: Icono.economia,
     pestanas: [['economia', '', 'Resumen'], ['pagos', '', 'Pagos'], ['economia', 'ingresos', 'Ingresos'], ['economia', 'movimientos', 'Movimientos'],
-      ['economia', 'proyeccion', 'Proyección'], ['economia', 'cuentas', 'Cuentas y categorías']],
+      ['economia', 'ulises', 'Con Ulises'], ['economia', 'proyeccion', 'Proyección'], ['economia', 'cuentas', 'Cuentas y categorías']],
   },
   {
     id: 'casa', nombre: 'Casa', icono: Icono.stock,
