@@ -4,6 +4,7 @@ import { Campo, Icono, Modal, Tarjeta } from '../../ui/ui';
 import { GRUPOS, infoEjercicio, nombreGrupo, todos, zonasDe, type Grupo } from './biblioteca';
 import { EditorVariantes, FormEjercicio, MisEjercicios } from './Ejercicios';
 import { MapaMuscular } from './MapaMuscular';
+import { MejorasProfe } from './MejorasProfe';
 import { e, guardarRutina, RUTINA_BASE, useBiblioteca, useRutina, type DiaPlan, type EjercicioPlan } from './modelo';
 
 /** Buscador de la biblioteca, filtrable por grupo; también deja escribir un ejercicio propio. */
@@ -125,6 +126,7 @@ export function PantallaRutina() {
       <p className="nota" style={{ margin: 0 }}>
         {fila ? `Rutina activa: ${fila.nombre}.` : 'Estás usando la rutina base.'} Editá días y ejercicios; los cambios valen desde el próximo entreno y no tocan el historial.
       </p>
+      <MejorasProfe bloqueado={sucio} />
       {fila?.notas && <Tarjeta titulo="Notas de la rutina"><p className="nota" style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{fila.notas}</p></Tarjeta>}
       <div className="segmentado" style={{ flexWrap: 'wrap' }}>
         {borrador.map((d, i) => <button key={i} className={i === diaSel ? 'activo' : ''} onClick={() => setDiaSel(i)}>{d.id} · {d.nombre}</button>)}
