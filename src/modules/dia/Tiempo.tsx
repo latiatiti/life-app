@@ -78,7 +78,7 @@ export function TuTiempo({ vista }: { vista: VistaDia }) {
           </ul>
         </>
       )}
-      <form className="tarea-nueva" onSubmit={anotar}>
+      <form className="tarea-nueva tiempo-form" onSubmit={anotar}>
         <input value={que} onChange={(e) => setQue(e.target.value)} placeholder="Ej. leí, curso, ordené el placard…" aria-label="Qué hiciste" />
         <input type="number" inputMode="numeric" min={1} value={min} onChange={(e) => setMin(e.target.value)} placeholder="min" aria-label="Minutos" />
         <select value={clase} onChange={(e) => setClase(e.target.value as ClaseTiempo)} aria-label="Tipo">
@@ -103,7 +103,7 @@ export function CosasDiarias() {
   const { filas: rutinas } = useRutinas();
   const [nombre, setNombre] = useState('');
   const [min, setMin] = useState('');
-  const [veces, setVeces] = useState('1');
+  const [veces, setVeces] = useState('');
   const [dias, setDias] = useState<number[]>([]);
 
   async function agregar(e: FormEvent) {
@@ -114,7 +114,7 @@ export function CosasDiarias() {
       nombre: nombre.trim(), minutos: m, veces: Math.max(1, Math.round(Number(veces)) || 1),
       dias: dias.length && dias.length < 7 ? [...dias].sort() : null, momento: 'cualquiera', activo: true, nota: null,
     });
-    setNombre(''); setMin(''); setVeces('1'); setDias([]);
+    setNombre(''); setMin(''); setVeces(''); setDias([]);
   }
 
   const total = rutinas.filter((x) => x.activo !== false && !x.dias?.length).reduce((s, x) => s + x.minutos * (x.veces || 1), 0);
@@ -141,7 +141,7 @@ export function CosasDiarias() {
         <div className="tarea-nueva">
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. bañarme" aria-label="Qué" />
           <input type="number" inputMode="numeric" min={1} value={min} onChange={(e) => setMin(e.target.value)} placeholder="min" aria-label="Minutos cada vez" />
-          <input type="number" inputMode="numeric" min={1} value={veces} onChange={(e) => setVeces(e.target.value)} aria-label="Veces por día" title="Veces por día" />
+          <input type="number" inputMode="numeric" min={1} value={veces} onChange={(e) => setVeces(e.target.value)} placeholder="veces" aria-label="Veces por día" />
           <button className="btn btn-primario" aria-label="Agregar">{Icono.mas}</button>
         </div>
         <div className="dias-elegir" role="group" aria-label="Qué días (ninguno = todos)">

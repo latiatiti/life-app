@@ -21,12 +21,12 @@ Estado: relevamiento 2026-10-25. **Plata, Casa y el botón + aprobados y hechos 
 | Sección | Pestañas | Objetos (tablas) |
 |---|---|---|
 | Inicio | (una sola) tira de 14 días, tarjeta del día, nivel/XP, señales, resúmenes de cada módulo | lee de todos |
-| Día | Hoy · Semana tipo | `dia_plantilla`, `dia_dias`, `dia_tareas` |
+| Día | Hoy · Semana tipo | `dia_plantilla`, `dia_dias`, `dia_tareas`, `dia_rutinas`, `dia_tiempo` (2026-10-29) |
 | Economía | Resumen · Movimientos · Ingresos · Proyección · Cuentas y categorías | `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos` |
 | Pagos | (una sola) + Ponerse al día (`#/pagos/al-dia`) | `pag_pagos` |
 | Entreno | Hoy · Progreso · Historial · Rutina · Preparador | `ent_sesiones`, `ent_series`, `ent_rutinas`, `ent_ejercicios` |
 | Stock | En casa · Lista de compras | `stk_productos` |
-| Compras | Lista · Modo compra · Por pasillos · Ticket · Precios · Historial | `com_supers`, `com_items`, `com_precios`, `com_compras`, `com_tickets` |
+| Compras | Lista · Modo compra · Por pasillos · Ticket · Precios · Historial | `com_supers`, `com_items`, `com_precios`, `com_compras`, `com_tickets`, `com_frecuencias` (2026-10-29, tarjeta al final de Lista) |
 | Comida | Hoy · Platos · Metas | `ali_platos`, `ali_comidas`, `ali_extras`, `ali_metas` |
 | Ajustes | (una sola, larga) cuentas de usuario, conexión con Claude, respaldo, semilla, datos de prueba | `perfiles`, `api_claves` |
 

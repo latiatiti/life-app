@@ -168,3 +168,4 @@
 .dias-elegir { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .dias-elegir .chip { border: 0; cursor: pointer; padding: 6px 9px; }
 @media (max-width: 420px) { .tiempo-leyenda { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 761px) { .tarea-nueva.tiempo-form { grid-template-columns: minmax(0, 1fr) 80px 150px 44px; } }

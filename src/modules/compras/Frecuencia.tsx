@@ -111,7 +111,7 @@ export function TarjetaFrecuencias() {
               {(Object.keys(LUGARES) as Lugar[]).map((l) => <option key={l} value={l}>{LUGARES[l]}</option>)}
             </select>
             <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre (opcional)" aria-label="Nombre" />
-            <input type="number" inputMode="numeric" min={1} value={cada} onChange={(e) => setCada(e.target.value)} placeholder="Cada cuántos días" aria-label="Cada cuántos días" />
+            <input type="number" inputMode="numeric" min={1} value={cada} onChange={(e) => setCada(e.target.value)} placeholder="Cada ¿cuántos? días" aria-label="Cada cuántos días" />
             <select value={dia} onChange={(e) => setDia(e.target.value)} aria-label="Día habitual">
               <option value="">Cualquier día</option>
               {[1, 2, 3, 4, 5, 6, 0].map((d) => <option key={d} value={d}>{DIAS[d]}</option>)}
