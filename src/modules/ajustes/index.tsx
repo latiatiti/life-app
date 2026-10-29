@@ -8,6 +8,7 @@ import { Campo, Icono, Tarjeta } from '../../ui/ui';
 import { usePerfil } from '../../core/auth';
 import { ConexionClaude } from './Claude';
 import { PanelCuentas } from './Cuentas';
+import { TarjetaEspacio, useSenalesEspacio } from './Espacio';
 import { cargarConfiguracionInicial } from './semilla';
 
 function PantallaAjustes() {
@@ -128,6 +129,8 @@ function PantallaAjustes() {
         </div>
       </Tarjeta>
 
+      <TarjetaEspacio />
+
       <Tarjeta titulo="Respaldo">
         <p className="nota">Descargá todos tus datos en un archivo, o importalos en otro dispositivo o en la nube.</p>
         <div className="acciones">
@@ -151,5 +154,6 @@ export const moduloAjustes: Modulo = {
   descripcion: 'Cuenta, conexión con Claude, respaldo e instalación',
   icono: Icono.ajustes,
   pantallas: [{ ruta: '', titulo: 'Ajustes', componente: PantallaAjustes }],
+  useSenales: useSenalesEspacio,
   enHub: false,
 };

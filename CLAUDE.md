@@ -30,6 +30,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 ## Cuentas y conexión con Claude (2026-10-15, `docs/cuentas-y-conexiones.md`)
 - La nube de LIFE viene integrada (`NUBE_LIFE` en `core/config.ts`); solo `build:single` queda en modo local. Login por usuario (`mauro` = `mauro@life.com`), sin registro público. Aviso "Subir a mi cuenta" para datos que quedaron en el navegador.
 - `supabase/cuentas.sql`: `perfiles` (rol superadmin/usuario/lector, modulos, activo), reglas de escritura con `life_puede_escribir()` en toda tabla con `user_id`, `api_claves`, `api_registro`, `life_columnas()`. `usePerfil()` en `core/auth.tsx`.
+- Base gratis (2026-10-29, eligió quedarse en Supabase gratis + copia en su PC): `supabase/uso.sql` (`life_uso()`, aplicado) → tarjeta "Espacio en la nube" en Ajustes y señal al 70 % / 90 % (`ajustes/Espacio.tsx`). `herramientas/respaldo-pc/`: instalador Windows (copia diaria con el conector de solo lectura al disco con más espacio, mismo formato que "Descargar respaldo", accesos directos LIFE y LIFE respaldo en el escritorio).
 - Funciones: `cuentas` (superadmin: listar/crear/clave) y `life-mcp` (conector MCP para Claude con clave personal, sin JWT; leer/crear/modificar/borrar/deshacer con registro).
 
 ## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql` + `dia.sql` + `dia-tiempo.sql`, en ese orden)
