@@ -10,6 +10,7 @@
 // Todo cambio queda en api_registro con el antes y el después, y se puede deshacer.
 
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { guardarSoderia } from '../_shared/soderia.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -44,6 +45,8 @@ const DESCRIPCION: Record<string, string> = {
   dia_plantilla: 'Semana tipo: un bloque por fila (dia_semana 0=domingo, inicio/fin HH:MM, 24:00 = fin del día, tipo, opcional, come_alla). Vacía = usa la de fábrica de la app.',
   dia_dias: 'Una fila por fecha marcada: estado normal/libre/feriado/especial, prioridades [{texto,hecho}], nota, bloques = horario propio (null = semana tipo).',
   dia_tareas: 'Tareas con fecha (YYYY-MM-DD), hora (HH:MM) opcional, prioridad alta/media/baja; origen "claude" si las carga Claude.',
+  sod_cuenta: 'Copia de la cuenta del repartidor en la sodería Tía Titi: saldo = lo que le deben, movimientos (devengado, pago, compensación). Se carga con soderia_guardar, no a mano.',
+  sod_repartos: 'Reparto de cada día según la sodería (dia_semana 0=domingo, fecha null = semana tipo): salida, regreso y paradas con hora estimada. Se carga con soderia_guardar.',
 };
 
 type Json = Record<string, unknown>;
@@ -154,6 +157,23 @@ const HERRAMIENTAS = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
   },
+  {
+    name: 'soderia_guardar',
+    description: 'Copia en LIFE lo que dice el conector de la sodería Tía Titi sobre la usuaria (su repartidor). ' +
+      'persona = el objeto de esa persona tal como lo devuelve la herramienta "personal" de la sodería (personaId, nombre, saldo, cierresImpagos, cierresDevengados, pagos, compensaciones, ajustes). ' +
+      'tiradas = la lista "tiradas" de "horarios_de_pasada" sin día (la semana entera) o de "armar_recorrido"; con fecha si son de un día puntual. ' +
+      'Pisa la copia anterior y pone el saldo como lo que le debe el ingreso del reparto (entra en la proyección). Mandá solo persona, solo tiradas o las dos.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        persona: { type: 'object', additionalProperties: true },
+        tiradas: { type: 'array', items: { type: 'object', additionalProperties: true } },
+        fecha: { type: 'string', description: 'Solo si las tiradas son de un día puntual (YYYY-MM-DD).' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
 ];
 
 class ErrorUso extends Error {}
@@ -185,8 +205,18 @@ async function anotar(db: SupabaseClient, q: Quien, accion: string, tabla: strin
 }
 
 async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json): Promise<unknown> {
-  const escribe = ['crear', 'modificar', 'borrar', 'deshacer'].includes(nombre);
+  const escribe = ['crear', 'modificar', 'borrar', 'deshacer', 'soderia_guardar'].includes(nombre);
   if (escribe && q.permiso !== 'escribir') throw new ErrorUso('Esta clave es solo de lectura.');
+
+  if (nombre === 'soderia_guardar') {
+    try {
+      const r = await guardarSoderia(db, q.userId, args as never, 'claude');
+      await anotar(db, q, 'soderia', 'sod_cuenta', null, null, r);
+      return { ok: true, ...r };
+    } catch (e) {
+      throw new ErrorUso((e as Error).message);
+    }
+  }
 
   if (nombre === 'historial') {
     const limite = Math.min(Math.max(Number(args.limite) || 20, 1), 100);
@@ -331,6 +361,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
         capabilities: { tools: {} },
         serverInfo: { name: 'LIFE', version: '1.0.0' },
         instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras). ' +
+          'Para traer lo que le debe la sodería y sus repartos: leé el conector de la sodería (personal, horarios_de_pasada) y pasalo a soderia_guardar. ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
           'Antes de cargar algo que ella te contó, confirmá los datos clave (monto, fecha, cuenta) si no están claros. ' +
           'Fechas en YYYY-MM-DD, montos en pesos argentinos sin separadores. Todo cambio queda en historial y se puede deshacer.',

@@ -9,6 +9,7 @@ import {
   guardarDiaPlantilla, guardarSemanaBase, horaCorta, semanaDe, semanaTipo, TD, TIPOS, useDias, usePlantilla, useTareas,
   type Bloque, type EstadoDia, type NivelPrioridad, type Prioridad, type Tarea, type TipoBloque, type VistaDia,
 } from './modelo';
+import { repartoDe, useRepartosSoderia } from '../economia/soderia';
 import './dia.css';
 
 const PX_HORA = 72;
@@ -183,6 +184,41 @@ function ListaBloques({ vista, min }: { vista: VistaDia; min: number }) {
         );
       })}
     </ol>
+  );
+}
+
+/* ---------- Reparto según la sodería ---------- */
+
+function RepartoSoderia({ vista }: { vista: VistaDia }) {
+  const { filas } = useRepartosSoderia();
+  const r = repartoDe(vista.fecha, filas);
+  if (!r || !r.paradas.length) return null;
+  const sale = r.salida ? aMinutos(r.salida) : null;
+  let vuelve = r.regreso ? aMinutos(r.regreso) : null;
+  const pasaMedianoche = sale !== null && vuelve !== null && vuelve < sale;
+  if (pasaMedianoche) vuelve = 24 * 60;
+  const choca = sale !== null && vuelve !== null
+    ? vista.bloques.find((x) => x.tipo === 'fabrica' && aMinutos(x.inicio) < vuelve! && sale < aMinutos(x.fin))
+    : undefined;
+  const tiradas = new Set(r.paradas.map((p) => p.tirada)).size;
+  return (
+    <Tarjeta titulo={<span className="etq-tit">🚚 REPARTO · SEGÚN LA SODERÍA</span>}
+      accion={<small className="nota">{r.paradas.length} parada{r.paradas.length > 1 ? 's' : ''}{tiradas > 1 ? ` · ${tiradas} vueltas` : ''}</small>}>
+      <p><strong className="num">{r.salida ?? '—'} → {r.regreso ?? '—'}</strong>{pasaMedianoche && <small className="nota"> (del otro día)</small>}</p>
+      {pasaMedianoche && <p className="nota">⚠ Según la sodería terminarías pasada la medianoche: el orden guardado o la velocidad de manejo de la sodería no están bien. Conviene revisarlos allá.</p>}
+      {choca && <p className="nota">⚠ Se pisa con {choca.titulo.toLowerCase()} ({choca.inicio} a {choca.fin}): la sodería calcula la salida a las {r.salida}.</p>}
+      <details>
+        <summary className="nota">Ver las paradas</summary>
+        <ol className="bloques">
+          {r.paradas.map((p, i) => (
+            <li key={i} style={{ '--c': TIPOS.reparto.color } as CSSProperties}>
+              <span className="bloques-hora num">{p.llegada ?? ''}</span>
+              <span className="crece"><strong>{p.nombre}</strong>{p.zona && <small>{p.zona}{tiradas > 1 ? ` · vuelta ${p.tirada}` : ''}</small>}</span>
+            </li>
+          ))}
+        </ol>
+      </details>
+    </Tarjeta>
   );
 }
 
@@ -498,6 +534,7 @@ export function PantallaDia() {
           </Tarjeta>
           <Tareas vista={vista} otros={otros} />
         </div>
+        <RepartoSoderia vista={vista} />
       </div>
 
       <Calendario sel={fecha} onSel={elegir} />
