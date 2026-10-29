@@ -5,8 +5,9 @@ LIFE - copia de tus datos en tu compu (Windows)
 3. Pega el link cuando lo pida.
 
 Queda:
-- Carpeta LIFE en el disco con mas espacio libre, con las copias en LIFE\respaldos (ultimos 90 dias).
-- Copia automatica todos los dias a las 22 h y al prender la compu.
+- Carpeta LIFE en el disco con mas espacio libre. La copia es UN archivo, LIFE\respaldos\LIFE-datos.json,
+  que se actualiza (no se juntan copias). La de la semana anterior queda como LIFE-datos-anterior.json.
+- Se actualiza sola los domingos a las 22 h (si la compu estaba apagada, apenas se prende).
 - En el escritorio: "LIFE" (abre la app) y "LIFE respaldo" (copia ya y abre la carpeta).
 
 Para volver a cargar una copia: LIFE > Ajustes > Importar respaldo > elegir el archivo.

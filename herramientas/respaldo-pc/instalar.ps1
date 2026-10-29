@@ -1,7 +1,7 @@
 ﻿# LIFE · instalador de la copia en tu compu (Windows).
 # 1) Elige el disco con más espacio libre y crea la carpeta LIFE ahí.
 # 2) Guarda (cifrado) el link de tu conector de "solo lectura".
-# 3) Programa la copia todos los días a las 22 h y al prender la compu.
+# 3) Programa la copia una vez por semana (domingo 22 h; si la compu estaba apagada, apenas se prende).
 # 4) Crea en el escritorio: "LIFE" (abre la app) y "LIFE respaldo" (hace una copia ya y abre la carpeta).
 
 $ErrorActionPreference = 'Stop'
@@ -28,9 +28,9 @@ ConvertTo-SecureString $link -AsPlainText -Force | ConvertFrom-SecureString | Se
 $ps = "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe"
 $script = Join-Path $carpeta 'respaldo.ps1'
 $accion = New-ScheduledTaskAction -Execute $ps -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`""
-$cuando = @((New-ScheduledTaskTrigger -Daily -At 22:00), (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME))
+$cuando = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 22:00
 $opciones = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-Register-ScheduledTask -TaskName 'LIFE respaldo' -Action $accion -Trigger $cuando -Settings $opciones -Description 'Copia diaria de los datos de LIFE' -Force | Out-Null
+Register-ScheduledTask -TaskName 'LIFE respaldo' -Action $accion -Trigger $cuando -Settings $opciones -Description 'Copia semanal de los datos de LIFE (se actualiza el mismo archivo)' -Force | Out-Null
 
 $escritorio = [Environment]::GetFolderPath('Desktop')
 Set-Content -Path (Join-Path $escritorio 'LIFE.url') -Value "[InternetShortcut]`r`nURL=$APP`r`n"
@@ -47,7 +47,7 @@ Write-Host ''
 Write-Host '  Haciendo la primera copia...'
 & $script -ver
 Write-Host ''
-Write-Host "  Listo. Tus copias quedan en $carpeta\respaldos (se guardan los ultimos 90 dias)." -ForegroundColor Green
+Write-Host "  Listo. Tu copia es $carpeta\respaldos\LIFE-datos.json y se actualiza todos los domingos." -ForegroundColor Green
 Write-Host '  En el escritorio tenes "LIFE" (la app) y "LIFE respaldo" (copia ya y abre la carpeta).'
 Write-Host '  Para volver a cargar una copia: LIFE > Ajustes > Importar respaldo > elegir el archivo.'
 Read-Host '  Enter para cerrar'

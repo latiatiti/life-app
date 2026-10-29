@@ -1,7 +1,7 @@
 ﻿# LIFE · copia de tus datos en esta compu.
 # Baja todas tus tablas de la nube con tu clave de "solo lectura" del conector y las guarda en un archivo
 # con el mismo formato que "Descargar respaldo" de Ajustes (se puede volver a importar desde ahí).
-# Lo corre solo la tarea programada "LIFE respaldo" (todos los días y al prender la compu) o el acceso directo.
+# Lo corre sola la tarea programada "LIFE respaldo" (una vez por semana) o el acceso directo.
 
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -50,15 +50,18 @@ try {
     $datos[$t.tabla] = @($filas.Values)
     $total += $filas.Count
   }
+  # Una sola copia que se va actualizando (pedido de ella). La de la vez anterior queda como "anterior"
+  # por si la nueva sale mal; no se acumulan archivos.
   $hoy = Get-Date -Format 'yyyy-MM-dd'
-  $archivo = Join-Path $destino "life-respaldo-$hoy.json"
+  $archivo = Join-Path $destino 'LIFE-datos.json'
+  $temporal = Join-Path $destino 'LIFE-datos.nuevo'
   $salida = [ordered]@{ app = 'LIFE'; version = 1; fecha = $hoy; datos = $datos } | ConvertTo-Json -Depth 20
-  [IO.File]::WriteAllText($archivo, $salida, [Text.UTF8Encoding]::new($false))
-  Copy-Item $archivo (Join-Path $destino 'ultimo.json') -Force
-  # Guarda los últimos 90 días.
-  Get-ChildItem $destino -Filter 'life-respaldo-*.json' | Sort-Object Name -Descending | Select-Object -Skip 90 | Remove-Item -Force
-  Anotar "OK: $total registros en $($info.tablas.Count) tablas -> $archivo"
-  if ($ver) { Write-Host "Listo: $total registros guardados en $archivo" -ForegroundColor Green }
+  [IO.File]::WriteAllText($temporal, $salida, [Text.UTF8Encoding]::new($false))
+  if (Test-Path $archivo) { Move-Item $archivo (Join-Path $destino 'LIFE-datos-anterior.json') -Force }
+  Move-Item $temporal $archivo -Force
+  $kb = [math]::Round((Get-Item $archivo).Length / 1KB)
+  Anotar "OK: $total registros en $($info.tablas.Count) tablas, $kb KB -> $archivo"
+  if ($ver) { Write-Host "Listo: $total registros ($kb KB) actualizados en $archivo" -ForegroundColor Green }
 } catch {
   Anotar "ERROR: $($_.Exception.Message)"
   if ($ver) { Write-Host "No se pudo hacer la copia: $($_.Exception.Message)" -ForegroundColor Red }

@@ -113,7 +113,7 @@ export const SEMANA_BASE: Array<Omit<BloquePlantilla, 'id'>> = [
   b(3, '00:00', '07:00', 'Dormir', 'descanso'),
   b(3, '07:00', '08:00', 'Despertar y salir', 'traslado'),
   b(3, '08:00', '17:00', 'Fábrica', 'fabrica', { come_alla: true, nota: 'Como en la fábrica' }),
-  b(3, '17:00', '18:00', 'Reparto: hospital de ojos', 'reparto', { nota: 'Reparto fijo' }),
+  b(3, '17:30', '18:15', 'Reparto: hospital de ojos', 'reparto', { nota: 'Reparto fijo, paso tipo 17:30' }),
   b(3, '18:30', '20:00', 'Gimnasio', 'gym', { opcional: true, nota: GYM }),
   // Jueves: reparto partido, almuerzo en casa y gimnasio al final
   b(4, '00:00', '08:30', 'Dormir', 'descanso'),
