@@ -43,6 +43,7 @@ const DESCRIPCION: Record<string, string> = {
   com_tickets: 'Tickets guardados (QR, texto leído, productos).',
   dia_plantilla: 'Semana tipo: un bloque por fila (dia_semana 0=domingo, inicio/fin HH:MM, 24:00 = fin del día, tipo, opcional, come_alla). Vacía = usa la de fábrica de la app.',
   dia_dias: 'Una fila por fecha marcada: estado normal/libre/feriado/especial, prioridades [{texto,hecho}], nota, bloques = horario propio (null = semana tipo).',
+  eco_compartidos: 'Cuenta con Ulises (con quien vive): gastos compartidos, préstamos y pagos para saldar. monto = efecto en el saldo (+ él le debe a ella, − ella le debe). Para cargar usá anotar_compartido; para el saldo, cuenta_compartida.',
   dia_tareas: 'Tareas con fecha (YYYY-MM-DD), hora (HH:MM) opcional, prioridad alta/media/baja; origen "claude" si las carga Claude.',
 };
 
@@ -134,6 +135,39 @@ const HERRAMIENTAS = [
     annotations: { readOnlyHint: false, destructiveHint: true },
   },
   {
+    name: 'cuenta_compartida',
+    description: 'Cuánto se deben con Ulises (o con otra persona): saldo, a favor de quién, y los últimos movimientos con el saldo corrido. Usalo para "¿qué le debo a Ulises?" o "¿qué me debe?".',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        persona: { type: 'string', description: 'Por defecto "Ulises".' },
+        limite: { type: 'number', description: 'Cuántos movimientos devolver (1 a 100, por defecto 20).' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'anotar_compartido',
+    description: 'Anota en la cuenta con Ulises, igual que la app: un gasto compartido (total + qué % le toca al que no pagó), un préstamo o un pago para saldar. Calcula solo el efecto en el saldo. Si pasás cuenta, también lo registra en sus cuentas (gasto si puso ella la plata, ingreso si la puso él), salvo un gasto que pagó él.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tipo: { type: 'string', enum: ['gasto', 'prestamo', 'pago'] },
+        total: { type: 'number', description: 'Monto total en pesos (el gasto entero, el préstamo o el pago).' },
+        pago: { type: 'string', enum: ['yo', 'otro'], description: '"yo" = la plata la puso ella; "otro" = la puso Ulises.' },
+        parte: { type: 'number', description: 'Solo gastos: % del total que le toca a quien NO pagó. A medias = 50 (por defecto).' },
+        descripcion: { type: 'string', description: 'Qué fue (ej. "Gas", "verdulería").' },
+        fecha: { type: 'string', description: 'YYYY-MM-DD. Por defecto hoy.' },
+        cuenta: { type: 'string', description: 'Opcional: nombre o id de la cuenta de eco_cuentas por donde salió o entró la plata.' },
+        persona: { type: 'string', description: 'Por defecto "Ulises".' },
+      },
+      required: ['tipo', 'total', 'pago'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
     name: 'historial',
     description: 'Últimos cambios que hizo Claude en LIFE (crear, modificar, borrar), con su id de registro para deshacer.',
     inputSchema: {
@@ -185,7 +219,7 @@ async function anotar(db: SupabaseClient, q: Quien, accion: string, tabla: strin
 }
 
 async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json): Promise<unknown> {
-  const escribe = ['crear', 'modificar', 'borrar', 'deshacer'].includes(nombre);
+  const escribe = ['crear', 'modificar', 'borrar', 'deshacer', 'anotar_compartido'].includes(nombre);
   if (escribe && q.permiso !== 'escribir') throw new ErrorUso('Esta clave es solo de lectura.');
 
   if (nombre === 'historial') {
@@ -195,6 +229,9 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     if (error) throw new Error(error.message);
     return data;
   }
+
+  if (nombre === 'cuenta_compartida') return cuentaCompartida(db, q, args);
+  if (nombre === 'anotar_compartido') return anotarCompartido(db, q, args);
 
   const tablas = await tablasPermitidas(db);
 
@@ -299,6 +336,70 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
   throw new ErrorUso(`No conozco la herramienta "${nombre}".`);
 }
 
+/* ---------- Cuenta con Ulises (mismo cálculo que src/modules/economia/compartidos.ts) ---------- */
+
+const pesos = (n: number) => `$ ${Math.round(n).toLocaleString('es-AR')}`;
+
+function textoSaldo(saldo: number, persona: string) {
+  if (Math.abs(saldo) < 1) return `Con ${persona} están a mano`;
+  return saldo > 0 ? `${persona} te debe ${pesos(saldo)}` : `Le debés a ${persona} ${pesos(-saldo)}`;
+}
+
+async function cuentaCompartida(db: SupabaseClient, q: Quien, args: Json) {
+  const persona = String(args.persona ?? 'Ulises');
+  const limite = Math.min(Math.max(Number(args.limite) || 20, 1), 100);
+  const { data, error } = await db.from('eco_compartidos').select('id, fecha, tipo, descripcion, total, pago, parte, monto, compra_id, created_at')
+    .eq('user_id', q.userId).eq('persona', persona).order('fecha').order('created_at');
+  if (error) throw new ErrorUso(error.message);
+  let s = 0;
+  const filas = (data ?? []).map((f) => ({ ...f, saldo_despues: (s = Math.round((s + Number(f.monto)) * 100) / 100) }));
+  return {
+    persona, saldo: s, resumen: textoSaldo(s, persona),
+    explicacion: 'saldo > 0: la otra persona le debe a la usuaria; saldo < 0: la usuaria le debe.',
+    ultimos: filas.reverse().slice(0, limite),
+  };
+}
+
+async function anotarCompartido(db: SupabaseClient, q: Quien, args: Json) {
+  const tipo = String(args.tipo);
+  if (!['gasto', 'prestamo', 'pago'].includes(tipo)) throw new ErrorUso('tipo: gasto, prestamo o pago.');
+  const pago = String(args.pago);
+  if (pago !== 'yo' && pago !== 'otro') throw new ErrorUso('pago: "yo" u "otro".');
+  const total = Number(args.total);
+  if (!(total > 0)) throw new ErrorUso('total tiene que ser mayor a cero.');
+  const parte = tipo === 'gasto' ? (args.parte == null ? 50 : Number(args.parte)) : 100;
+  if (!(parte >= 0 && parte <= 100)) throw new ErrorUso('parte va de 0 a 100.');
+  const persona = String(args.persona ?? 'Ulises');
+  const fecha = String(args.fecha ?? hoyMendoza());
+  const descripcion = String(args.descripcion ?? '').trim();
+  const m = Math.round(total * parte) / 100;
+  const monto = pago === 'yo' ? m : -m;
+
+  let movimiento_id: string | null = null;
+  if (args.cuenta && !(tipo === 'gasto' && pago === 'otro')) {
+    const c = String(args.cuenta);
+    const { data: cuentas } = await db.from('eco_cuentas').select('id, nombre').eq('user_id', q.userId);
+    const cuenta = (cuentas ?? []).find((x) => x.id === c) ?? (cuentas ?? []).find((x) => x.nombre.toLowerCase() === c.toLowerCase());
+    if (!cuenta) throw new ErrorUso(`No encontré la cuenta "${c}". Cuentas: ${(cuentas ?? []).map((x) => x.nombre).join(', ')}.`);
+    const desc = descripcion || (tipo === 'pago' ? (pago === 'yo' ? `Le pagué a ${persona}` : `${persona} me pagó`) : tipo === 'prestamo' ? 'Préstamo' : 'Gasto compartido');
+    const { data: mov, error } = await db.from('eco_movimientos').insert({
+      user_id: q.userId, fecha, tipo: pago === 'yo' ? 'gasto' : 'ingreso', monto: total, cuenta_id: cuenta.id,
+      descripcion: `${desc} · con ${persona}`,
+    }).select().single();
+    if (error) throw new ErrorUso(error.message);
+    movimiento_id = (mov as Json).id as string;
+    await anotar(db, q, 'crear', 'eco_movimientos', movimiento_id, null, mov);
+  }
+
+  const { data: fila, error } = await db.from('eco_compartidos').insert({
+    user_id: q.userId, fecha, persona, tipo, descripcion, total, pago, parte, monto, movimiento_id,
+  }).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'crear', 'eco_compartidos', (fila as Json).id as string, null, fila);
+  const cuenta = await cuentaCompartida(db, q, { persona, limite: 1 });
+  return { ok: true, registro_id: registro, efecto: monto, movimiento_id, saldo: cuenta.saldo, resumen: cuenta.resumen };
+}
+
 /* ---------- Protocolo MCP (HTTP sin sesión, respuestas JSON) ---------- */
 
 async function quien(db: SupabaseClient, req: Request): Promise<Quien | null> {
@@ -331,6 +432,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
         capabilities: { tools: {} },
         serverInfo: { name: 'LIFE', version: '1.0.0' },
         instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras). ' +
+          'Para la cuenta con Ulises (con quien vive) usá cuenta_compartida y anotar_compartido. ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
           'Antes de cargar algo que ella te contó, confirmá los datos clave (monto, fecha, cuenta) si no están claros. ' +
           'Fechas en YYYY-MM-DD, montos en pesos argentinos sin separadores. Todo cambio queda en historial y se puede deshacer.',

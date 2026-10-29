@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { eliminar } from '../../core/db';
 import { dinero, fechaCorta, mesActual } from '../../core/format';
 import { Icono, Modal, Tarjeta } from '../../ui/ui';
+import { OTRO, useCompartidos } from './compartidos';
 import { FormMovimiento } from './FormMovimiento';
 import { SelectorMes } from './Resumen';
 import { T, useCategorias, useCuentas, useMovimientos, usePagos, type Movimiento, type TipoMovimiento } from './modelo';
@@ -19,6 +20,8 @@ export function PantallaMovimientos() {
   const { filas: cuentas } = useCuentas();
   const { filas: categorias } = useCategorias();
   const { filas: pagos } = usePagos();
+  const { filas: compartidos } = useCompartidos();
+  const conOtro = new Set(compartidos.map((c) => c.movimiento_id).filter(Boolean));
 
   const cuentaDe = new Map(cuentas.map((c) => [c.id, c]));
   const catDe = new Map(categorias.map((c) => [c.id, c]));
@@ -85,6 +88,7 @@ export function PantallaMovimientos() {
                         <small className="nota">
                           {sub}
                           {m.pago_id && ` · pago: ${pagoDe.get(m.pago_id)?.nombre ?? 'recurrente'}`}
+                          {conOtro.has(m.id) && ` · con ${OTRO}`}
                         </small>
                       </div>
                       <span className={`num ${m.tipo === 'ingreso' ? 'texto-bien' : ''}`}>

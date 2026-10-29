@@ -2,6 +2,7 @@ import { escribirStorage, leerStorage, NUBE_LIFE } from '../../core/config';
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { diasEntre, hoy } from '../../core/format';
 import { T as TE, type Movimiento } from '../economia/modelo';
+import { anotarCompartido, datosDeCompra } from '../economia/compartidos';
 import { ajustar, LUGARES, type Lugar, nuevoProducto, type Persona, personaDe, type Producto } from '../stock/modelo';
 
 /* ---------- Tipos ---------- */
@@ -482,6 +483,10 @@ export async function cerrarCarrito(d: {
     movimiento_id, reparto: { pago: d.pago, yo: Math.round(t.yo), ulises: Math.round(t.ulises), debe: Math.round(debe) },
     ...(d.ticket ? { ticket: d.ticket } : {}),
   });
+  // Lo que se deben queda en la cuenta con Ulises (Plata → Con Ulises).
+  if (compra.reparto && compra.reparto.debe > 0 && (d.pago === 'yo' || d.pago === 'ulises')) {
+    await anotarCompartido(datosDeCompra(compra, d.super?.nombre));
+  }
   for (const l of lineas) {
     if (l.real != null && l.real > 0) {
       await crear<PrecioReg>(TC.precios, { item_id: l.item_id, cadena: d.super?.cadena ?? 'otro', super_id: d.super?.id ?? null, precio: l.real, fuente: 'ticket', fecha, compra_id: compra.id });
