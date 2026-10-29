@@ -5,3 +5,12 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# Conector de LIFE para Claude: la misma función life-mcp de Supabase, pero servida desde este sitio.
+# En supabase.co la ruta /.well-known/... responde 401 y Claude cree que hace falta iniciar sesión (OAuth);
+# acá esa ruta da 404, así que Claude conecta solo con la clave del link (?k=...). La query pasa tal cual.
+[[redirects]]
+  from = "/mcp"
+  to = "https://jxnlgszmywoebjjpacod.supabase.co/functions/v1/life-mcp"
+  status = 200
+  force = true

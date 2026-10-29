@@ -22,7 +22,7 @@ Write-Host ''
 Write-Host '  En LIFE: Ajustes > Conexion con Claude > permiso "Solo puede leer" > Crear.'
 Write-Host '  Copia el link que aparece y pegalo aca (clic derecho pega):'
 $link = (Read-Host '  Link').Trim()
-if ($link -notmatch '^https://.+life-mcp\?k=life_') { throw 'Ese no parece el link del conector de LIFE (tiene que terminar en life-mcp?k=life_...).' }
+if ($link -notmatch '^https://.+(life-mcp|/mcp)\?k=life_') { throw 'Ese no parece el link del conector de LIFE (tiene que terminar en mcp?k=life_...).' }
 ConvertTo-SecureString $link -AsPlainText -Force | ConvertFrom-SecureString | Set-Content (Join-Path $carpeta 'clave.txt')
 
 $ps = "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe"
