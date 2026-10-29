@@ -76,7 +76,7 @@ export async function cargarConfiguracionInicial(): Promise<number> {
   const sabado = proximoSabado();
   await contar<Ingreso>(T.ingresos, {
     nombre: 'Reparto de soda', monto: 120000, moneda: 'ARS', frecuencia: 'semanal', proximo_cobro: sabado,
-    cuenta_id: efectivo.id, categoria_id: cat.get('Reparto de soda') ?? null, activo: true, notas: '3 días por semana. Se cobra los sábados.', puede_adeudarse: false, adeudado: 0,
+    cuenta_id: efectivo.id, categoria_id: cat.get('Reparto de soda') ?? null, activo: true, notas: '3 días por semana. Se cobra los sábados; suele acumularse en deuda.', puede_adeudarse: true, adeudado: 0,
   });
   await contar<Ingreso>(T.ingresos, {
     nombre: 'Fábrica', monto: 135000, moneda: 'ARS', frecuencia: 'semanal', proximo_cobro: sabado,
@@ -92,7 +92,8 @@ export async function cargarConfiguracionInicial(): Promise<number> {
   await pago('Alquiler', 200000, 5, 'Vivienda', null, 'Incluye expensas, luz, gas y agua. Efectivo o transferencia. Sube según el consumo de suministros.');
   await pago('Internet (mi mitad)', 9250, 10, 'Servicios', mp.id, 'Total $18.500 entre dos; lo paga Uli por Mercado Pago y le pasás tu mitad.');
   await pago('Gimnasio', 80000, 5, 'Gimnasio', mp.id, 'Se lo pasás a tu papá, que lo paga con su tarjeta.');
-  await pago('Carga de celular', 8000, 15, 'Servicios', mp.id, 'Monto aproximado: depende del consumo de datos.');
+  await pago('Carga de celular', 8000, 15, 'Servicios', mp.id, 'Cuando se acaba: cada una o dos semanas, $8.000.');
+  await pago('Seguro del auto', 50000, 10, 'Transporte', null, 'Entre $48.000 y $50.000; se paga entre el 1 y el 15 de cada mes.');
 
   // Básicos de la casa (cantidad 0: contá lo que tenés y ajustalo con + y −).
   const prod = new Map<string, string>();

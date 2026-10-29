@@ -561,7 +561,7 @@ export function PantallaSemana() {
           Guardar toda la semana tipo tal como está
         </button>
       )}
-      <p className="nota">El gimnasio no abre los domingos y los sábados abre a las 7. Tus entrenos duran alrededor de 1 h 30.</p>
+      <p className="nota">El gimnasio no abre los domingos y los sábados cierra a las 19. Vas 3 días por semana y tus entrenos duran alrededor de 1 h 30.</p>
     </div>
   );
 }
