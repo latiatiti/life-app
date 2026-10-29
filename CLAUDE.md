@@ -33,7 +33,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Funciones: `cuentas` (superadmin: listar/crear/clave) y `life-mcp` (conector MCP para Claude con clave personal, sin JWT; leer/crear/modificar/borrar/deshacer con registro).
 
 ## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql` + `dia.sql`, en ese orden)
-- `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
+- `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila, + `perfil` jsonb), `ali_cuerpo` (mediciones, `alimentacion-cuerpo.sql`).
 - Compras (`supabase/compras.sql`, aplicado en la nube): `com_supers` (bloques jsonb = orden de pasillos de ese súper), `com_items` (catálogo propio; precios jsonb = último precio online por cadena; producto_id enlaza al stock), `com_precios` (historial: online/ticket/manual), `com_compras` (estimado vs total del ticket, items jsonb, reparto y ticket jsonb).
 - Día (`supabase/dia.sql`, aplicado en la nube): `dia_plantilla` (semana tipo, un bloque por fila: dia_semana 0=dom, inicio/fin 'HH:MM' con '24:00' = fin, tipo, opcional, come_alla), `dia_dias` (una fila por fecha: estado normal/libre/feriado/especial, nombre, nota, prioridades jsonb [{texto,hecho}], bloques jsonb = horario propio o null = semana tipo), `dia_tareas` (fecha, hora, prioridad alta/media/baja, origen 'app'|'claude'). Pensadas para la API de lectura/escritura de Claude.
 - Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; `dia_`; próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
@@ -71,6 +71,14 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Feriados nacionales 2026–2027 + Santiago Apóstol (Mendoza) en `FERIADOS`; los "puente" no cuentan como feriado automático.
 - Gimnasio: domingo cerrado, sábado abre a las 7, entrenos ~1 h 30 (`GIMNASIO`). Días de fábrica come allá: bloques `come_alla`, `comeEnFabrica(bloques)` para Alimentación.
 - Al hub: señales (tareas atrasadas, prioridad de hoy, feriado mañana), agenda (tareas, feriados, días libres) y XP por tarea hecha.
+
+## Comida para ganar masa (2026-10-29)
+- Comida salió de Casa y es sección propia: Hoy · Asistente · Cuerpo · Platos · Metas (`GRUPOS` en `App.tsx`).
+- `nutricion.ts` = el experto: `sugerirMetas` (Mifflin-St Jeor × actividad + superávit chico por `kg_mes`; proteína 2 / 1,8 g/kg; 0,4 g/kg por comida; agua 35 ml/kg + 500), `gastoReal` (metabolismo medido: kcal promedio − Δpeso × 7700, pide 14 días cargados y 3 pesajes), `tendencia`/`veredicto` (kg/mes y cintura/mes), `ritmoSemana`/`horasSinComer` (ventanas sin comer), `ALIMENTOS` (tabla por 100 g) y `buscarPorCodigo` (Open Food Facts). Perfil de ella: 1,82 m, ~80 kg, actividad alta.
+- `canasta.ts`: canasta semanal para ganar masa (`CANASTA`), usa el consumo real de `com_compras` si hay, la suba mensual de cada cosa con `com_precios` (`subaMensual`), plata a separar (`plataCanasta`), "Buscar precios que faltan" (función `precios` → `com_items` + `com_precios` online) y "Pasar a la lista".
+- Registrar comida: pestañas Alimento (tabla + gramos) / Mi plato / Escanear / Otra cosa, con hora (`ali_comidas.hora`).
+- Recordatorios: agua por tramos de 2 h (9–22 h), creatina y suplementos desde las 12, "hace X h que no comés", pesarse cada 4 días, sábado "separá $X". `Senal.accion.hacer` resuelve el aviso flotante ahí mismo (+500 ml, Tomé). `useDiaDeEntreno()` = entrenó o el Día tiene gym.
+- SQL `supabase/alimentacion-cuerpo.sql`: `ali_cuerpo` (peso, cintura, brazo), `ali_metas.perfil` jsonb, `ali_comidas.hora`. Si la nube no tiene las columnas, guarda igual sin ellas (`sinColumnaNueva`).
 
 ## Preparador y ciclos (2026-10-06)
 - `ent_rutinas` guarda cada ciclo como una fila: `inicio` (lunes) + `ciclo` jsonb {semanas, objetivo, perfil, numero}. Solo una `activa`; las viejas quedan como historial (`empezarCiclo` en `modelo.ts`). SQL: `supabase/entreno-ciclos.sql` (aplicado).

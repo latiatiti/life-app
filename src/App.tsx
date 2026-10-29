@@ -24,9 +24,9 @@ const GRUPOS: Array<{ id: string; nombre: string; icono: ReactNode; pestanas: Ar
   },
   {
     id: 'casa', nombre: 'Casa', icono: Icono.stock,
-    pestanas: [['stock', '', 'En casa'], ['compras', '', 'Lista'], ['compras', 'escanear', 'Comprar'], ['alimentacion', '', 'Comida'],
+    pestanas: [['stock', '', 'En casa'], ['compras', '', 'Lista'], ['compras', 'escanear', 'Comprar'],
       ['compras', 'comprando', 'Por pasillos'], ['compras', 'ticket', 'Ticket'], ['compras', 'precios', 'Precios'], ['compras', 'historial', 'Compras hechas'],
-      ['alimentacion', 'platos', 'Platos'], ['alimentacion', 'metas', 'Metas de comida']],
+    ],
   },
 ];
 
