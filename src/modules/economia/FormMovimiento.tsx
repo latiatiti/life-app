@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { crear, modificar } from '../../core/db';
-import { hoy, parsearMonto } from '../../core/format';
+import { crear, eliminar, modificar } from '../../core/db';
+import { dinero, hoy, parsearMonto } from '../../core/format';
 import { Campo } from '../../ui/ui';
+import { cambiarCompartido, filaCompartido, OTRO, personasDe, TABLA_COMPARTIDOS, useCompartidos, type Compartido } from './compartidos';
 import {
   T, useCategorias, useCuentas,
   type Movimiento, type TipoMovimiento,
@@ -28,6 +29,16 @@ export function FormMovimiento({ inicial, onListo }: { inicial?: Movimiento; onL
   const [descripcion, setDescripcion] = useState(inicial?.descripcion ?? '');
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  // Parte de este gasto que es de Ulises (queda en Plata → Con Ulises).
+  const { filas: compartidos } = useCompartidos();
+  const enlazado = inicial ? compartidos.find((c) => c.movimiento_id === inicial.id && c.tipo === 'gasto') : undefined;
+  const [compartido, setCompartido] = useState<boolean | null>(null);
+  const [parte, setParte] = useState<string | null>(null);
+  const esCompartido = compartido ?? !!enlazado;
+  const parteTxt = parte ?? String(enlazado?.parte ?? 50);
+  const personas = personasDe(compartidos);
+  const [persona, setPersona] = useState<string | null>(null);
+  const quien = persona ?? enlazado?.persona ?? OTRO;
 
   const cats = categorias.filter((c) => c.tipo === (tipo === 'ingreso' ? 'ingreso' : 'gasto'));
   const monedaOrigen = cuentas.find((c) => c.id === cuenta)?.moneda;
@@ -54,10 +65,18 @@ export function FormMovimiento({ inicial, onListo }: { inicial?: Movimiento; onL
       descripcion: descripcion.trim(),
       pago_id: inicial?.pago_id ?? null,
     };
+    const p = Number(parteTxt.replace(',', '.'));
+    const conOtro = tipo === 'gasto' && esCompartido;
+    if (conOtro && (Number.isNaN(p) || p <= 0 || p > 100)) return setError(`La parte de ${quien} va de 1 a 100 %.`);
     setGuardando(true);
     try {
+      let id = inicial?.id;
       if (inicial) await modificar<Movimiento>(T.movimientos, inicial.id, datos);
-      else await crear<Movimiento>(T.movimientos, datos);
+      else id = (await crear<Movimiento>(T.movimientos, datos)).id;
+      const dc = { persona: quien, fecha, tipo: 'gasto' as const, descripcion: datos.descripcion || 'Gasto compartido', total: m, pago: 'yo' as const, parte: p };
+      if (conOtro && enlazado) await cambiarCompartido(enlazado, dc);
+      else if (conOtro) await crear<Compartido>(TABLA_COMPARTIDOS, filaCompartido({ ...dc, movimiento_id: id }));
+      else if (enlazado) await eliminar(TABLA_COMPARTIDOS, enlazado.id);
       onListo();
     } catch (err) {
       setError((err as Error).message);
@@ -110,6 +129,27 @@ export function FormMovimiento({ inicial, onListo }: { inicial?: Movimiento; onL
             <option value="">Sin categoría</option>
             {cats.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
+        </Campo>
+      )}
+      {tipo === 'gasto' && (
+        <label className="eco-switch">
+          <input type="checkbox" checked={esCompartido} onChange={(e) => setCompartido(e.target.checked)} />
+          <span><strong>Compartido</strong><small>Una parte es de otra persona: queda en lo que te debe.</small></span>
+        </label>
+      )}
+      {tipo === 'gasto' && esCompartido && (
+        <Campo etiqueta="Con quién" ayuda="Para sumar a alguien nuevo: Plata → Compartido → + Persona.">
+          <select value={quien} onChange={(e) => setPersona(e.target.value)}>
+            {personas.map((x) => <option key={x} value={x}>{x}</option>)}
+          </select>
+        </Campo>
+      )}
+      {tipo === 'gasto' && esCompartido && (
+        <Campo etiqueta={`Parte de ${quien} (%)`} ayuda={(() => {
+          const v = parsearMonto(monto || '0') * Number(parteTxt.replace(',', '.')) / 100;
+          return v > 0 ? `${quien} te debe ${dinero(v)} por esto.` : 'A medias = 50.';
+        })()}>
+          <input inputMode="decimal" value={parteTxt} onChange={(e) => setParte(e.target.value)} />
         </Campo>
       )}
       <Campo etiqueta="Descripción">
