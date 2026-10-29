@@ -1,11 +1,13 @@
-import { diasEntre, hoy } from '../../core/format';
-import type { ActividadEnCurso, Modulo, Senal, Vital } from '../../core/types';
+import { diasEntre, hoy, sumarDias } from '../../core/format';
+import type { ActividadEnCurso, ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
 import { Icono } from '../../ui/ui';
-import { leerEnCurso } from './Entrenando';
+import { leerEnCurso, mostrarEntreno } from './Entrenando';
 import { necesitaDescarga } from './analisis';
 import { entrenoHoy, progresoEjercicio, proximoDia, tendencia, useBiblioteca, useRutina, useSeries, useSesiones } from './modelo';
 import { PantallaHistorial, PantallaHoy, PantallaProgreso } from './Pantallas';
 import { PantallaPreparador } from './Preparador';
+import { ajustarDia, estadoCiclo } from './ciclo';
+import { duracion, rendimientoGuardado } from './vivo';
 import { PantallaRutina } from './Rutina';
 
 function useSenalesEntreno(): Senal[] {
@@ -80,6 +82,30 @@ function useActividadEntreno(): string[] {
   return useSesiones().filas.flatMap((s) => Array(5).fill(s.fecha));
 }
 
+const COMO_FUE: Record<number, string> = { 5: 'liviano', 7: 'justo', 8: 'duro', 10: 'al límite' };
+
+/** Cada entreno guardado queda en su día (Día y la agenda lo muestran hecho), con cómo te fue. */
+function useAgendaEntreno(): ItemAgenda[] {
+  const { filas: sesiones } = useSesiones();
+  const { filas: series } = useSeries();
+  const { todas, perfil } = useRutina();
+  const desde = sumarDias(hoy(), -60);
+  return sesiones.filter((s) => s.fecha >= desde).map((s) => {
+    // La rutina y la semana del ciclo que corrían ese día (vale también para ciclos viejos).
+    const rut = todas.find((x) => (x.inicio ?? '') <= s.fecha) ?? todas[todas.length - 1];
+    const sem = estadoCiclo(rut?.ciclo, rut?.inicio, s.fecha);
+    const semana = sem && !sem.terminado ? sem.semana : null;
+    const dia = rut?.dias?.find((d) => d.id === s.dia);
+    const r = s.dia === 'otro' || !dia ? null : rendimientoGuardado(s, series, ajustarDia(dia, semana), rut?.ciclo?.perfil ?? perfil, semana);
+    const n = series.filter((x) => x.sesion_id === s.id && x.tipo !== 'calentamiento').length;
+    return {
+      id: `ent-${s.id}`, modulo: 'entrenamiento', fecha: s.fecha, hecho: true, ruta: '#/entrenamiento/historial',
+      titulo: `✓ Entreno · ${s.dia === 'otro' ? s.deporte : `Día ${s.dia}${s.dia_nombre ? ` ${s.dia_nombre}` : ''}`}`,
+      detalle: [s.duracion_min ? duracion(s.duracion_min) : '', n ? `${n} series` : '', r != null ? `${Math.round(r)} % de lo esperado` : '', s.rpe_sesion ? COMO_FUE[s.rpe_sesion] ?? `RPE ${s.rpe_sesion}` : ''].filter(Boolean).join(' · '),
+    };
+  });
+}
+
 /** Para la barra de actividad: un entreno empezado y no guardado, con el descanso en vivo. */
 function entrenoEnCurso(): ActividadEnCurso | null {
   const e = leerEnCurso();
@@ -88,7 +114,7 @@ function entrenoEnCurso(): ActividadEnCurso | null {
   const resta = e.descansoHasta ? Math.ceil((e.descansoHasta - Date.now()) / 1000) : 0;
   const reloj = `${Math.floor(resta / 60)}:${String(resta % 60).padStart(2, '0')}`;
   return {
-    id: 'entreno', ruta: '#/entrenamiento',
+    id: 'entreno', ruta: '#/entrenamiento', minimizada: e.minimizada, volver: mostrarEntreno,
     titulo: `Entrenando${e.plan?.nombre ? ` · ${e.plan.nombre}` : ''}`,
     detalle: resta > 0 ? `Descanso ${reloj}` : series === 1 ? '1 serie hecha' : `${series} series hechas`,
   };
@@ -109,6 +135,7 @@ export const moduloEntrenamiento: Modulo = {
   Resumen: ResumenEntreno,
   useVital: useVitalEntreno,
   useSenales: useSenalesEntreno,
+  useAgenda: useAgendaEntreno,
   useActividad: useActividadEntreno,
   enCurso: entrenoEnCurso,
 };

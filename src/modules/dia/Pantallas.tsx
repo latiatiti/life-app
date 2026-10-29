@@ -237,7 +237,7 @@ function Tareas({ vista, otros }: { vista: VistaDia; otros: ItemAgenda[] }) {
         {otros.map((o) => (
           <li key={o.id} className="tarea-otro">
             <span className="tilde fija">•</span>
-            <a className="crece" href={o.ruta ?? '#/'}>{o.titulo}<small>{MODULOS.find((m) => m.id === o.modulo)?.nombre}</small></a>
+            <a className="crece" href={o.ruta ?? '#/'}>{o.titulo}<small>{[o.detalle, MODULOS.find((m) => m.id === o.modulo)?.nombre].filter(Boolean).join(' · ')}</small></a>
           </li>
         ))}
       </ul>

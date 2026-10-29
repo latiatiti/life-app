@@ -69,7 +69,7 @@ function Dia({ dia, items, atrasados, nombreModulo }: {
         ) : (
           todos.map((i) => (
             <a key={i.id} href={i.ruta ?? '#/'} className="dia-item">
-              {i.fecha < hoy() ? <Estado nivel="critico" texto="Atrasado" /> : <span className="chip">{nombreModulo.get(i.modulo)}</span>}
+              {i.fecha < hoy() && !i.hecho ? <Estado nivel="critico" texto="Atrasado" /> : <span className="chip">{nombreModulo.get(i.modulo)}</span>}
               <span className="crece">{i.titulo}</span>
               {i.monto != null && <strong className="num">{dinero(i.monto, i.moneda)}</strong>}
             </a>

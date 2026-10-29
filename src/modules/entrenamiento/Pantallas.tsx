@@ -4,6 +4,7 @@ import { crear, eliminar } from '../../core/db';
 import { fechaCorta, hoy, relativo } from '../../core/format';
 import { Campo, Estado, Icono, Modal, Tarjeta, Vacio } from '../../ui/ui';
 import { compararSemana, necesitaDescarga, pct, semanas } from './analisis';
+import { avisarCambio, useCambios } from '../../ui/Actividad';
 import { empezarEntreno, Entrenando, leerEnCurso } from './Entrenando';
 import { BarrasSemanas, Linea, VolumenGrupos } from './Graficos';
 import {
@@ -83,10 +84,14 @@ export function PantallaHoy() {
   const { filas: sesiones } = useSesiones();
   const { filas: series } = useSeries();
   const { dias, perfil, semana, fila } = useRutina();
-  const [enCurso, setEnCurso] = useState(() => !!leerEnCurso());
+  useCambios();
+  const curso = leerEnCurso();
   const [elegido, setElegido] = useState<string | null>(null);
   const [otro, setOtro] = useState(false);
-  if (enCurso) return <Entrenando onSalir={() => setEnCurso(false)} />;
+  // Queda abierto hasta que se sale (así se ve el resultado después de guardar, cuando ya no hay entreno en curso).
+  const [abierto, setAbierto] = useState(false);
+  if (curso && !curso.minimizada && !abierto) setAbierto(true);
+  if (abierto) return <Entrenando onSalir={() => { setAbierto(false); avisarCambio(); }} />;
 
   const sugerido = proximoDia(sesiones, dias, fila?.inicio);
   const plan = ajustarDia(dias.find((d) => d.id === elegido) ?? sugerido, semana);
@@ -127,7 +132,7 @@ export function PantallaHoy() {
             );
           })}
         </ul>
-        <button className="btn btn-primario ancho" style={{ marginTop: 12 }} onClick={() => { empezarEntreno(plan, semana); setEnCurso(true); }}>
+        <button className="btn btn-primario ancho" style={{ marginTop: 12 }} onClick={() => empezarEntreno(plan, semana)}>
           ▶ Empezar entreno
         </button>
       </Tarjeta>

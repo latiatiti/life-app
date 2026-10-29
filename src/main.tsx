@@ -4,6 +4,9 @@ import { App } from './App';
 import { ConSesion } from './core/auth';
 import './tema/tema.css';
 import './styles.css';
+import { activarOndas } from './ui/onda';
+
+activarOndas();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
