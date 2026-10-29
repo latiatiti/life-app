@@ -9,6 +9,7 @@ import { BarraCiclo } from './Pantallas';
 import { fijarPropios, type EjercicioBase } from './biblioteca';
 import { leerEjerciciosJson } from './Ejercicios';
 import { MapaMuscular, textoZonas } from './MapaMuscular';
+import { sugerirMejoras, textoMejoras } from './profe';
 import { esJson, leerTabla, PRESETS, rutinaATabla, type RutinaLeida } from './tabla';
 
 async function copiar(texto: string) {
@@ -75,7 +76,8 @@ export function PantallaPreparador() {
 
   const nombre = fila?.nombre ?? 'Rutina base';
   const tablaActual = rutinaATabla(dias, nombre, fila?.notas ?? '', ciclo);
-  const informe = informeEntrenador(sesiones, series, dias, fila?.notas ?? '', hoy(), { ciclo, inicio: fila?.inicio ?? null, perfil });
+  const informe = informeEntrenador(sesiones, series, dias, fila?.notas ?? '', hoy(), { ciclo, inicio: fila?.inicio ?? null, perfil })
+    + '\n\n' + textoMejoras(sugerirMejoras(dias, sesiones, series, { desde: fila?.inicio, perfil }));
   const mostrarPropuesta = !!(fila?.inicio && estado && (estado.terminado || estado.indice >= estado.total - 2));
   const propuesta = mostrarPropuesta && fila?.inicio
     ? proponerCiclo(dias, sesiones, series, fila.inicio, { progreso: progresoPorFecha, porGrupo: seriesPorGrupo, rango: rangoSeries })

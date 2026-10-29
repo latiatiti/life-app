@@ -24,7 +24,7 @@ Estado: relevamiento 2026-10-25. **Plata, Casa y el botón + aprobados y hechos 
 | Día | Hoy · Semana tipo | `dia_plantilla`, `dia_dias`, `dia_tareas` |
 | Economía | Resumen · Movimientos · Ingresos · Proyección · Cuentas y categorías | `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos` |
 | Pagos | (una sola) + Ponerse al día (`#/pagos/al-dia`) | `pag_pagos` |
-| Entreno | Hoy · Progreso · Historial · Rutina · Preparador | `ent_sesiones`, `ent_series`, `ent_rutinas`, `ent_ejercicios` |
+| Entreno | Hoy · Progreso · Historial · Rutina (con El profe arriba) · Preparador | `ent_sesiones`, `ent_series`, `ent_rutinas`, `ent_ejercicios` |
 | Stock | En casa · Lista de compras | `stk_productos` |
 | Compras | Lista · Modo compra · Por pasillos · Ticket · Precios · Historial | `com_supers`, `com_items`, `com_precios`, `com_compras`, `com_tickets` |
 | Comida | Hoy · Platos · Metas | `ali_platos`, `ali_comidas`, `ali_extras`, `ali_metas` |

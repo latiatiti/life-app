@@ -6,6 +6,7 @@ import { necesitaDescarga } from './analisis';
 import { entrenoHoy, progresoEjercicio, proximoDia, tendencia, useBiblioteca, useRutina, useSeries, useSesiones } from './modelo';
 import { PantallaHistorial, PantallaHoy, PantallaProgreso } from './Pantallas';
 import { PantallaPreparador } from './Preparador';
+import { useMejoras } from './MejorasProfe';
 import { PantallaRutina } from './Rutina';
 
 function useSenalesEntreno(): Senal[] {
@@ -13,6 +14,7 @@ function useSenalesEntreno(): Senal[] {
   const { filas: sesiones, cargado } = useSesiones();
   const { filas: series } = useSeries();
   const { dias, estado, ciclo, fila } = useRutina();
+  const { mejoras } = useMejoras();
   if (!cargado) return [];
   const senales: Senal[] = [];
   if (estado?.terminado) {
@@ -44,6 +46,15 @@ function useSenalesEntreno(): Senal[] {
       titulo: `${estancados.length === 1 ? '1 ejercicio estancado' : `${estancados.length} ejercicios estancados`}`,
       detalle: `${estancados.map((e) => e.nombre).join(', ')}. Probá dormir y comer más proteína, o bajar 10 % el peso y volver a subir.`,
       ruta: '#/entrenamiento/progreso',
+    });
+  }
+  const cambios = mejoras.filter((m) => m.aplicar);
+  if (cambios.length) {
+    senales.push({
+      id: 'ent-profe', modulo: 'entrenamiento', nivel: 'info',
+      titulo: `El profe tiene ${cambios.length === 1 ? '1 mejora' : `${cambios.length} mejoras`} para tu rutina`,
+      detalle: cambios[0].titulo,
+      ruta: '#/entrenamiento/rutina', accion: { texto: 'Ver mejoras', ruta: '#/entrenamiento/rutina' },
     });
   }
   return senales;
