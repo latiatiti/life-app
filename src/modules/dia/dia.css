@@ -156,3 +156,15 @@
   .semana-dia { min-width: 0; padding: 8px 0; }
   .cal-dia { height: 48px; padding: 4px; }
 }
+
+/* Tu tiempo: las 24 h repartidas */
+.tiempo-barra { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--surface-2); gap: 2px; }
+.tiempo-barra span { min-width: 3px; }
+.tiempo-leyenda { list-style: none; margin: 10px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.tiempo-leyenda li { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--ink-2); }
+.tiempo-leyenda i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-bottom: 3px; }
+.tiempo-leyenda strong { font-size: 1rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tiempo-sub { font-size: 0.8rem; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; margin: 14px 0 6px; }
+.dias-elegir { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dias-elegir .chip { border: 0; cursor: pointer; padding: 6px 9px; }
+@media (max-width: 420px) { .tiempo-leyenda { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

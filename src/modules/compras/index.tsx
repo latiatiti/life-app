@@ -1,5 +1,7 @@
 import { dinero, relativo } from '../../core/format';
-import type { ActividadEnCurso, Modulo, Senal, Vital } from '../../core/types';
+import { hoy, sumarDias } from '../../core/format';
+import type { ActividadEnCurso, ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
+import { proximaIda, tocaIr, useFrecuencias } from './Frecuencia';
 import './compras.css';
 import { PantallaEscanear } from './Carrito';
 import { PantallaComprando } from './Comprando';
@@ -18,8 +20,15 @@ const ICONO = (
 function useSenalesCompras(): Senal[] {
   const { filas: items, cargado } = useItems();
   const { filas: precios } = usePrecios();
+  const { filas: frecs } = useFrecuencias();
+  const { filas: compras } = useCompras();
   if (!cargado) return [];
   const senales: Senal[] = [];
+  for (const t of tocaIr(frecs, compras)) senales.push({
+    id: `com-toca-${t.f.id}`, modulo: 'compras', nivel: 'info', titulo: `Te toca ir: ${t.f.nombre}`,
+    detalle: t.hace != null ? `Fuiste hace ${t.hace} días (vas cada ~${t.f.cada_dias}).` : `Vas cada ~${t.f.cada_dias} días.`,
+    ruta: '#/compras', accion: { texto: 'Ver la lista', ruta: '#/compras' },
+  });
   const carro = leerCarrito();
   if (carro?.lineas.length) senales.push({ id: 'com-carro', modulo: 'compras', nivel: 'info', titulo: `Carro a medias: ${carro.lineas.length} cosas`, detalle: 'Tocá para seguir cargando o cerrar la compra.', ruta: '#/compras/escanear' });
   if (leerEnCurso()) senales.push({ id: 'com-curso', modulo: 'compras', nivel: 'info', titulo: 'Tenés una compra a medias', detalle: 'Tocá para seguir en el súper.', ruta: '#/compras/comprando' });
@@ -69,6 +78,17 @@ function useVitalCompras(): Vital {
   };
 }
 
+/** Próximas idas a comprar (aproximadas) en los próximos 14 días. */
+function useAgendaCompras(): ItemAgenda[] {
+  const { filas: frecs } = useFrecuencias();
+  const { filas: compras } = useCompras();
+  const h = hoy();
+  return frecs.filter((f) => f.activo !== false).flatMap((f) => {
+    const p = proximaIda(f, compras);
+    return p && p >= h && p <= sumarDias(h, 14) ? [{ id: `com-ida-${f.id}`, modulo: 'compras', fecha: p, titulo: `${f.nombre} (aprox.)`, ruta: '#/compras' }] : [];
+  });
+}
+
 /** Cada compra cerrada vale 3 registros (30 XP). */
 function useActividadCompras(): string[] {
   return useCompras().filas.flatMap((c) => Array(3).fill(c.fecha));
@@ -101,6 +121,7 @@ export const moduloCompras: Modulo = {
   Resumen: ResumenCompras,
   useVital: useVitalCompras,
   useSenales: useSenalesCompras,
+  useAgenda: useAgendaCompras,
   useActividad: useActividadCompras,
   enCurso: compraEnCurso,
 };

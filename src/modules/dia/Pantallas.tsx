@@ -9,6 +9,8 @@ import {
   guardarDiaPlantilla, guardarSemanaBase, horaCorta, semanaDe, semanaTipo, TD, TIPOS, useDias, usePlantilla, useTareas,
   type Bloque, type EstadoDia, type NivelPrioridad, type Prioridad, type Tarea, type TipoBloque, type VistaDia,
 } from './modelo';
+import { BarraTiempo, CosasDiarias, TuTiempo } from './Tiempo';
+import { duracion, repartir, useRutinas } from './tiempo';
 import './dia.css';
 
 const PX_HORA = 72;
@@ -498,6 +500,8 @@ export function PantallaDia() {
           </Tarjeta>
           <Tareas vista={vista} otros={otros} />
         </div>
+
+        <TuTiempo vista={vista} />
       </div>
 
       <Calendario sel={fecha} onSel={elegir} />
@@ -515,6 +519,7 @@ export function PantallaDia() {
 
 export function PantallaSemana() {
   const { filas: plantilla } = usePlantilla();
+  const { filas: rutinas } = useRutinas();
   const [dia, setDia] = useState(desdeISO(hoy()).getDay());
   const [aviso, setAviso] = useState('');
   const bloques = useMemo(
@@ -524,6 +529,8 @@ export function PantallaSemana() {
     [plantilla, dia],
   );
   const orden = [1, 2, 3, 4, 5, 6, 0];
+  const reparto = repartir(bloques, rutinas, dia);
+  const libreSemana = orden.reduce((s, d) => s + repartir(semanaTipo(plantilla).filter((x) => x.dia_semana === d), rutinas, d).libre, 0);
 
   return (
     <div className="pila dia">
@@ -544,6 +551,11 @@ export function PantallaSemana() {
           window.setTimeout(() => setAviso(''), 2500);
         }} />
       </Tarjeta>
+      <Tarjeta titulo={<span className="etq-tit">TIEMPO DEL {DIAS_SEMANA[dia].toUpperCase()} · {duracion(reparto.libre)} LIBRES</span>}>
+        <BarraTiempo r={reparto} />
+        <p className="nota">En una semana normal te quedan {duracion(libreSemana)} libres en total.</p>
+      </Tarjeta>
+      <CosasDiarias />
       {!plantilla.length && (
         <button className="btn" onClick={async () => { const n = await guardarSemanaBase(plantilla); setAviso(`Semana tipo guardada (${n} bloques).`); }}>
           Guardar toda la semana tipo tal como está

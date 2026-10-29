@@ -3,6 +3,7 @@ import { hoy, sumarDias } from '../../core/format';
 import type { ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
 import { aMinutos, ahoraMinutos, armarDia, bloqueEn, FERIADOS, horaCorta, TIPOS, useDias, usePlantilla, useTareas } from './modelo';
 import { PantallaDia, PantallaSemana } from './Pantallas';
+import { duracion, repartir, useRutinas, useUsos } from './tiempo';
 
 const icono = (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -48,8 +49,10 @@ function useAgendaDia(): ItemAgenda[] {
   return items;
 }
 
+/** XP por tarea hecha y por cada rato productivo anotado. */
 function useActividadDia(): string[] {
-  return useTareas().filas.filter((t) => t.hecho && t.fecha).map((t) => t.fecha!);
+  const usos = useUsos().filas.filter((u) => u.clase === 'productivo').map((u) => u.fecha);
+  return [...useTareas().filas.filter((t) => t.hecho && t.fecha).map((t) => t.fecha!), ...usos];
 }
 
 function ResumenDia() {
@@ -73,9 +76,10 @@ function useVitalDia(): Vital {
   const actual = bloqueEn(v.bloques, min);
   const siguiente = v.bloques.find((x) => aMinutos(x.inicio) > min);
   const pend = v.tareas.filter((t) => !t.hecho).length;
+  const libre = repartir(v.bloques, useRutinas().filas, v.diaSemana).libre;
   return {
     cifra: siguiente ? horaCorta(siguiente.inicio) : actual ? actual.titulo : 'Libre',
-    sub: [siguiente ? `Después: ${siguiente.titulo}` : actual ? `Ahora: ${actual.titulo}` : '', pend ? `${pend} tarea${pend > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || undefined,
+    sub: [siguiente ? `Después: ${siguiente.titulo}` : actual ? `Ahora: ${actual.titulo}` : '', pend ? `${pend} tarea${pend > 1 ? 's' : ''}` : '', `${duracion(libre)} libres`].filter(Boolean).join(' · ') || undefined,
     barra: min / (24 * 60),
     accion: { texto: 'Ver mi día', ruta: '#/dia' },
   };

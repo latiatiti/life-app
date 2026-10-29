@@ -5,6 +5,7 @@ import { ir } from '../../core/router';
 import { Icono, Modal, Tarjeta, Vacio } from '../../ui/ui';
 import { aComprar, faltantes, useProductos } from '../stock/modelo';
 import { FormItem } from './FormItem';
+import { TarjetaFrecuencias } from './Frecuencia';
 import {
   actualizarTodo, BLOQUES, CADENAS, enOferta, estimar, type Item, leerEnCurso, masBarato, nuevoItem, SUGERIDOS, sumarFaltantes, TC,
   totalesPorCadena, useItems, usePrecios,
@@ -163,6 +164,8 @@ export function PantallaLista() {
           <button className="btn" onClick={actualizar}>Actualizar precios</button>
         </div>
       )}
+
+      <TarjetaFrecuencias />
 
       <Modal titulo="Armar la lista" abierto={preguntando} onCerrar={() => setPreguntando(false)}>
         <Cuestionario items={items} onListo={() => setPreguntando(false)} />
