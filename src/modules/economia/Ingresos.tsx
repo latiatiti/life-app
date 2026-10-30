@@ -282,6 +282,7 @@ export function PantallaIngresos() {
             setCargando(true); await cargarMisTrabajos(ingresos); setCargando(false);
           }}>{cargando ? 'Cargando…' : 'Cargar reparto ($120.000) y fábrica ($135.000), los sábados'}</button>
           <button className="btn" onClick={() => setEditando('nuevo')}>{Icono.mas} Cargar otro a mano</button>
+          {soderia && <button className="btn" onClick={() => setVerSoderia(true)}>La sodería te debe {dinero(Number(soderia.saldo))} {Icono.flechaDer}</button>}
         </Vacio>
       ) : (
         <>
