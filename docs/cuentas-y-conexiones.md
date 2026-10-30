@@ -30,18 +30,21 @@ Herramientas: `que_hay` (tablas, columnas y cantidades; toda tabla nueva con `us
 Cada cambio queda en `api_registro` con el antes y el después. La clave se guarda solo como sha-256;
 se puede cortar desde Ajustes. Desplegar con verificación de JWT **desactivada** (la autoriza la clave).
 
-## Mercado Pago (investigación, sin implementar)
-- Una cuenta personal puede crear una "aplicación" en mercadopago.com.ar/developers y obtener su
-  *access token* de producción. Con eso se puede consultar por API:
-  - `/v1/payments/search`: pagos **recibidos** (cobros, transferencias que entran).
-  - `/v1/account/release_report` y `settlement_report`: reportes CSV de movimientos de la cuenta
-    (dinero liberado, retiros, saldo). Están pensados para vendedores; hay que probar con su cuenta si
-    también muestran lo que ella paga con QR o transfiere.
-- No hay API oficial para ver los pagos que uno hace como comprador desde la billetera.
-- Plan propuesto: función `mercadopago` con su token guardado como secreto en Supabase, que cada día
-  traiga los movimientos y los deje como "a revisar" en Economía (no como gastos firmes).
-- Alternativa sin API: Mercado Pago manda un correo por cada pago y transferencia; con el conector de
-  Gmail se pueden leer esos avisos y proponer los movimientos.
-
-Fuentes: https://mercadopago.cl/developers/es/docs/reports/released-money/api ,
-https://www.mercadopago.com.ar/developers/en/docs/subscriptions/additional-content/payment-management.md
+## Mercado Pago (2026-10-30)
+Elegido por ella: **API de Mercado Pago** con su propia clave, guardada solo en la nube.
+- Función `supabase/functions/mercadopago` (JWT activado). Secretos: `MP_ACCESS_TOKEN` (Access Token
+  de producción de una app creada en mercadopago.com.ar/developers → Tus integraciones) y `MP_DUENO`
+  (el `user_id` de LIFE de ella: nadie más puede usarla). Solo hace consultas fijas de lectura:
+  `/users/me`, saldo (`/users/{id}/mercadopago_account/balance`, no documentado: si no responde la app
+  muestra "—"), y `/v1/payments/search` como cobradora (`collector.id`) y como pagadora (`payer.id`),
+  aprobados, últimos 30 días.
+- Ojo: el token de MP no se puede limitar a solo leer. Si se filtra: MP → la app → Renovar credenciales.
+  Lo que paga con QR/servicios puede no venir completo por `payer.id`; para eso queda subir el resumen CSV.
+- En la app: Plata → **Mercado Pago** (`#/economia/mercadopago`). Al abrirla pregunta sola a MP (cada 3 h)
+  y muestra saldo en MP vs. en LIFE (avisa si no coinciden). Tabla `eco_mp_movimientos`
+  (`supabase/economia-mercadopago.sql`): cada movimiento entra `nuevo` y ella lo confirma como pago de un
+  vencimiento (`registrarPago`), cobro (`registrarCobro`), gasto/ingreso con categoría, o lo ignora.
+  `externo = "mp:<id de operación>"` evita duplicados (igual en la API y en el CSV). Lo que se repite en
+  2+ meses sin estar en Pagos se ofrece como recordatorio mensual.
+- Otra entrada posible (no activa): Claude leyendo los avisos de MP del mail y creando filas con
+  `origen: "mail"` por el conector LIFE. Los avisos le llegan a otro mail, no al conectado.

@@ -35,6 +35,8 @@ de desarrollo). `supabase/seguridad.sql` **aplicado en la nube el 2026-10-30** (
 `seguridad_gonzalito_1`, con su OK): los asesores bajaron de 10 a 5 avisos (quedan los esperables).
 
 Pendiente:
+- Mercado Pago (2026-10-30): el Access Token va solo como secreto `MP_ACCESS_TOKEN` de la función
+  `mercadopago` (nunca en el chat, el repo ni la app). Renovarlo en MP si se pegó en algún lado.
 - Pasar el repo de GitHub a **privado** (hoy es público).
 - Cuenta `mauro2@life.com` (sin datos, con una sesión abierta desde el 15/10): pausarla o borrarla.
 - Supabase → Authentication: confirmar que "Allow new users to sign up" esté apagado y activar la

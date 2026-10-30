@@ -238,7 +238,7 @@ export async function registrarPago(
   p: Pago,
   datos: { monto: number; cuenta_id: string; fecha: string; categoria_id: string | null }
 ) {
-  await crear<Movimiento>(T.movimientos, {
+  const mov = await crear<Movimiento>(T.movimientos, {
     fecha: datos.fecha,
     tipo: 'gasto',
     monto: datos.monto,
@@ -252,6 +252,7 @@ export async function registrarPago(
   const sig = siguienteVencimiento(p);
   if (sig) await modificar<Pago>(T.pagos, p.id, { proximo_vencimiento: sig });
   else await modificar<Pago>(T.pagos, p.id, { activo: false });
+  return mov;
 }
 
 /** Saltear un vencimiento sin generar gasto (ej. un mes que no se cobró). */
@@ -306,12 +307,13 @@ export async function registrarCobro(
   datos: { monto: number; cuenta_id: string; fecha: string },
   restoPendiente = false
 ) {
-  if (datos.monto > 0) await movIngreso(i, datos);
+  const mov = datos.monto > 0 ? await movIngreso(i, datos) : null;
   const falta = Math.max(0, num(i.monto) - datos.monto);
   await modificar<Ingreso>(T.ingresos, i.id, {
     proximo_cobro: siguienteCobro(i),
     ...(restoPendiente && falta > 0 ? { adeudado: num(i.adeudado) + falta } : {}),
   });
+  return mov;
 }
 
 /** El cobro de esta semana no llegó: pasa al próximo y el monto se suma a lo que te deben. */

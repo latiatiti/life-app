@@ -4,6 +4,8 @@ import type { ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
 import { Icono } from '../../ui/ui';
 import { PantallaCuentas } from './Cuentas';
 import { PantallaIngresos } from './Ingresos';
+import { PantallaMercadoPago } from './MercadoPago';
+import { useMovimientosMP } from './mercadopago';
 import { PantallaMovimientos } from './Movimientos';
 import { PantallaProyeccion } from './Proyeccion';
 import { PantallaResumen, ResumenHub } from './Resumen';
@@ -47,9 +49,21 @@ function useSenalesEconomia(): Senal[] {
   const { filas: movs } = useMovimientos();
   const { filas: fuentes } = useIngresos();
   const { filas: pagos } = usePagos();
+  const { filas: movsMP } = useMovimientosMP();
   if (!cargado || cuentas.length === 0) return [];
   const mes = mesActual();
   const senales: Senal[] = [];
+
+  const porRevisar = movsMP.filter((m) => m.estado === 'nuevo');
+  if (porRevisar.length) {
+    senales.push({
+      id: 'eco-mp', modulo: 'economia', nivel: 'info',
+      titulo: `${porRevisar.length} ${porRevisar.length === 1 ? 'movimiento' : 'movimientos'} de Mercado Pago para revisar`,
+      detalle: porRevisar.slice(0, 3).map((m) => `${m.descripcion} ${dinero(Number(m.monto))}`).join(' · '),
+      ruta: '#/economia/mercadopago',
+      accion: { texto: 'Revisar', ruta: '#/economia/mercadopago' },
+    });
+  }
 
   const deben = fuentes.filter((i) => Number(i.adeudado) > 0);
   if (deben.length) {
@@ -116,6 +130,7 @@ export const moduloEconomia: Modulo = {
     { ruta: 'movimientos', titulo: 'Movimientos', componente: PantallaMovimientos },
     { ruta: 'ingresos', titulo: 'Ingresos', componente: PantallaIngresos },
     { ruta: 'proyeccion', titulo: 'Proyección', componente: PantallaProyeccion },
+    { ruta: 'mercadopago', titulo: 'Mercado Pago', componente: PantallaMercadoPago },
     { ruta: 'cuentas', titulo: 'Cuentas y categorías', componente: PantallaCuentas },
   ],
   Resumen: ResumenHub,
