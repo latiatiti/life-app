@@ -1,7 +1,7 @@
 -- =====================================================================
 -- LIFE · Seguridad (Gonzalito, 2026-10-29)
 --
--- NO APLICADO TODAVÍA: se corre en la nube solo con el OK de ella.
+-- Aplicado en la nube el 2026-10-30 con el OK de ella (migración seguridad_gonzalito_1).
 -- Se puede correr más de una vez. No borra ni mueve datos.
 --
 -- 1. Las funciones de permisos (security definer) dejan de poder llamarse

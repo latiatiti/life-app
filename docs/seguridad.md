@@ -30,12 +30,12 @@ consola; si no hay avisos "Content-Security-Policy-Report-Only", cambiar el nomb
 `Content-Security-Policy`. Si se suma un dominio externo nuevo, agregarlo ahí.
 
 ## Estado (auditoría 2026-10-29)
-Aplicado en el repo (PR de Gonzalito): encabezados, service worker que no guarda errores, Vite 8.3.5
-(fallas del servidor de desarrollo), `supabase/seguridad.sql` **escrito pero sin aplicar**.
+Aplicado (PR #17): encabezados, service worker que no guarda errores, Vite 8.3.5 (fallas del servidor
+de desarrollo). `supabase/seguridad.sql` **aplicado en la nube el 2026-10-30** (migración
+`seguridad_gonzalito_1`, con su OK): los asesores bajaron de 10 a 5 avisos (quedan los esperables).
 
-Pendiente de decisión de ella:
+Pendiente:
 - Pasar el repo de GitHub a **privado** (hoy es público).
-- Aplicar `supabase/seguridad.sql`.
 - Cuenta `mauro2@life.com` (sin datos, con una sesión abierta desde el 15/10): pausarla o borrarla.
 - Supabase → Authentication: confirmar que "Allow new users to sign up" esté apagado y activar la
   protección de contraseñas filtradas.
