@@ -82,60 +82,62 @@ export interface Tarea extends Fila {
 export const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 export const DIAS_CORTOS = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
-/** Horario del gimnasio: el domingo no abre, el sábado abre a las 7. Entrenos de ~1 h 30 (express). */
-export const GIMNASIO = { cerrado: [0], abreSabado: '07:00', duracionMin: 90 };
+/** Horario del gimnasio: el domingo no abre y el sábado cierra a las 19. Entrenos de ~1 h 30. Va 3 días por semana (lun a jue, según la semana). */
+export const GIMNASIO = { cerrado: [0], cierraSabado: '19:00', duracionMin: 90, diasPorSemana: 3 };
 
-/* ---------- Semana tipo de fábrica (lo que contó la usuaria el 2026-10-15) ---------- */
+/* ---------- Semana tipo de fábrica (lo que contó la usuaria el 2026-10-15, actualizada el 2026-10-29) ---------- */
 
 const b = (dia_semana: number, inicio: string, fin: string, titulo: string, tipo: TipoBloque, extra: Partial<Bloque> = {}) =>
   ({ dia_semana, inicio, fin, titulo, tipo, ...extra });
 
+const GYM = 'Va 3 días por semana: lun, mar y mié, o mar, mié y jue si un lunes no va';
+
 export const SEMANA_BASE: Array<Omit<BloquePlantilla, 'id'>> = [
-  // Lunes: reparto
+  // Lunes: reparto 11 a 15, a veces un cliente a la tarde, gimnasio a la noche
   b(1, '00:00', '08:30', 'Dormir', 'descanso'),
-  b(1, '08:30', '11:00', 'Despertar y mañana en casa', 'casa', { nota: 'Me despierto entre las 8 y las 9' }),
+  b(1, '08:30', '11:00', 'Mañana en casa', 'casa'),
   b(1, '11:00', '12:00', 'A la fábrica a cargar', 'traslado'),
-  b(1, '12:00', '15:30', 'Reparto', 'reparto', { nota: 'Hasta las 3 o 4' }),
-  b(1, '15:30', '16:30', 'Almuerzo', 'comida'),
-  b(1, '17:00', '18:00', 'Reparto de la siesta', 'reparto', { opcional: true, nota: 'Si quedaron clientes: uno o dos' }),
-  b(1, '18:00', '19:30', 'Gimnasio', 'gym', { opcional: true, nota: 'Si está planificado' }),
-  b(1, '19:30', '24:00', 'En casa', 'casa'),
-  // Martes y miércoles: fábrica
-  ...[2, 3].flatMap((d) => [
-    b(d, '00:00', '07:00', 'Dormir', 'descanso'),
-    b(d, '07:00', '08:00', 'Despertar y salir', 'traslado'),
-    b(d, '08:00', '17:00', 'Fábrica', 'fabrica', { come_alla: true, nota: 'Como en la fábrica' }),
-    b(d, '17:00', '18:00', 'Reparto de un par de clientes', 'reparto', { nota: 'Me llevo un poco de carga' }),
-    b(d, '18:30', '20:00', 'Gimnasio', 'gym', { opcional: true }),
-    b(d, '20:00', '24:00', 'En casa', 'casa'),
-  ]),
-  // Jueves: reparto partido con gimnasio en el medio
+  b(1, '12:00', '15:00', 'Reparto', 'reparto'),
+  b(1, '15:00', '16:00', 'Vuelta a casa', 'traslado', { nota: 'Llego 15:30 o 16' }),
+  b(1, '16:00', '17:00', 'Almuerzo', 'comida'),
+  b(1, '17:00', '18:00', 'Reparto de la tarde', 'reparto', { opcional: true, nota: 'Si queda algún cliente' }),
+  b(1, '21:00', '22:30', 'Gimnasio', 'gym', { opcional: true, nota: GYM }),
+  b(1, '22:30', '23:00', 'Vuelta a casa', 'traslado', { opcional: true }),
+  // Martes: fábrica, algún cliente y gimnasio
+  b(2, '00:00', '07:00', 'Dormir', 'descanso'),
+  b(2, '07:00', '08:00', 'Despertar y salir', 'traslado'),
+  b(2, '08:00', '17:00', 'Fábrica', 'fabrica', { come_alla: true, nota: 'Como en la fábrica' }),
+  b(2, '17:00', '18:00', 'Reparto', 'reparto', { opcional: true, nota: 'Si tengo algún cliente, apenas salgo' }),
+  b(2, '18:30', '20:00', 'Gimnasio', 'gym', { opcional: true, nota: GYM }),
+  // Miércoles: fábrica, reparto fijo al hospital de ojos y gimnasio
+  b(3, '00:00', '07:00', 'Dormir', 'descanso'),
+  b(3, '07:00', '08:00', 'Despertar y salir', 'traslado'),
+  b(3, '08:00', '17:00', 'Fábrica', 'fabrica', { come_alla: true, nota: 'Como en la fábrica' }),
+  b(3, '17:30', '18:15', 'Reparto: hospital de ojos', 'reparto', { nota: 'Reparto fijo, paso tipo 17:30' }),
+  b(3, '18:30', '20:00', 'Gimnasio', 'gym', { opcional: true, nota: GYM }),
+  // Jueves: reparto partido, almuerzo en casa y gimnasio al final
   b(4, '00:00', '08:30', 'Dormir', 'descanso'),
-  b(4, '08:30', '11:00', 'Mañana en casa', 'casa'),
-  b(4, '11:00', '14:30', 'Reparto', 'reparto', { nota: 'Paso por la fábrica a cargar' }),
-  b(4, '14:30', '15:30', 'Almuerzo en casa', 'comida'),
-  b(4, '15:30', '18:00', 'Siesta / casa', 'casa'),
-  b(4, '18:00', '19:00', 'Reparto cerca del gym', 'reparto'),
-  b(4, '19:00', '20:30', 'Gimnasio', 'gym', { nota: 'Entreno express, ~1 h 30' }),
-  b(4, '20:30', '21:00', 'Vuelta', 'traslado'),
-  b(4, '21:00', '24:00', 'En casa', 'casa'),
-  // Viernes: fábrica + reparto largo (zona El Challao)
+  b(4, '08:30', '10:00', 'Mañana en casa', 'casa'),
+  b(4, '10:00', '15:00', 'Reparto', 'reparto'),
+  b(4, '15:00', '16:00', 'Almuerzo en casa', 'comida'),
+  b(4, '17:00', '19:00', 'Reparto de la tarde', 'reparto', { nota: 'Hasta las 6 o 7' }),
+  b(4, '19:00', '20:30', 'Gimnasio', 'gym', { opcional: true, nota: GYM }),
+  b(4, '20:30', '21:00', 'Vuelta a casa', 'traslado'),
+  // Viernes: fábrica + reparto Guaymallén y El Challao
   b(5, '00:00', '07:00', 'Dormir', 'descanso'),
   b(5, '07:00', '08:00', 'Despertar y salir', 'traslado'),
   b(5, '08:00', '17:00', 'Fábrica', 'fabrica', { come_alla: true, nota: 'Como en la fábrica' }),
-  b(5, '17:00', '20:00', 'Reparto zona El Challao', 'reparto', { nota: 'Reparto más abundante' }),
-  b(5, '20:00', '24:00', 'En casa', 'casa'),
-  // Sábado: reparto de mañana y cobro
+  b(5, '17:00', '20:30', 'Reparto Guaymallén y El Challao', 'reparto', { nota: 'Vuelvo a casa 20:30' }),
+  // Sábado: reparto de 10 a 15, cobro y fin de semana
   b(6, '00:00', '09:00', 'Dormir', 'descanso'),
-  b(6, '09:00', '10:30', 'Mañana en casa', 'casa'),
-  b(6, '10:30', '14:30', 'Reparto', 'reparto', { nota: 'Salgo de la fábrica 10:30, termino 2 o 3' }),
-  b(6, '14:30', '15:30', 'Almuerzo · día de cobro', 'comida'),
-  b(6, '15:30', '24:00', 'Tarde libre', 'libre', { nota: 'El gimnasio abre a las 7 por si voy' }),
+  b(6, '09:00', '10:00', 'Mañana en casa', 'casa'),
+  b(6, '10:00', '15:00', 'Reparto', 'reparto'),
+  b(6, '15:00', '16:00', 'Almuerzo · día de cobro', 'comida'),
+  b(6, '16:30', '18:00', 'Gimnasio', 'gym', { opcional: true, nota: 'Cierra a las 19: si querés sumar un día, que sea temprano' }),
+  b(6, '18:00', '24:00', 'Fin de semana', 'libre'),
   // Domingo: libre, el gimnasio no abre
   b(0, '00:00', '10:00', 'Dormir', 'descanso'),
-  b(0, '10:00', '18:00', 'Día libre', 'libre', { nota: 'El gimnasio no abre' }),
-  b(0, '18:00', '19:00', 'Organizar la semana', 'otro'),
-  b(0, '19:00', '24:00', 'En casa', 'casa'),
+  b(0, '10:00', '24:00', 'Día libre', 'libre', { nota: 'El gimnasio no abre' }),
 ];
 
 /* ---------- Feriados de Argentina (+ Mendoza) ---------- */

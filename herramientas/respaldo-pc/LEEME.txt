@@ -1,0 +1,14 @@
+LIFE - copia de tus datos en tu compu (Windows)
+
+1. En LIFE: Ajustes > Conexion con Claude > permiso "Solo puede leer" > Crear. Deja el link a mano.
+2. Doble clic en "Instalar LIFE en mi PC.bat" (si Windows avisa, "Mas informacion" > "Ejecutar de todas formas").
+3. Pega el link cuando lo pida.
+
+Queda:
+- Carpeta LIFE en el disco con mas espacio libre. La copia es UN archivo, LIFE\respaldos\LIFE-datos.json,
+  que se actualiza (no se juntan copias). La de la semana anterior queda como LIFE-datos-anterior.json.
+- Se actualiza sola los domingos a las 22 h (si la compu estaba apagada, apenas se prende).
+- En el escritorio: "LIFE" (abre la app) y "LIFE respaldo" (copia ya y abre la carpeta).
+
+Para volver a cargar una copia: LIFE > Ajustes > Importar respaldo > elegir el archivo.
+Para sacarlo: borrar la tarea "LIFE respaldo" del Programador de tareas y la carpeta LIFE.
