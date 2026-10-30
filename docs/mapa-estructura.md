@@ -75,7 +75,7 @@ Reglas que se siguen: primero Inicio, después lo diario, al final lo que se ana
 |---|---|---|---|---|
 | **Inicio** | 1.º del menú | barra | Tablero de 8 tarjetas (Día, Plata, Entreno, Comida, Compras, En casa, Mi partida, Para resolver) + agenda de 14 días | todos |
 | **Día** | menú | barra | Hoy · Semana · Semana tipo | `dia_*` |
-| **Plata** (Economía + Pagos) | menú | barra | Resumen · Pagos · Ingresos · Movimientos · ⋯ Proyección | `eco_*`, `pag_pagos` |
+| **Plata** (Economía + Pagos) | menú | barra | Resumen · Pagos · Ingresos · Movimientos · ⋯ Proyección · Mercado Pago | `eco_*`, `pag_pagos` |
 | **Entreno** | menú | Más (o barra, ver pregunta) | Hoy · Progreso · Rutina · ⋯ Historial, Preparador | `ent_*` |
 | **Casa** (Stock + Compras + Comida) | menú | Más | En casa · Lista · Comprar · ⋯ Comida, Precios, Tickets, Historial | `stk_*`, `com_*`, `ali_*` |
 | **Ajustes** | ⚙ al final | Más | Mi cuenta · Plata (cuentas y categorías) · Claude · Respaldo · Datos de prueba | `perfiles`, `api_claves`, `eco_cuentas`, `eco_categorias` |
