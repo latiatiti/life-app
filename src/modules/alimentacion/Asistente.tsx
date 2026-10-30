@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { dinero, hoy } from '../../core/format';
+import { dinero, fechaLarga, hoy, nombreMes } from '../../core/format';
 import { Cifra, Estado, Tarjeta } from '../../ui/ui';
 import { useCompras, useItems, usePrecios } from '../compras/modelo';
+import { useCategorias, useMovimientos } from '../economia/modelo';
 import { armarDia, comeEnFabrica, useDias, usePlantilla, useTareas } from '../dia/modelo';
 import { useProductos } from '../stock/modelo';
+import { INICIO_GASTO_COMIDA, resumenGastoComida } from './gasto';
 import { armarCanasta, buscarFaltantes, canastaALista, plataCanasta } from './canasta';
 import { faltaPara, metasDelDia, totalesDia, useComidas, useDiaDeEntreno, useMetas, usePlatos } from './modelo';
 import {
@@ -33,6 +35,8 @@ export function PantallaAsistente() {
   const { filas: plantilla } = usePlantilla();
   const { filas: dias } = useDias();
   const { filas: tareas } = useTareas();
+  const { filas: movimientos } = useMovimientos();
+  const { filas: categorias } = useCategorias();
   const [msg, setMsg] = useState('');
   const [buscando, setBuscando] = useState(false);
 
@@ -51,6 +55,7 @@ export function PantallaAsistente() {
   const v = veredicto(tendencia(cuerpo), perfil.kg_mes);
   const canasta = armarCanasta({ items, precios, compras, proteinaDia: meta.proteina });
   const plata = plataCanasta(canasta);
+  const gasto = resumenGastoComida({ compras, movimientos, categorias });
   const conStock = platos.filter((p) => p.ingredientes?.length && faltaPara(p, productos).length === 0).sort((a, b) => b.proteina - a.proteina);
   const opciones = opcionesProteina().sort((a, b) => Math.abs(a.proteina - Math.min(falta, 45)) - Math.abs(b.proteina - Math.min(falta, 45))).slice(0, 4);
 
@@ -130,6 +135,28 @@ export function PantallaAsistente() {
                   : 'Buen ritmo: comidas repartidas y con proteína.'}
               </p>
             </div>
+          </>
+        )}
+      </Tarjeta>
+
+      <Tarjeta titulo="Cuánto gastamos en comida">
+        {!gasto.actual.empezo ? (
+          <p className="nota">Empieza a contar el {fechaLarga(INICIO_GASTO_COMIDA)}. Suma las compras del súper (el total del ticket, con lo de Ulises) y los gastos de Plata en Súper, Verdulería, Carnicería y Delivery. Cargá cada compra y cada gasto de comida desde ese día.</p>
+        ) : (
+          <>
+            <div className="grilla-cifras compacta">
+              <Cifra etiqueta={`Nos gastamos en ${nombreMes(gasto.actual.mes).split(" ")[0].toLowerCase()}`} valor={dinero(gasto.actual.total)} nota={`${gasto.actual.compras} compras del súper`} />
+              <Cifra etiqueta="Mi parte" valor={dinero(gasto.actual.mio)} nota="lo compartido a medias" />
+              <Cifra etiqueta="A este ritmo, el mes" valor={gasto.faltanDias ? '—' : dinero(gasto.proyeccion)} nota={gasto.faltanDias ? 'en una semana te digo' : plata.mes ? `la canasta da ${dinero(plata.mes)}` : undefined} />
+              <Cifra etiqueta="Mes anterior" valor={gasto.anterior.empezo ? dinero(gasto.anterior.total) : '—'} />
+            </div>
+            {gasto.actual.porCategoria.length > 0 && (
+              <ul className="lista">
+                {gasto.actual.porCategoria.map((c) => (
+                  <li key={c.nombre} className="lista-item"><div className="crece"><strong>{c.nombre}</strong></div><span className="mono">{dinero(c.monto)}</span></li>
+                ))}
+              </ul>
+            )}
           </>
         )}
       </Tarjeta>

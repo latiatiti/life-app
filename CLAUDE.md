@@ -78,6 +78,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `canasta.ts`: canasta semanal para ganar masa (`CANASTA`), usa el consumo real de `com_compras` si hay, la suba mensual de cada cosa con `com_precios` (`subaMensual`), plata a separar (`plataCanasta`), "Buscar precios que faltan" (función `precios` → `com_items` + `com_precios` online) y "Pasar a la lista".
 - Registrar comida: pestañas Alimento (tabla + gramos) / Mi plato / Escanear / Otra cosa, con hora (`ali_comidas.hora`).
 - Recordatorios: agua por tramos de 2 h (9–22 h), creatina y suplementos desde las 12, "hace X h que no comés", pesarse cada 4 días, sábado "separá $X". `Senal.accion.hacer` resuelve el aviso flotante ahí mismo (+500 ml, Tomé). `useDiaDeEntreno()` = entrenó o el Día tiene gym.
+- Gasto en comida (`gasto.ts`, tarjeta en Asistente): cuenta desde `INICIO_GASTO_COMIDA` = 2026-11-01 (pedido de ella). Total = compras del súper (ticket entero, con lo de Ulises) + gastos de Plata en categorías de comida no ligados a una compra; "mi parte" usa `reparto.yo`. Mes anterior y proyección a fin de mes.
 - SQL `supabase/alimentacion-cuerpo.sql`: `ali_cuerpo` (peso, cintura, brazo), `ali_metas.perfil` jsonb, `ali_comidas.hora`. Si la nube no tiene las columnas, guarda igual sin ellas (`sinColumnaNueva`).
 
 ## Preparador y ciclos (2026-10-06)
