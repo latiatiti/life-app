@@ -12,8 +12,11 @@ export interface Senal {
   detalle?: string;
   /** Ruta a la que lleva la señal al tocarla, ej. "#/pagos". */
   ruta?: string;
-  /** Acceso directo que se ofrece en el aviso flotante, ej. { texto: 'Pagar', ruta: '#/pagos/al-dia' }. */
-  accion?: { texto: string; ruta: string };
+  /**
+   * Acceso directo que se ofrece en el aviso flotante, ej. { texto: 'Pagar', ruta: '#/pagos/al-dia' }.
+   * Con `hacer`, el botón lo resuelve ahí mismo sin cambiar de pantalla (ej. "+500 ml" de agua).
+   */
+  accion?: { texto: string; ruta: string; hacer?: () => unknown };
 }
 
 /**

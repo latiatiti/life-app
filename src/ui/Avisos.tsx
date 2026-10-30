@@ -57,7 +57,10 @@ export function Avisos() {
           </a>
           <div className="aviso-acciones">
             {s.accion && (
-              <a href={s.accion.ruta} className="btn btn-confirmar chico" onClick={() => cerrar(s, true)}>{s.accion.texto}</a>
+              <a href={s.accion.ruta} className="btn btn-confirmar chico" onClick={(e) => {
+                const hacer = s.accion?.hacer;
+                if (hacer) { e.preventDefault(); void hacer(); cerrar(s); } else cerrar(s, true);
+              }}>{s.accion.texto}</a>
             )}
             <button className="btn-icono" onClick={() => cerrar(s)} aria-label={`Cerrar aviso: ${s.titulo}`}>{Icono.cerrar}</button>
           </div>

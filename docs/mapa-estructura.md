@@ -77,7 +77,8 @@ Reglas que se siguen: primero Inicio, después lo diario, al final lo que se ana
 | **Día** | menú | barra | Hoy · Semana · Semana tipo | `dia_*` |
 | **Plata** (Economía + Pagos) | menú | barra | Resumen · Pagos · Ingresos · Movimientos · ⋯ Proyección | `eco_*`, `pag_pagos` |
 | **Entreno** | menú | Más (o barra, ver pregunta) | Hoy · Progreso · Rutina · ⋯ Historial, Preparador | `ent_*` |
-| **Casa** (Stock + Compras + Comida) | menú | Más | En casa · Lista · Comprar · ⋯ Comida, Precios, Tickets, Historial | `stk_*`, `com_*`, `ali_*` |
+| **Casa** (Stock + Compras) | menú | Más | En casa · Lista · Comprar · ⋯ Precios, Tickets, Historial | `stk_*`, `com_*` |
+| **Comida** (sección propia desde 2026-10-29, pedido de ella: "como la de Entreno") | menú | Más | Hoy · Asistente · Cuerpo · Platos · ⋯ Metas | `ali_*` (+ lee `com_*`, `dia_*`, `ent_*`) |
 | **Ajustes** | ⚙ al final | Más | Mi cuenta · Plata (cuentas y categorías) · Claude · Respaldo · Datos de prueba | `perfiles`, `api_claves`, `eco_cuentas`, `eco_categorias` |
 
 Cambios que implica (cada uno sería una tanda chica):

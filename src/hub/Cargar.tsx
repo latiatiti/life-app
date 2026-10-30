@@ -16,6 +16,8 @@ const OPCIONES: Opcion[] = [
   { id: 'pague', texto: 'Pagué', ayuda: 'Un vencimiento de Pagos', modulo: 'pagos', ruta: 'pagos/al-dia' },
   { id: 'tarea', texto: 'Tarea', ayuda: 'Algo para hacer hoy o otro día', modulo: 'dia', ruta: 'dia' },
   { id: 'comi', texto: 'Comí', ayuda: 'Un plato o algo suelto', modulo: 'alimentacion', form: 'comida' },
+  { id: 'agua', texto: 'Agua o creatina', ayuda: 'Sumar un vaso o marcar el suplemento', modulo: 'alimentacion', ruta: 'alimentacion' },
+  { id: 'peso', texto: 'Me pesé', ayuda: 'Peso en ayunas y cintura', modulo: 'alimentacion', ruta: 'alimentacion/cuerpo' },
   { id: 'lista', texto: 'Agregar a la lista', ayuda: 'Para la próxima compra', modulo: 'compras', ruta: 'compras' },
   { id: 'entreno', texto: 'Empezar entreno', ayuda: 'La rutina que toca hoy', modulo: 'entrenamiento', ruta: 'entrenamiento' },
 ];
