@@ -43,3 +43,40 @@ LIFE como el monitor de tu vida con pantalla de videojuego (HUD). Elegido entre 
 - Estados siempre con ícono o texto, nunca solo color.
 - Textos cortos: etiquetas de 1 a 3 palabras.
 - **Deshacer y confirmar (pilar 7):** toda escritura con `crear`/`modificar`/`eliminar` muestra sola el aviso "Guardado · DESHACER" (las que llegan seguidas se deshacen juntas). Para lo que no tiene vuelta usar `await confirmar('¿Borrar X? Qué pasa.')` de `src/ui/Deshacer.tsx`, nunca `window.confirm`.
+
+## Escala de rendimiento (toda la app, 2026-10-29)
+
+Pedido de ella: los porcentajes se ponen más "épicos" cuanto mejor vas. Todo % que compare **lo que pasó contra lo esperado** (100 % = justo lo que tocaba) usa esta escala, en cualquier módulo:
+
+| Nivel | Cuándo (por defecto) | Cómo se ve |
+|---|---|---|
+| ⚠ Muy mal | menos de 75 % | rojo que **parpadea** (solo para lo grave, y siempre con su botón) |
+| ▼ Mal | 75–89 % | rojo |
+| ● Regular | 90–96 % | naranja |
+| ✓ Bien | 97–104 % | verde |
+| ◆ Muy bien | 105–114 % | azul con más brillo |
+| ★ Épico | 115 % o más | morado con un brillo que corre |
+
+- Colores: `--n-critico`, `--n-mal`, `--n-regular`, `--n-bien`, `--n-muy`, `--n-epico` en `tema.css`.
+- Piezas: `src/ui/nivel.tsx` → `nivelDe(pct)`, `<Medidor pct texto onClick>` (el % grande con nombre del nivel y una línea de qué hacer) y `<Pct pct>` (chico, para filas). En CSS: `.nv[data-n="…"]` da el color en `--n` a cualquier cosa.
+- Siempre con palabra e ícono, nunca solo color. Cada módulo puede pasar sus propios límites (`niveles`) si 100 % no es "lo esperado" en su caso.
+- Dónde ofrecerla: Entreno (ya está), Plata (gasto del mes contra presupuesto, invertido: menos es mejor), Comida (proteína y agua del día contra la meta), Día (tareas hechas contra las del día), Compras (total contra lo estimado). Cada hilo la propone en su pestaña cuando tenga sentido; no se fuerza.
+
+## Animación (toda la app, 2026-10-29)
+
+Probador: pestaña "Colores y animación" del boceto de entreno. Reglas:
+- Rápido y suave: 0,1 a 0,4 s, curvas `--curva` y `--resorte` (rebote suave) de `tema.css`.
+- **Tocar:** todo botón se hunde un poco (escala 0,97) y los `.btn`, `.medidor`, `.segmentado button` y los de pantallas en vivo abren una **onda** desde el dedo (`src/ui/onda.ts`, una sola escucha para toda la app).
+- **Números que cambian saltan** (`useSalto` de `ui/nivel.tsx`, clase `.salta`).
+- **Pantallas** entran hacia el lado que vas (`.entra-adelante` / `.entra-atras`); listas y cifras de un resumen aparecen escalonadas (`.aparece-escalonado`).
+- **Hojas** suben desde abajo; el aviso "Guardado · DESHACER" sube con rebote; un récord aparece con `.trofeo`.
+- Si el teléfono tiene "reducir movimiento", todo se apaga solo (bloque de `styles.css`).
+
+## Pantallas en vivo (cosas que se hacen con el pulgar mientras pasan)
+
+Modelo: el modo entrenando (`docs/pilares-entreno.md`). Para toda actividad nueva (compra en el súper, cuestionario de la mañana, ponerse al día):
+- Una vista sin scroll en el celu: lo que importa ahora en grande y centrado, los datos con − y + ya cargados con lo previsto, un solo botón grande abajo.
+- Lo que no se usa en cada paso va en hojas que suben (☰ lista, ⋯ opciones).
+- Tira de progreso arriba que se toca para ver la lista.
+- Un medidor con la escala de rendimiento para "cómo venís".
+- DESHACER a mano del último paso; minimizar a la barra de actividad; cancelar pide confirmar.

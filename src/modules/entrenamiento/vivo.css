@@ -1,0 +1,122 @@
+/* Modo entrenando en una sola vista (2026-10-29). Todo entra en el celu sin scroll:
+   cabecera + tira arriba, el paso en el medio (se reparte el alto) y el botón grande abajo.
+   Usa la capa .actividad de styles.css (pantalla completa, encima del menú). Reglas: docs/pilares-entreno.md */
+
+.ent-vivo { height: 100dvh; }
+.ent-vivo .ev-cab { display: flex; align-items: center; gap: 10px; padding: calc(8px + env(safe-area-inset-top)) 14px 4px; }
+.ent-vivo .ev-cab strong { display: block; font-family: var(--letra-dato); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-icono { width: 44px; height: 44px; flex: none; display: grid; place-items: center; font-size: 1.1rem; color: var(--texto); background: var(--capa-1); border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); cursor: pointer; }
+.ev-etq { display: block; font: 500 0.68rem var(--letra-dato); letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-3); }
+.ev-dato { font-family: var(--letra-dato); font-variant-numeric: tabular-nums; color: var(--texto-2); }
+
+.ev-tira { display: flex; gap: 5px; width: 100%; max-width: 760px; margin: 0 auto; padding: 6px 14px; background: none; border: 0; cursor: pointer; }
+.ev-tira-ej { display: flex; gap: 2px; }
+.ev-tira i { flex: 1; height: 8px; background: var(--capa-2); border: 1px solid var(--borde); }
+.ev-tira i.h { background: var(--acento); border-color: var(--acento); box-shadow: var(--brillo); animation: ev-llenar 600ms var(--curva); }
+.ev-tira i.a { background: var(--acento-suave); border-color: var(--acento); }
+@keyframes ev-llenar { from { background: #fff; transform: scaleY(2); } }
+
+.ev-cuerpo { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 8px 14px; overflow-y: auto; }
+.ev-cuerpo > * { flex-shrink: 0; }
+.ev-scroll .ev-cuerpo { padding-bottom: 20px; }
+.ev-pie { padding: 8px 14px calc(12px + env(safe-area-inset-bottom)); }
+.ev-pie-nota { text-align: center; font: 500 0.68rem var(--letra-dato); letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-3); padding: 8px 14px calc(14px + env(safe-area-inset-bottom)); margin: 0; }
+.ev-principal { min-height: 64px; flex-direction: column; gap: 2px; font-size: 1.05rem; }
+.ev-principal small { font: 500 0.8rem var(--letra-dato); text-transform: none; letter-spacing: 0; opacity: 0.85; }
+.ev-principal.cal { background: var(--atencion); border-color: var(--atencion); color: var(--sobre-atencion); box-shadow: none; }
+.ev-principal.ok { animation: ev-ok 520ms var(--curva); }
+@keyframes ev-ok { 30% { transform: scale(0.97); filter: brightness(1.5); } }
+
+/* Serie */
+.ev-ejercicio { text-align: center; }
+.ev-ejercicio h2 { font: 700 clamp(1.4rem, 6.5vw, 1.9rem)/1.1 var(--letra-titulo); margin: 4px 0 2px; text-wrap: balance; }
+.ev-serie { font: 500 0.88rem var(--letra-dato); color: var(--acento-texto); }
+.ev-serie.cal { color: var(--atencion-texto); }
+.ev-crono { text-align: center; background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); padding: 6px 6px 8px; }
+.ev-crono b { display: block; font: 600 clamp(3rem, 16vw, 4.2rem)/1 var(--letra-dato); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; text-shadow: var(--brillo); }
+.ev-ritmo { font: 400 0.75rem var(--letra-dato); color: var(--texto-2); }
+.ev-ritmo em { font-style: normal; color: var(--acento-texto); }
+.ev-params { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 6px; }
+.ev-param { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--capa-1); border: 1px solid var(--borde-fuerte); border-radius: var(--radio); padding: 6px 4px; min-width: 0; }
+.ev-param-val { width: 100%; text-align: center; background: none; border: 0; color: var(--texto); font: 600 1.9rem/1.1 var(--letra-dato); font-variant-numeric: tabular-nums; padding: 0; min-height: 0; }
+.ev-param-val:focus { outline: 1px solid var(--acento-borde); }
+.ev-param.sin-valor .ev-param-val { color: var(--atencion-texto); }
+.ev-plan { font: 400 0.68rem var(--letra-dato); color: var(--texto-3); }
+.ev-plan.dif { color: var(--atencion-texto); }
+.ev-mm { display: flex; gap: 4px; width: 100%; }
+.ev-mm button { flex: 1; height: 46px; background: var(--capa-2); border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); color: var(--texto); font: 600 1.4rem var(--letra-dato); cursor: pointer; touch-action: manipulation; }
+.ev-como { width: 100%; text-align: left; background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); padding: 8px 10px; min-height: 48px; color: var(--texto-2); font-size: 0.8rem; cursor: pointer; }
+.ev-como b { color: var(--texto); font-weight: 500; }
+.ev-herram { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ev-herram button { min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: var(--capa-1); border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); color: var(--texto-2); font: 500 0.66rem var(--letra-dato); letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.ev-herram button span { font-size: 1rem; line-height: 1; color: var(--texto); }
+.ev-herram button.on { border-color: var(--atencion); color: var(--atencion-texto); }
+.ev-herram button:disabled { opacity: 0.4; }
+
+/* Descanso */
+.ev-anillo { position: relative; width: min(236px, 62vw); aspect-ratio: 1; margin: 4px auto 0; max-width: 100%; }
+.ev-anillo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ev-anillo-fondo { fill: none; stroke: var(--capa-2); stroke-width: 5; }
+.ev-anillo-arco { fill: none; stroke: var(--acento); stroke-width: 5; transition: stroke-dashoffset 250ms linear; filter: drop-shadow(0 0 6px var(--acento)); }
+.ev-anillo-num { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ev-anillo-num b { font: 600 clamp(3rem, 16vw, 4.1rem)/1 var(--letra-dato); font-variant-numeric: tabular-nums; text-shadow: var(--brillo); }
+.ev-fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ev-fila2 .btn { min-height: 48px; }
+.ev-recien { display: flex; align-items: center; gap: 8px; background: var(--capa-2); border: 1px solid var(--borde-fuerte); border-radius: var(--radio); padding: 4px 4px 4px 10px; font-size: 0.85rem; min-height: 48px; }
+.ev-recien button { background: none; border: 0; color: var(--xp); font: 700 0.75rem var(--letra-dato); text-transform: uppercase; min-height: 44px; padding: 0 10px; cursor: pointer; }
+.ev-sigue { background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); padding: 8px 10px; }
+.ev-sigue div { display: flex; justify-content: space-between; gap: 8px; font-size: 0.9rem; }
+.ev-sigue .ev-dato { color: var(--acento-texto); }
+
+/* Llegar */
+.ev-dia { border: 1px solid var(--acento-borde); background: linear-gradient(180deg, var(--acento-suave), transparent 70%), var(--capa-1); border-radius: var(--radio); padding: 10px 12px; }
+.ev-dia h2 { font: 700 1.45rem/1.1 var(--letra-titulo); margin: 2px 0 4px; }
+.ev-dia p { margin: 0; font-size: 0.82rem; color: var(--texto-2); }
+.ev-calent { background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); padding: 8px 10px; font-size: 0.82rem; }
+.ev-calent ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.ev-calent li { display: flex; justify-content: space-between; gap: 8px; color: var(--texto-2); }
+.ev-preg { display: grid; grid-template-columns: 70px minmax(0, 1fr); align-items: center; gap: 6px; }
+.ev-seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; }
+.ev-seg button { min-height: 46px; background: var(--capa-1); border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); color: var(--texto); font: 500 0.9rem var(--letra-dato); cursor: pointer; transition: background var(--dur) var(--curva), transform 120ms var(--curva); }
+.ev-seg button.on { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); box-shadow: var(--brillo); }
+.ev-lectura { font-size: 0.82rem; color: var(--texto-2); text-align: center; margin: 0; }
+
+/* Cierre y guardado */
+.ev-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ev-cifras div { background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); padding: 8px; min-width: 0; }
+.ev-cifras b { display: block; font: 600 1.05rem var(--letra-dato); }
+.ev-cifras span { font-size: 0.68rem; color: var(--texto-3); }
+.ev-ejs { display: grid; gap: 2px; font-size: 0.82rem; }
+.ev-ejs div { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; gap: 8px; align-items: center; padding: 6px 8px; background: var(--capa-1); }
+.ev-ejs div > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-ejs .ev-dato { font-size: 0.75rem; }
+.ev-ejs-pct { text-align: right; font-size: 0.75rem; }
+.ev-enlace { background: none; border: 0; color: var(--xp); font: 600 0.82rem var(--letra); text-align: left; min-height: 44px; padding: 0; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-cab-final { text-align: center; }
+.ev-cab-final h2 { font: 700 1.5rem var(--letra-titulo); margin: 4px 0 0; color: var(--bien-texto); }
+
+/* Hojas */
+.ev-lista { display: grid; gap: 4px; }
+.ev-lista button { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio-chico); padding: 8px 10px; min-height: 52px; text-align: left; color: var(--texto); cursor: pointer; font: inherit; }
+.ev-lista button.act { border-color: var(--acento); }
+.ev-lista button.listo { opacity: 0.55; }
+.ev-tabla { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px 12px; font: 0.85rem var(--letra-dato); }
+
+/* Pantallas bajitas (iPhone SE): se achica lo grande para que siga entrando sin scroll. */
+@media (max-height: 740px) {
+  .ev-crono b, .ev-anillo-num b { font-size: 2.5rem; }
+  .ev-crono { padding: 4px; }
+  .ev-ejercicio h2 { font-size: 1.25rem; }
+  .ev-anillo { width: 160px; }
+  .ev-cuerpo { gap: 6px; padding-top: 4px; }
+  .ev-como { display: none; }
+  .ev-mm button { height: 40px; }
+  .ev-param-val { font-size: 1.5rem; }
+  .ent-vivo .medidor { min-height: 44px; padding: 4px 10px; }
+  .ent-vivo .medidor-pct { font-size: 1.3rem; }
+  .ev-principal { min-height: 56px; }
+  .ev-herram button { min-height: 44px; }
+}
+@media (min-width: 761px) {
+  .ent-vivo .ev-cab, .ev-cuerpo, .ev-pie { padding-left: 32px; padding-right: 32px; }
+}

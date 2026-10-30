@@ -46,6 +46,16 @@
   --urgente: #ff4d6d;
   --urgente-texto: #ff8098;
 
+  /* Escala de rendimiento (2026-10-29, pedido de ella): de peor a mejor. Cuanto mejor, más "épico".
+     La usan las piezas .nv / .medidor de styles.css y nivelDe() de src/ui/nivel.tsx.
+     Muy mal parpadea (solo para lo grave y siempre con su botón). Siempre con palabra e ícono. */
+  --n-critico: #ff2e4d;    /* ⚠ Muy mal: rojo que parpadea */
+  --n-mal: #ff5a6e;        /* ▼ Mal: rojo */
+  --n-regular: #ffb547;    /* ● Regular: naranja */
+  --n-bien: #3cffc0;       /* ✓ Bien: verde */
+  --n-muy: #4cc9ff;        /* ◆ Muy bien: azul */
+  --n-epico: #c084ff;      /* ★ Épico: morado con brillo que corre */
+
   /* ---------- 5. Letras ---------- */
   --letra: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --letra-titulo: 'Chakra Petch', 'IBM Plex Sans', system-ui, sans-serif;
@@ -64,6 +74,8 @@
   /* ---------- 7. Movimiento ---------- */
   --dur: 220ms;
   --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Rebote suave para lo que aparece (hojas, números que saltan). */
+  --resorte: cubic-bezier(0.2, 1.35, 0.35, 1);
 
   /* ---------- 8. Modo juego ---------- */
   --letra-dato: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace; /* números, fechas y etiquetas */
