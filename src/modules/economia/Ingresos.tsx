@@ -9,6 +9,7 @@ import {
   registrarCobro, siguienteCobro, T, useCategorias, useCuentas, useIngresos,
   type FrecuenciaCobro, type Ingreso, type Moneda,
 } from './modelo';
+import { diasDesde, TIPOS_MOV, useCuentaSoderia, type CuentaSoderia } from './soderia';
 
 function FormIngreso({ inicial, onListo }: { inicial?: Ingreso; onListo: () => void }) {
   const { filas: cuentas } = useCuentas();
@@ -200,6 +201,39 @@ function FormAdeudado({ ingreso, onListo }: { ingreso: Ingreso; onListo: () => v
   );
 }
 
+/** Lo que dice la sodería: de dónde sale lo que te debe. */
+function DetalleSoderia({ cuenta }: { cuenta: CuentaSoderia }) {
+  const movs = cuenta.movimientos ?? [];
+  const suma = (t: string) => movs.filter((m) => m.tipo === t).reduce((s, m) => s + Math.abs(Number(m.monto) || 0), 0);
+  return (
+    <div className="pila">
+      <p className="nota">
+        Así figura {cuenta.persona} en el sistema de la sodería. Se copió {diasDesde(cuenta.actualizado) === 0 ? 'hoy' : `hace ${diasDesde(cuenta.actualizado)} días`}
+        {cuenta.origen === 'auto' ? ' (se actualiza sola)' : ' (lo actualiza Claude cuando se lo pedís)'}.
+      </p>
+      <div className="grilla-cifras">
+        <Cifra etiqueta="Te debe" valor={dinero(Number(cuenta.saldo))} tono={Number(cuenta.saldo) > 0 ? 'mal' : undefined}
+          nota={cuenta.cierres_impagos ? `${cuenta.cierres_impagos} semanas sin cobrar` : 'Al día'} />
+        <Cifra etiqueta="Trabajado" valor={dinero(suma('devengado') + suma('inicial'))} nota={suma('inicial') ? `Con ${dinero(suma('inicial'))} que ya te debían` : undefined} />
+        <Cifra etiqueta="Pusiste vos" valor={dinero(suma('compensacion'))} nota="Ej. la carga de la planta" />
+        <Cifra etiqueta="Te pagaron" valor={dinero(suma('pago'))} />
+      </div>
+      <ul className="lista">
+        {movs.map((m, i) => (
+          <li key={i} className="lista-item">
+            <div className="crece">
+              <strong>{TIPOS_MOV[m.tipo] ?? m.tipo}</strong>
+              <small className="nota">{fechaCorta(m.dia)} · {m.concepto}</small>
+            </div>
+            <span className="num">{m.tipo === 'pago' ? '−' : '+'}{dinero(Math.abs(Number(m.monto) || 0))}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="nota">Si algo no coincide, se corrige en la sodería: la próxima copia lo trae.</p>
+    </div>
+  );
+}
+
 /** Próximo sábado (o hoy si es sábado). */
 function proximoSabado(): string {
   const d = new Date();
@@ -222,6 +256,9 @@ export function PantallaIngresos() {
   const [cobrando, setCobrando] = useState<Ingreso | null>(null);
   const [saldando, setSaldando] = useState<Ingreso | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [verSoderia, setVerSoderia] = useState(false);
+  const soderia = useCuentaSoderia().filas[0];
+  const deReparto = ingresos.find((i) => /reparto/i.test(i.nombre));
   const ars = ingresos.filter((i) => i.activo && i.moneda === 'ARS');
   const en30 = cobrosEsperados(ars, sumarDias(hoy(), 30));
   const total30 = en30.reduce((s, c) => s + (Number(c.ingreso.monto) || 0), 0);
@@ -245,6 +282,7 @@ export function PantallaIngresos() {
             setCargando(true); await cargarMisTrabajos(ingresos); setCargando(false);
           }}>{cargando ? 'Cargando…' : 'Cargar reparto ($120.000) y fábrica ($135.000), los sábados'}</button>
           <button className="btn" onClick={() => setEditando('nuevo')}>{Icono.mas} Cargar otro a mano</button>
+          {soderia && <button className="btn" onClick={() => setVerSoderia(true)}>La sodería te debe {dinero(Number(soderia.saldo))} {Icono.flechaDer}</button>}
         </Vacio>
       ) : (
         <>
@@ -254,6 +292,9 @@ export function PantallaIngresos() {
             <Cifra etiqueta="Te deben" valor={dinero(adeudado)} tono={adeudado > 0 ? 'mal' : undefined}
               nota={adeudado > 0 ? 'Pendiente, cuenta en la proyección' : 'Al día'} />
           </div>
+          {soderia && !deReparto && (
+            <button className="btn ancho" onClick={() => setVerSoderia(true)}>La sodería te debe {dinero(Number(soderia.saldo))} {Icono.flechaDer}</button>
+          )}
           <button className="btn ancho" onClick={() => ir('economia/proyeccion')}>Ver la línea de tiempo de tu plata {Icono.flechaDer}</button>
           <div className="eco-fuentes">
             {ingresos.map((i) => {
@@ -278,6 +319,11 @@ export function PantallaIngresos() {
                       {deuda > 0 && <button className="btn chico" onClick={() => setSaldando(i)}>Me pagó</button>}
                     </div>
                   )}
+                  {soderia && i === deReparto && (
+                    <button className="btn chico" onClick={() => setVerSoderia(true)}>
+                      Según la sodería · {diasDesde(soderia.actualizado) === 0 ? 'hoy' : `hace ${diasDesde(soderia.actualizado)} días`} {Icono.flechaDer}
+                    </button>
+                  )}
                   {i.activo && (
                     <div className="eco-fuente-acciones">
                       {atrasado && <Estado nivel="aviso" texto="Sin registrar" />}
@@ -299,6 +345,9 @@ export function PantallaIngresos() {
       </Modal>
       <Modal titulo={cobrando ? `Cobro: ${cobrando.nombre}` : 'Cobro'} abierto={!!cobrando} onCerrar={() => setCobrando(null)}>
         {cobrando && <FormCobrar ingreso={cobrando} onListo={() => setCobrando(null)} />}
+      </Modal>
+      <Modal titulo="Tu cuenta en la sodería" abierto={verSoderia} onCerrar={() => setVerSoderia(false)}>
+        {soderia && <DetalleSoderia cuenta={soderia} />}
       </Modal>
       <Modal titulo={saldando ? `${saldando.nombre}: te pagó` : 'Te pagaron'} abierto={!!saldando} onCerrar={() => setSaldando(null)}>
         {saldando && <FormAdeudado ingreso={saldando} onListo={() => setSaldando(null)} />}

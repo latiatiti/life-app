@@ -1,6 +1,6 @@
 # LIFE — contexto para Claude Code
 
-App personal que centraliza áreas de la vida (economía, pagos, tareas, calendario, compras, entrenamiento, sueño…) en módulos que cruzan datos entre sí para tomar mejores decisiones. Meta a futuro: que sea vendible. **No tiene relación con la sodería.**
+App personal que centraliza áreas de la vida (economía, pagos, tareas, calendario, compras, entrenamiento, sueño…) en módulos que cruzan datos entre sí para tomar mejores decisiones. Meta a futuro: que sea vendible. Con la sodería Tía Titi solo se cruza en una cosa (decisión de ella, 2026-10-29): LIFE lee la cuenta de su repartidor (lo que le deben y los repartos); ver "Sodería" abajo.
 
 Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores mientras se suman nuevos. Hablar con el usuario en español rioplatense y simple (no es programador).
 
@@ -36,7 +36,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
 - Compras (`supabase/compras.sql`, aplicado en la nube): `com_supers` (bloques jsonb = orden de pasillos de ese súper), `com_items` (catálogo propio; precios jsonb = último precio online por cadena; producto_id enlaza al stock), `com_precios` (historial: online/ticket/manual), `com_compras` (estimado vs total del ticket, items jsonb, reparto y ticket jsonb).
 - Día (`supabase/dia.sql`, aplicado en la nube): `dia_plantilla` (semana tipo, un bloque por fila: dia_semana 0=dom, inicio/fin 'HH:MM' con '24:00' = fin, tipo, opcional, come_alla), `dia_dias` (una fila por fecha: estado normal/libre/feriado/especial, nombre, nota, prioridades jsonb [{texto,hecho}], bloques jsonb = horario propio o null = semana tipo), `dia_tareas` (fecha, hora, prioridad alta/media/baja, origen 'app'|'claude'). Pensadas para la API de lectura/escritura de Claude.
-- Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; `dia_`; próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
+- Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; `dia_`; `sod_` (copia de la sodería, solo lectura, fuera de `TABLAS`); próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
 - Toda tabla nueva: con `user_id` y política RLS, igual que las existentes.
 
 ## Cruces ya implementados
@@ -71,6 +71,11 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Feriados nacionales 2026–2027 + Santiago Apóstol (Mendoza) en `FERIADOS`; los "puente" no cuentan como feriado automático.
 - Gimnasio: domingo cerrado, sábado abre a las 7, entrenos ~1 h 30 (`GIMNASIO`). Días de fábrica come allá: bloques `come_alla`, `comeEnFabrica(bloques)` para Alimentación.
 - Al hub: señales (tareas atrasadas, prioridad de hoy, feriado mañana), agenda (tareas, feriados, días libres) y XP por tarea hecha.
+
+## Sodería (2026-10-29, `supabase/soderia.sql`)
+- Ella trabaja de repartidor en la sodería Tía Titi (sistema aparte con su propio conector MCP, "mcp tia titi"). LIFE guarda una copia de solo lectura: `sod_cuenta` (saldo = lo que le deben, movimientos devengado/pago/compensación/inicial) y `sod_repartos` (por día de la semana o fecha: salida, regreso, paradas con hora estimada). La app no escribe esas tablas.
+- Se llenan con `guardarSoderia()` (`supabase/functions/_shared/soderia.ts`): desde life-mcp → herramienta `soderia_guardar` (Claude lee `personal` y `horarios_de_pasada` del conector de la sodería y se los pasa) o desde la función `soderia` (automática con clave de solo lectura de la sodería; secretos en su encabezado). Cada copia pisa la anterior y pone el saldo como `adeudado` del ingreso que se llama "reparto" → entra en Proyección y en "Te deben".
+- Pantallas: Plata → Ingresos ("Según la sodería" abre el detalle) y Día (tarjeta "Reparto · según la sodería", avisa si se pisa con la fábrica o pasa la medianoche). `economia/soderia.ts` tiene tipos y hooks.
 
 ## Preparador y ciclos (2026-10-06)
 - `ent_rutinas` guarda cada ciclo como una fila: `inicio` (lunes) + `ciclo` jsonb {semanas, objetivo, perfil, numero}. Solo una `activa`; las viejas quedan como historial (`empezarCiclo` en `modelo.ts`). SQL: `supabase/entreno-ciclos.sql` (aplicado).

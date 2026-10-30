@@ -415,6 +415,56 @@ export function proyectar(
   return { inicial, adeudado, dias: r };
 }
 
+/** Lo que pasa hasta una fecha elegida, separando plata en mano de lo que te deben. */
+export interface Simulacion {
+  hasta: string;
+  /** Plata en cuentas hoy. */
+  enMano: number;
+  /** Lo que te deben hoy. */
+  deudaHoy: number;
+  /** Todo lo que vas a haber ganado entre hoy y esa fecha (te lo paguen o no). */
+  ganado: number;
+  /** De lo ganado, lo que entra seguro (fuentes que no suelen deber). */
+  seguro: number;
+  /** Lo que te pagan de las fuentes que deben, según lo que elegiste por semana. */
+  teDevuelven: number;
+  /** Pagos fijos que vencen hasta esa fecha. */
+  pagos: number;
+  /** Plata en mano ese día. */
+  enManoFinal: number;
+  /** Lo que te van a deber ese día. */
+  deudaFinal: number;
+}
+
+/**
+ * Simulador "a tal fecha": las fuentes que suelen deber (ej. la sodería) solo ponen plata en mano
+ * lo que elegís que te pagan por semana; el resto se suma a la deuda.
+ */
+export function simular(
+  cuentas: Cuenta[], movs: Movimiento[], ingresos: Ingreso[], pagos: Pago[], hasta: string, pagoSemanal: number, hoyISO = hoy()
+): Simulacion {
+  const activos = ingresos.filter((i) => i.activo && i.moneda === 'ARS');
+  let ganado = 0, seguro = 0;
+  for (const { ingreso: i } of cobrosEsperados(activos, hasta)) {
+    ganado += num(i.monto);
+    if (!i.puede_adeudarse) seguro += num(i.monto);
+  }
+  let totalPagos = 0;
+  for (const p of pagos) {
+    if (!p.activo || p.moneda !== 'ARS') continue;
+    totalPagos += vencimientosHasta(p, hasta).length * num(p.monto);
+  }
+  const enMano = disponible(cuentas, movs, 'ARS');
+  const deudaHoy = activos.reduce((s, i) => s + num(i.adeudado), 0);
+  const semanas = Math.max(0, Math.floor(diasEntre(hoyISO, hasta) / 7));
+  const teDevuelven = Math.min(Math.max(0, pagoSemanal) * semanas, deudaHoy + ganado - seguro);
+  return {
+    hasta, enMano, deudaHoy, ganado, seguro, teDevuelven, pagos: totalPagos,
+    enManoFinal: enMano + seguro + teDevuelven - totalPagos,
+    deudaFinal: deudaHoy + ganado - seguro - teDevuelven,
+  };
+}
+
 /* ---------- Datos sugeridos para empezar ---------- */
 
 export const CATEGORIAS_SUGERIDAS: Array<Pick<Categoria, 'nombre' | 'tipo'>> = [
