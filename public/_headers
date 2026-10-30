@@ -2,3 +2,16 @@
   Cache-Control: no-cache
 /index.html
   Cache-Control: no-cache
+
+# Seguridad (Gonzalito, 2026-10-29). Ver docs/seguridad.md.
+# La regla de contenido (CSP) va primero en modo "solo avisar" (Report-Only): no bloquea nada,
+# solo anota en la consola del navegador lo que bloquearía. Cuando se confirme que la app
+# anda entera sin avisos, se cambia el nombre a Content-Security-Policy para que bloquee.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=()
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:; connect-src 'self' https://jxnlgszmywoebjjpacod.supabase.co wss://jxnlgszmywoebjjpacod.supabase.co https://cdn.jsdelivr.net https://world.openfoodfacts.org; img-src 'self' data: blob: https:; media-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
