@@ -50,9 +50,7 @@ export function ConexionClaude() {
       await crear<Clave & { hash: string }>('api_claves', {
         nombre: 'Claude', hash: await sha256(clave), prefijo: clave.slice(0, 9), permiso, ultimo_uso: null, revocada: false,
       });
-      // Desde el sitio de Netlify (proxy /mcp en netlify.toml): en supabase.co Claude pide OAuth y no conecta.
-      const sitio = window.location.hostname.endsWith('netlify.app') ? window.location.origin : 'https://life-app-latiatiti.netlify.app';
-      setLink(`${sitio}/mcp?k=${clave}`);
+      setLink(`${base}/functions/v1/life-mcp?k=${clave}`);
       setMsg('');
     } catch (e) {
       setMsg(/api_claves/.test((e as Error).message)

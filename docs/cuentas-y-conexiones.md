@@ -22,7 +22,7 @@ Función `cuentas` (con sesión de superadmin): listar, crear, cambiar contrase�
 
 ## Conexión con Claude (`supabase/functions/life-mcp`)
 Servidor MCP por HTTP. En Ajustes → Conexión con Claude se crea un link personal
-(`https://life-app-latiatiti.netlify.app/mcp?k=life_...`, proxy de Netlify a la función: en supabase.co la ruta `/.well-known/oauth-protected-resource` da 401 y Claude pide OAuth); en claude.ai → Configuración → Conectores →
+(`.../functions/v1/life-mcp?k=life_...`; si Claude Desktop muestra "No se pudo registrar con el servicio de inicio de sesión", volver a intentar: el 2026-10-29 conectó con una clave nueva); en claude.ai → Configuración → Conectores →
 Agregar conector personalizado se pega ese link.
 
 Herramientas: `que_hay` (tablas, columnas y cantidades; toda tabla nueva con `user_id` aparece sola),
