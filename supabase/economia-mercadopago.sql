@@ -3,6 +3,7 @@
 -- o una función con la clave de MP). Nada se carga solo en Economía: ella confirma cada uno en
 -- Plata → Mercado Pago (pago de un vencimiento, gasto, cobro o ignorar).
 -- Correr después de schema.sql y cuentas.sql. Se puede correr más de una vez.
+-- Aplicado en la nube el 2026-10-30 (migración economia_mercadopago, con su OK). Función `mercadopago` desplegada.
 
 create table if not exists public.eco_mp_movimientos (
   id             uuid primary key default gen_random_uuid(),
@@ -19,6 +20,7 @@ create table if not exists public.eco_mp_movimientos (
 );
 create unique index if not exists eco_mp_movimientos_externo on public.eco_mp_movimientos (user_id, externo);
 create index if not exists eco_mp_movimientos_user_fecha on public.eco_mp_movimientos (user_id, fecha desc);
+create index if not exists eco_mp_movimientos_mov on public.eco_mp_movimientos (movimiento_id);
 
 do $$
 begin

@@ -32,7 +32,7 @@ se puede cortar desde Ajustes. Desplegar con verificación de JWT **desactivada*
 
 ## Mercado Pago (2026-10-30)
 Elegido por ella: **API de Mercado Pago** con su propia clave, guardada solo en la nube.
-- Función `supabase/functions/mercadopago` (JWT activado). Secretos: `MP_ACCESS_TOKEN` (Access Token
+- Función `supabase/functions/mercadopago` (JWT activado; desplegada y tabla aplicada el 2026-10-30). Secretos: `MP_ACCESS_TOKEN` (Access Token
   de producción de una app creada en mercadopago.com.ar/developers → Tus integraciones) y `MP_DUENO`
   (el `user_id` de LIFE de ella: nadie más puede usarla). Solo hace consultas fijas de lectura:
   `/users/me`, saldo (`/users/{id}/mercadopago_account/balance`, no documentado: si no responde la app
