@@ -3,6 +3,11 @@
 //
 // Entrada (POST JSON): { url: string }
 // Salida: { ok, status, url (final), tipo, html, texto }
+//
+// Seguridad (Gonzalito, 2026-10-31): hace falta la sesión de una cuenta de LIFE activa. La anon key
+// es pública, así que sin este control cualquiera podía usar la función para bajar páginas ajenas.
+
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +24,9 @@ function permitida(u: URL) {
   if (u.protocol !== 'https:') return false;
   const h = u.hostname.toLowerCase();
   if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal') || !h.includes('.')) return false;
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(h)) return false;
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(h) || /^\d+$/.test(h) || /^0x/i.test(h)) return false;
+  if (u.port && u.port !== '443') return false;
+  if (u.username || u.password) return false;
   if (h.startsWith('[')) return false;
   return true;
 }
@@ -39,6 +46,17 @@ function aTexto(html: string) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+  if (req.method !== 'POST') return responder({ ok: false, error: 'Usá POST.' }, 405);
+
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    auth: { persistSession: false },
+  });
+  const jwt = (req.headers.get('authorization') ?? '').replace(/^Bearer /, '');
+  const { data: yo } = await admin.auth.getUser(jwt);
+  if (!yo.user) return responder({ ok: false, error: 'Iniciá sesión en LIFE para bajar el ticket.' }, 401);
+  const { data: perfil } = await admin.from('perfiles').select('activo').eq('user_id', yo.user.id).maybeSingle();
+  if (!perfil?.activo) return responder({ ok: false, error: 'Esta cuenta está pausada.' }, 403);
+
   let url: URL;
   try {
     url = new URL(String((await req.json()).url ?? '').trim());

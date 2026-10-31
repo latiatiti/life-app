@@ -30,6 +30,10 @@ function claveNueva() {
   return 'life_' + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+/** Cada cuánto conviene cambiar un link (docs/seguridad.md). */
+const DIAS_ROTAR = 90;
+const diasDesde = (iso?: string | null) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000) : 0);
+
 const ACCION: Record<string, string> = { crear: 'Cargó', modificar: 'Cambió', borrar: 'Borró', deshacer: 'Deshizo' };
 
 /** Claves personales para que Claude lea y cargue datos en LIFE (función life-mcp). */
@@ -40,6 +44,7 @@ export function ConexionClaude() {
   const [link, setLink] = useState('');
   const [msg, setMsg] = useState('');
   const [permiso, setPermiso] = useState<'leer' | 'escribir'>('escribir');
+  const [nombre, setNombre] = useState('');
   const base = configNube()?.url;
 
   if (!base) return null;
@@ -48,9 +53,10 @@ export function ConexionClaude() {
     const clave = claveNueva();
     try {
       await crear<Clave & { hash: string }>('api_claves', {
-        nombre: 'Claude', hash: await sha256(clave), prefijo: clave.slice(0, 9), permiso, ultimo_uso: null, revocada: false,
+        nombre: nombre.trim() || 'Claude', hash: await sha256(clave), prefijo: clave.slice(0, 9), permiso, ultimo_uso: null, revocada: false,
       });
       setLink(`${base}/functions/v1/life-mcp?k=${clave}`);
+      setNombre('');
       setMsg('');
     } catch (e) {
       setMsg(/api_claves/.test((e as Error).message)
@@ -69,6 +75,7 @@ export function ConexionClaude() {
   }
 
   const activas = claves.filas.filter((c) => !c.revocada);
+  const viejas = activas.filter((c) => diasDesde(c.created_at) >= DIAS_ROTAR);
   const ultimos = [...registro.filas].reverse().slice(0, 8);
 
   return (
@@ -94,6 +101,7 @@ export function ConexionClaude() {
       ) : (
         puedeEscribir(perfil) && (
           <div className="acciones">
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="¿Para qué es? (ej. Claude celu)" aria-label="Nombre del link" maxLength={40} />
             <select value={permiso} onChange={(e) => setPermiso(e.target.value as 'leer' | 'escribir')} aria-label="Permiso">
               <option value="escribir">Puede leer y cargar</option>
               <option value="leer">Solo puede leer</option>
@@ -104,13 +112,22 @@ export function ConexionClaude() {
       )}
       {msg && <p className="nota" role="status">{msg}</p>}
 
+      {viejas.length > 0 && (
+        <p className="nota" role="alert">
+          ⚠ {viejas.length === 1 ? 'Un link tiene' : `${viejas.length} links tienen`} más de {DIAS_ROTAR} días. Por seguridad, creá uno nuevo, cambialo en Claude y cortá el viejo.
+        </p>
+      )}
       {activas.length > 0 && (
         <ul className="lista-simple">
           {activas.map((c) => (
             <li key={c.id}>
               <span>
-                <strong>{c.prefijo}…</strong> · {c.permiso === 'leer' ? 'solo lee' : 'lee y carga'}
-                <small className="nota"> · {c.ultimo_uso ? `usado ${fechaCorta(c.ultimo_uso.slice(0, 10))}` : 'sin usar'}</small>
+                <strong>{c.nombre || 'Claude'}</strong> <small className="nota">{c.prefijo}…</small> · {c.permiso === 'leer' ? 'solo lee' : 'lee y carga'}
+                <small className="nota">
+                  {c.created_at ? ` · creado ${fechaCorta(c.created_at.slice(0, 10))}` : ''}
+                  {' · '}{c.ultimo_uso ? `usado ${fechaCorta(c.ultimo_uso.slice(0, 10))}` : 'sin usar'}
+                  {diasDesde(c.created_at) >= DIAS_ROTAR ? ' · ⚠ cambialo' : ''}
+                </small>
               </span>
               <button className="btn btn-peligro" onClick={async () => {
                 if (await confirmar('¿Cortar este link? Claude deja de tener acceso con él.')) void modificar<Clave>('api_claves', c.id, { revocada: true });

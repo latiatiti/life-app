@@ -108,7 +108,7 @@ Después: salud, hábitos, tareas programadas, auto, calendario con carga rápid
 ## Gonzalito (2026-10-25, renombrado 2026-10-29)
 - Gonzalito (antes "Gonza", es el mismo) = el experto en ciberseguridad (habilidad `gonzalito`): audita contraseñas y claves, filtración de datos (Supabase/RLS, Netlify, service worker, repo), acceso al servidor y a la compu, y los pilares confidencialidad / integridad / disponibilidad. Arma un informe por gravedad y ella decide. Memoria en `gonza.md` (memoria del proyecto). Nunca cambia la nube sin su OK.
 - **Reglas de seguridad para todos los hilos: `docs/seguridad.md`** (checklist antes de cerrar una entrega + pendientes). Ojo: el repo de GitHub es público (2026-10-29): nada de claves ni datos personales reales en commits.
-- `public/_headers`: encabezados de seguridad + CSP en modo solo avisar (Report-Only); todo dominio externo nuevo se suma ahí. `supabase/seguridad.sql`: aplicado en la nube (2026-10-30); sin perfil no se escribe.
+- `public/_headers`: encabezados de seguridad + CSP que bloquea (desde 2026-10-31); todo dominio externo nuevo se suma ahí. Función `ticket` pide sesión de LIFE. Informe: `docs/informe-seguridad.md`. `supabase/seguridad.sql`: aplicado en la nube (2026-10-30); sin perfil no se escribe.
 
 ## Reglas
 - Antes de dar algo por terminado: `npm run build` sin errores.
