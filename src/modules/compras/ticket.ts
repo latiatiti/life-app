@@ -1,4 +1,4 @@
-import { crear, type Fila, modificar, useTabla } from '../../core/db';
+import { crear, type Fila, modificar, supabase, useTabla } from '../../core/db';
 import { uid } from '../../core/format';
 import { buscarPrecios, leerQrTicket, NUBE_LIFE, type Persona, type TicketQR } from './modelo';
 
@@ -144,9 +144,11 @@ export function clasificarQr(texto: string): LecturaQr {
 /** Baja la página del ticket digital por la función "ticket" de Supabase (una sola vez: el link puede vencer). */
 export async function bajarTicket(url: string): Promise<{ ok: boolean; url: string; html: string; texto: string; error?: string }> {
   const { url: base, anonKey } = NUBE_LIFE;
+  // La función pide la sesión de LIFE (si no, cualquiera la usaría para bajar páginas ajenas).
+  const sesion = supabase ? (await supabase.auth.getSession()).data.session : null;
   const r = await fetch(`${base}/functions/v1/ticket`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+    headers: { 'Content-Type': 'application/json', apikey: anonKey, Authorization: `Bearer ${sesion?.access_token ?? anonKey}` },
     body: JSON.stringify({ url }),
   });
   const d = await r.json().catch(() => ({}));
