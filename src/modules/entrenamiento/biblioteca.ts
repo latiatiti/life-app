@@ -131,6 +131,7 @@ export const BIBLIOTECA: EjercicioBase[] = [
   b('Extensión por encima de la cabeza en polea', 'triceps', [], 'polea', false),
   b('Extensión de tríceps tras nuca con barra', 'triceps', [], 'barra', false, 2),
   b('Press cerrado con barra', 'triceps', ['pecho'], 'barra', true),
+  b('Fondos con peso', 'triceps', ['pecho', 'hombros'], 'otro', true, 2.5),
   b('Fondos en banco', 'triceps', ['pecho'], 'peso corporal', false, 0),
   b('Patada de tríceps', 'triceps', [], 'mancuernas', false, 1),
   // Antebrazo
@@ -169,6 +170,7 @@ const FINO: Record<string, Partial<Record<Zona, number>>> = {
   'Press inclinado con barra': { pecho: 1, deltoide_ant: 0.7, triceps: 0.5 },
   'Press inclinado con mancuernas': { pecho: 1, deltoide_ant: 0.7, triceps: 0.4 },
   'Fondos en paralelas (o press declinado)': { pecho: 1, triceps: 0.7, deltoide_ant: 0.5 },
+  'Fondos con peso': { triceps: 1, pecho: 0.6, deltoide_ant: 0.5 },
   'Press inclinado en Smith': { pecho: 1, deltoide_ant: 0.6, triceps: 0.4 },
   'Cruce de poleas de abajo hacia arriba': { pecho: 1, deltoide_ant: 0.4 },
   'Pec deck': { pecho: 1, deltoide_ant: 0.3 },
@@ -213,6 +215,7 @@ const FINO: Record<string, Partial<Record<Zona, number>>> = {
 
 /** Qué sentir en los básicos. El resto arma la frase desde el mapa. */
 const SENTIR: Record<string, string> = {
+  'Fondos con peso': 'Lastre colgado del cinturón. Torso derecho y codos pegados al cuerpo para cargar el tríceps; bajá hasta que el brazo quede paralelo al piso y empujá hasta trabar.',
   'Press de banca con barra': 'Escápulas juntas y abajo; el pecho empuja, los codos a ~45°. Tenés que sentir el estiramiento del pecho abajo.',
   'Press inclinado con mancuernas': 'Sentí la parte alta del pecho; bajá controlado hasta estirar.',
   'Press inclinado en Smith': 'Banco a 30° (no más: a 45° trabaja más el hombro). La barra baja justo debajo de la clavícula, codos a ~60° del cuerpo, omóplatos juntos.',
