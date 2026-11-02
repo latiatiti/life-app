@@ -108,6 +108,7 @@ export function describirSemana(s: SemanaCiclo): string {
  * En mancuernas el valor es por mano.
  */
 const RELACIONES: Array<[RegExp, number]> = [
+  [/fondos con peso/, 0.22],
   [/peso muerto convencional/, 0.7],
   [/peso muerto rumano con mancuernas/, 0.18],
   [/peso muerto rumano/, 0.5],
