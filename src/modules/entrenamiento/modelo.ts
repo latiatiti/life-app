@@ -27,7 +27,21 @@ export interface DiaPlan {
   id: string;
   nombre: string;
   ejercicios: EjercicioPlan[];
+  /** Si es otra versión de un día (ej. "B2" = pierna sin prensa), la letra del día original. No suma un día más a la semana. */
+  varianteDe?: string;
 }
+
+/** Día al que pertenece un id: "B2" es variante de "B" si existe "B" (o si lo dice `varianteDe`). */
+export function baseDe(id: string | null | undefined, dias: DiaPlan[]): string | null {
+  if (!id) return null;
+  const d = dias.find((x) => x.id === id);
+  if (d?.varianteDe) return d.varianteDe;
+  const m = id.match(/^([A-Z]+)\d+$/);
+  return m && dias.some((x) => x.id === m[1]) ? m[1] : id;
+}
+
+/** Los días de la semana, sin contar las variantes. */
+export const diasBase = (dias: DiaPlan[]) => dias.filter((d) => baseDe(d.id, dias) === d.id);
 
 export const e = (nombre: string, series: number, repsMin: number, repsMax: number, descanso: number, rpe: number, salto?: number): EjercicioPlan =>
   ({ nombre, series, repsMin, repsMax, descanso, rpe, salto: salto ?? infoEjercicio(nombre)?.salto ?? 2.5 });
@@ -200,9 +214,11 @@ const ordenSesion = (a: Sesion, b: Sesion) => b.fecha.localeCompare(a.fecha) || 
  */
 export function proximoDia(sesiones: Sesion[], dias: DiaPlan[] = RUTINA_BASE, desde?: string | null): DiaPlan {
   const ult = [...sesiones].filter((s) => s.dia !== 'otro' && (!desde || s.fecha >= desde)).sort(ordenSesion)[0];
-  if (!ult) return dias[0];
-  const i = dias.findIndex((d) => d.id === ult.dia);
-  return dias[(i + 1) % dias.length];
+  const base = diasBase(dias);
+  if (!base.length) return dias[0];
+  if (!ult) return base[0];
+  const i = base.findIndex((d) => d.id === baseDe(ult.dia, dias));
+  return base[(i + 1) % base.length];
 }
 
 /** Series efectivas de la última sesión en la que hiciste ese ejercicio (opcionalmente, antes de cierta sesión). */
