@@ -1,6 +1,6 @@
 import { desdeISO, diasEntre, hoy, sumarDias } from '../../core/format';
 import { alternativas, infoEjercicio, nombreGrupo, type Grupo } from './biblioteca';
-import type { DiaPlan, EjercicioPlan, Serie, Sesion } from './modelo';
+import { diasBase, type DiaPlan, type EjercicioPlan, type Serie, type Sesion } from './modelo';
 
 /* ---------- Preparador: ciclos de 4 semanas (mesociclos) ---------- */
 
@@ -219,7 +219,7 @@ export function proponerCiclo(dias: DiaPlan[], sesiones: Sesion[], series: Serie
     }),
   }));
 
-  const esperadas = dias.length * 3; // 3 semanas de carga
+  const esperadas = diasBase(dias).length * 3; // 3 semanas de carga
   const hechas = sesionesCiclo.length;
   const adherencia = Math.min(1, hechas / esperadas);
 

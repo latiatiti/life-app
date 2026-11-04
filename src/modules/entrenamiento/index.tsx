@@ -3,7 +3,7 @@ import type { ActividadEnCurso, ItemAgenda, Modulo, Senal, Vital } from '../../c
 import { Icono } from '../../ui/ui';
 import { leerEnCurso, mostrarEntreno } from './Entrenando';
 import { necesitaDescarga } from './analisis';
-import { entrenoHoy, progresoEjercicio, proximoDia, tendencia, useBiblioteca, useRutina, useSeries, useSesiones } from './modelo';
+import { diasBase, entrenoHoy, progresoEjercicio, proximoDia, tendencia, useBiblioteca, useRutina, useSeries, useSesiones } from './modelo';
 import { PantallaHistorial, PantallaHoy, PantallaProgreso } from './Pantallas';
 import { PantallaPreparador } from './Preparador';
 import { ajustarDia, estadoCiclo } from './ciclo';
@@ -58,7 +58,7 @@ function ResumenEntreno() {
   const p = proximoDia(sesiones, dias, fila?.inicio);
   return (
     <div className="grilla-cifras compacta">
-      <div className="cifra"><span className="cifra-etq">Esta semana</span><strong className="cifra-val">{semana}/{dias.length}</strong><span className="cifra-nota">entrenos</span></div>
+      <div className="cifra"><span className="cifra-etq">Esta semana</span><strong className="cifra-val">{semana}/{diasBase(dias).length}</strong><span className="cifra-nota">entrenos</span></div>
       <div className="cifra"><span className="cifra-etq">Próximo</span><strong className="cifra-val">Día {p.id}</strong><span className="cifra-nota">{p.nombre}</span></div>
     </div>
   );
@@ -71,8 +71,8 @@ function useVitalEntreno(): Vital {
   const p = proximoDia(sesiones, dias, fila?.inicio);
   return {
     cifra: `Día ${p.id}`,
-    sub: `${p.nombre} · ${semana} de ${dias.length} esta semana`,
-    barra: dias.length ? Math.min(1, semana / dias.length) : undefined,
+    sub: `${p.nombre} · ${semana} de ${diasBase(dias).length} esta semana`,
+    barra: dias.length ? Math.min(1, semana / diasBase(dias).length) : undefined,
     accion: { texto: entrenoHoy(sesiones) ? 'Ver progreso' : 'Empezar', ruta: entrenoHoy(sesiones) ? '#/entrenamiento/progreso' : '#/entrenamiento' },
   };
 }

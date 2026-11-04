@@ -186,6 +186,12 @@ Peso muerto rumano con mancuernas | 3x8-10 | 120 | 7 | 2 | Nuevo: faltaba la cad
 Extensión de cuádriceps | 3x10-15 | 75 | 9 | 5 | Pausa de 1 s arriba y bajada lenta | var: Sentadilla búlgara
 Curl femoral en máquina | 3x10-14 | 75 | 9 | 2.5 | Si tu gimnasio tiene la sentada, usala: rinde más | var: Curl femoral sentado
 Elevación de talones (gemelos) | 4x10-15 | 60 | 9 | 5 | 2 s abajo estirando y subí en puntas | var: Gemelos sentado
+B2: Pierna sin prensa
+Sentadilla con barra | 3x6-10 | 150 | 8 | 5 | Va primero, fresca. Bajá hasta que la cadera pase la rodilla si podés, pecho arriba | var: Sentadilla en Smith / Sentadilla hack
+Peso muerto rumano | 2x8-10 | 120 | 7 | 5 | Con barra. Cadera atrás y espalda firme; RPE 7 para cuidar la espalda del trabajo | var: Peso muerto rumano con mancuernas
+Extensión de cuádriceps | 3x10-15 | 75 | 9 | 5 | Pausa de 1 s arriba y bajada lenta | var: Sentadilla búlgara
+Curl femoral en máquina | 3x10-14 | 75 | 9 | 2.5 | Acostado: cadera pegada a la camilla | var: Curl femoral sentado
+Elevación de talones (gemelos) | 4x10-15 | 60 | 9 | 5 | 2 s abajo estirando y subí en puntas | var: Gemelos sentado
 C: Pecho y bíceps
 Press inclinado en Smith | 3x6-10 | 150 | 8 | 2.5 | Banco a 30°: el ángulo que más trabaja el pecho alto | var: Press inclinado con barra
 Press inclinado con mancuernas | 3x8-12 | 120 | 8 | 2 | Banco más bajo (15-30°) y estirá bien abajo | var: Press de pecho en máquina / Press de banca con mancuernas

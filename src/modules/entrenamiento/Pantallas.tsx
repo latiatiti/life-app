@@ -8,7 +8,7 @@ import { avisarCambio, useCambios } from '../../ui/Actividad';
 import { empezarEntreno, Entrenando, leerEnCurso } from './Entrenando';
 import { BarrasSemanas, Linea, VolumenGrupos } from './Graficos';
 import {
-  pesoSugerido, progresoEjercicio, proximoDia, TE, tendencia, useBiblioteca, useRutina, useSeries, useSesiones, type Serie, type Sesion,
+  baseDe, pesoSugerido, progresoEjercicio, proximoDia, TE, tendencia, useBiblioteca, useRutina, useSeries, useSesiones, type Serie, type Sesion,
 } from './modelo';
 import { Delta, ResumenEntreno } from './Resumen';
 import './entreno.css';
@@ -95,6 +95,8 @@ export function PantallaHoy() {
 
   const sugerido = proximoDia(sesiones, dias, fila?.inicio);
   const plan = ajustarDia(dias.find((d) => d.id === elegido) ?? sugerido, semana);
+  const toca = (id: string) => baseDe(id, dias) === sugerido.id;
+  const variantes = dias.filter((d) => baseDe(d.id, dias) === baseDe(plan.id, dias));
   const ult = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
   const descarga = necesitaDescarga(sesiones, series);
 
@@ -107,13 +109,22 @@ export function PantallaHoy() {
       <BarraCiclo />
       {descarga && !semana?.seriesPct && <Tarjeta><Estado nivel="aviso" texto="Fatiga acumulada" /><p className="nota" style={{ margin: '6px 0 0' }}>{descarga}</p></Tarjeta>}
       <div className="segmentado" style={{ flexWrap: 'wrap' }}>
-        {dias.map((d) => (
-          <button key={d.id} className={plan.id === d.id ? 'activo' : ''} onClick={() => setElegido(d.id)}>
-            {d.id} · {d.nombre}{d.id === sugerido.id ? ' ★' : ''}
+        {dias.filter((d) => baseDe(d.id, dias) === d.id).map((d) => (
+          <button key={d.id} className={baseDe(plan.id, dias) === d.id ? 'activo' : ''} onClick={() => setElegido(d.id)}>
+            {d.id} · {d.nombre}{toca(d.id) ? ' ★' : ''}
           </button>
         ))}
       </div>
-      <Tarjeta titulo={`Día ${plan.id}: ${plan.nombre}`} accion={plan.id === sugerido.id ? <span className="chip chip-on">Te toca hoy</span> : undefined}>
+      {variantes.length > 1 && (
+        <div className="segmentado" style={{ flexWrap: 'wrap' }} aria-label="Versión del día">
+          {variantes.map((d) => (
+            <button key={d.id} className={plan.id === d.id ? 'activo' : ''} onClick={() => setElegido(d.id)}>
+              {d.id === baseDe(d.id, dias) ? 'La de siempre' : d.nombre}
+            </button>
+          ))}
+        </div>
+      )}
+      <Tarjeta titulo={`Día ${plan.id}: ${plan.nombre}`} accion={toca(plan.id) ? <span className="chip chip-on">Te toca hoy</span> : undefined}>
         <ul className="lista">
           {plan.ejercicios.map((ej) => {
             const s = pesoSugerido(series, ej, perfil, semana);
