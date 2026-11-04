@@ -10,6 +10,7 @@ import { evaluarPreparacion, objetivoHoy, type Preparacion } from './analisis';
 import { infoEjercicio, variantesDe } from './biblioteca';
 import { describirSemana, type SemanaCiclo } from './ciclo';
 import { ImagenEjercicio } from './Controles';
+import { descansoReal } from './fuerza';
 import { guardarSesion, pesoSugerido, ultimaVez, useBiblioteca, useRutina, useSeries, type DiaPlan, type EjercicioPlan, type Sesion } from './modelo';
 import { ResumenEntreno } from './Resumen';
 import { SelectorEjercicio } from './Rutina';
@@ -23,7 +24,8 @@ import './vivo.css';
  * Todo entra en el celu sin scroll; lo que no es de cada serie va en hojas que suben (Modal).
  */
 
-type Hecha = { ejercicio: string; numero: number; peso: number; reps: number; rpe: number | null; tipo: 'efectiva' | 'calentamiento' };
+/** `t` = cuándo se cargó (ms): con eso se mide el descanso real entre series. */
+type Hecha = { ejercicio: string; numero: number; peso: number; reps: number; rpe: number | null; tipo: 'efectiva' | 'calentamiento'; t?: number };
 
 /** Estado del entreno en curso. Se guarda en el celular, así sobrevive si se cierra la app o no hay señal. */
 interface EnCurso {
@@ -273,7 +275,7 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   function serieHecha() {
     if (!st || !ej || peso == null || !(reps > 0)) return;
     const tipo = calent ? 'calentamiento' : 'efectiva';
-    const hechas = [...st.hechas, { ejercicio: ej.nombre, numero: hechasEj.length + 1, peso: peso || 0, reps, rpe: calent ? null : rpe, tipo } as Hecha];
+    const hechas = [...st.hechas, { ejercicio: ej.nombre, numero: hechasEj.length + 1, peso: peso || 0, reps, rpe: calent ? null : rpe, tipo, t: Date.now() } as Hecha];
     const completo = !calent && efEj.length + 1 >= seriesObjetivo;
     const prox = completo ? siguienteCon(hechas, st.ej) : st.ej;
     setFlash(true);
@@ -301,7 +303,7 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
         duracion_min: Math.max(1, Math.round((Date.now() - st.inicio) / 60000)), sensacion: null, rpe_sesion: rpeSesion, notas: notas.trim(),
         sueno_h: st.prep?.sueno_h ?? null, energia: st.prep?.energia ?? null, agujetas: st.prep?.agujetas ?? null,
       },
-      st.hechas,
+      st.hechas.map(({ t, ...h }, i) => ({ ...h, descanso_seg: t ? descansoReal(st.hechas[i - 1]?.t, t, h.reps) : null })),
     );
     setRendFinal(rendDe(st.hechas));
     actualizar(null);
