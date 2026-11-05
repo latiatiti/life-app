@@ -205,7 +205,7 @@ Press de banca con barra | 3x6-10 | 150 | 8 | 2.5 | Va primero, fresco. Escápul
 Press inclinado con mancuernas | 3x8-12 | 120 | 8 | 2 | Banco a 30° y estirá bien abajo: el pecho alto sigue presente | var: Press inclinado en Smith / Press inclinado con barra
 Pec deck | 3x12-15 | 75 | 9 | 5 | Apretá 1 s al cerrar y abrí lento hasta sentir que estira | var: Cruce de poleas de abajo hacia arriba / Aperturas en polea o máquina
 Elevaciones laterales con mancuernas | 3x12-20 | 75 | 9 | 1 | Guiá con los codos hasta el hombro. 75 s: con 60 s se te caían las de aislamiento | var: Elevaciones laterales en polea
-Curl inclinado con mancuernas | 3x8-12 | 90 | 8 | 1 | Alternado, un brazo y después el otro. Banco a 45-60°, bíceps estirado abajo | var: Curl alternado con mancuernas / Curl concentrado con mancuerna
+Curl alternado con mancuernas | 3x8-12 | 90 | 8 | 1 | Parado, un brazo y después el otro. Codos quietos al costado, sin balancear el cuerpo | var: Curl inclinado con mancuernas / Curl concentrado con mancuerna
 Curl en polea | 3x10-15 | 75 | 9 | 2.5 | Polea baja, codos quietos al costado; remata el bíceps con tensión todo el recorrido | var: Curl martillo con mancuernas / Curl con barra Z`,
   },
   {
