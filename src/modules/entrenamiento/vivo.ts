@@ -1,5 +1,6 @@
 /* Cuentas del modo entrenando (pantalla única, 2026-10-29): cómo venís contra lo esperado,
  * cuánto debería durar y el calentamiento sugerido. Lo que se sugiere de peso sigue en modelo.ts. */
+import { infoEjercicio } from './biblioteca';
 import { redondearCarga, type Perfil, type SemanaCiclo } from './ciclo';
 import { pesoSugerido, ultimaVez, type DiaPlan, type EjercicioPlan, type Serie, type Sesion } from './modelo';
 
@@ -51,9 +52,52 @@ export function rendimientoGuardado(sesion: Sesion, todas: Serie[], plan: DiaPla
   return rendimientoVivo(propias.map((s) => ({ ejercicio: s.ejercicio, peso: Number(s.peso) || 0, reps: s.reps, rpe: s.rpe ?? null, tipo: s.tipo ?? 'efectiva' })), esperado);
 }
 
-/** Minutos que debería durar: ~45 s por serie más el descanso que pide cada ejercicio. */
-export function minutosEstimados(plan: DiaPlan, seriesDe: (ej: EjercicioPlan) => number = (e) => e.series): number {
-  const seg = plan.ejercicios.reduce((t, e) => t + seriesDe(e) * (45 + e.descanso), 0);
+/**
+ * Tiempo que se va entre un ejercicio y otro (2026-11-05, pedido de ella): ir hasta el lugar, armar la barra o la máquina,
+ * acomodarse y, a veces, esperar que se libere. Con barra se tarda más (discos, rack). Si ya hay entrenos guardados,
+ * se usa lo que tardás de verdad (`cambioAprendido`).
+ */
+export function segCambio(ej: EjercicioPlan, aprendido?: number | null): number {
+  if (aprendido != null) return aprendido;
+  const eq = infoEjercicio(ej.nombre)?.equipo;
+  return eq === 'barra' ? 120 : 80;
+}
+
+/**
+ * Lo que tardás de más por ejercicio según tus entrenos guardados: (duración real − series × 45 s − descansos) ÷ ejercicios.
+ * Usa el descanso medido si está; si no, el del plan. Mediana de los últimos 6 entrenos, entre 1 y 4 min. null sin datos.
+ */
+export function cambioAprendido(sesiones: Sesion[], series: Serie[], dias: DiaPlan[]): number | null {
+  const plan = new Map<string, number>();
+  for (const d of dias) for (const x of d.ejercicios) if (!plan.has(x.nombre)) plan.set(x.nombre, x.descanso);
+  const vistas = new Set<string>();
+  const xs: number[] = [];
+  const recientes = [...sesiones].filter((s) => s.dia !== 'otro' && (s.duracion_min ?? 0) > 0).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  for (const s of recientes) {
+    const clave = `${s.fecha}|${s.dia}|${s.duracion_min}`;
+    if (vistas.has(clave)) continue; // el mismo entreno guardado dos veces
+    vistas.add(clave);
+    const propias = series.filter((x) => x.sesion_id === s.id).sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? '') || a.numero - b.numero);
+    const ejercicios = new Set(propias.map((x) => x.ejercicio));
+    if (!ejercicios.size) continue;
+    const yaEmpezado = new Set<string>();
+    let seg = 0;
+    for (const x of propias) {
+      seg += 45;
+      if (yaEmpezado.has(x.ejercicio)) seg += x.descanso_seg ?? plan.get(x.ejercicio) ?? 90;
+      yaEmpezado.add(x.ejercicio);
+    }
+    xs.push(((s.duracion_min ?? 0) * 60 - seg) / ejercicios.size);
+    if (xs.length >= 6) break;
+  }
+  if (!xs.length) return null;
+  xs.sort((a, b) => a - b);
+  return Math.round(Math.max(60, Math.min(240, xs[Math.floor(xs.length / 2)])) / 15) * 15;
+}
+
+/** Minutos que debería durar: ~45 s por serie, el descanso que pide cada ejercicio y el cambio entre ejercicios. */
+export function minutosEstimados(plan: DiaPlan, seriesDe: (ej: EjercicioPlan) => number = (e) => e.series, aprendido?: number | null): number {
+  const seg = plan.ejercicios.reduce((t, e) => t + seriesDe(e) * 45 + Math.max(0, seriesDe(e) - 1) * e.descanso + segCambio(e, aprendido), 0);
   return Math.round(seg / 60);
 }
 

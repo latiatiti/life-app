@@ -11,10 +11,10 @@ import { infoEjercicio, variantesDe } from './biblioteca';
 import { describirSemana, type SemanaCiclo } from './ciclo';
 import { ImagenEjercicio } from './Controles';
 import { descansoReal } from './fuerza';
-import { guardarSesion, pesoSugerido, ultimaVez, useBiblioteca, useRutina, useSeries, type DiaPlan, type EjercicioPlan, type Sesion } from './modelo';
+import { guardarSesion, pesoSugerido, ultimaVez, useBiblioteca, useRutina, useSeries, useSesiones, type DiaPlan, type EjercicioPlan, type Sesion } from './modelo';
 import { ResumenEntreno } from './Resumen';
 import { SelectorEjercicio } from './Rutina';
-import { calentamiento, consejoRendimiento, duracion, minutosEstimados, rendimientoVivo, repsPrevistas, type HechaVivo } from './vivo';
+import { calentamiento, cambioAprendido, consejoRendimiento, duracion, minutosEstimados, segCambio, rendimientoVivo, repsPrevistas, type HechaVivo } from './vivo';
 import './vivo.css';
 
 /*
@@ -160,9 +160,12 @@ type Hoja = 'lista' | 'como' | 'tecnica' | 'cambiar' | 'mas' | 'nota' | null;
 export function Entrenando({ onSalir }: { onSalir: () => void }) {
   useBiblioteca();
   const { filas: series } = useSeries();
+  const { filas: sesiones } = useSesiones();
   const { dias, perfil } = useRutina();
   const [st, setSt] = useState<EnCurso | null>(leerEnCurso);
   const [guardada, setGuardada] = useState<Sesion | null>(null);
+  /** Evita guardar el mismo entreno dos veces por un doble toque. */
+  const [guardando, setGuardando] = useState(false);
   const [hoja, setHoja] = useState<Hoja>(null);
   const [peso, setPeso] = useState<number | null>(0);
   const [reps, setReps] = useState(0);
@@ -247,10 +250,14 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   const nEfectivas = st.hechas.filter((h) => h.tipo !== 'calentamiento').length;
   const totalSeries = plan.ejercicios.reduce((s, x) => s + objetivo(x), 0);
   const seg = Math.floor((ahora - st.inicio) / 1000);
-  const estimado = minutosEstimados(plan, objetivo);
+  const aprendido = cambioAprendido(sesiones, series, dias);
+  const estimado = minutosEstimados(plan, objetivo, aprendido);
   const efTodas = st.hechas.filter((h) => h.tipo !== 'calentamiento');
   // Lo que debería llevar: ~45 s por serie hecha más los descansos ya cumplidos (el de la última todavía corre).
-  const esperadoSeg = efTodas.reduce((t, h, i) => t + 45 + (i < efTodas.length - 1 ? plan.ejercicios.find((x) => x.nombre === h.ejercicio)?.descanso ?? 90 : 0), 0);
+  // Más el tiempo de cambio de cada ejercicio que ya empezaste (ir, armar, acomodarse, esperar la máquina).
+  const empezados = [...new Set(st.hechas.map((h) => h.ejercicio))];
+  const esperadoSeg = efTodas.reduce((t, h, i) => t + 45 + (i < efTodas.length - 1 ? plan.ejercicios.find((x) => x.nombre === h.ejercicio)?.descanso ?? 90 : 0), 0)
+    + empezados.reduce((t, n) => t + segCambio(plan.ejercicios.find((x) => x.nombre === n) ?? { nombre: n } as EjercicioPlan, aprendido), 0);
   const atraso = Math.round((seg - esperadoSeg) / 60);
   const ritmo = !nEfectivas ? 'vas a tiempo' : atraso > 2 ? `${atraso}' atrás` : atraso < -2 ? `${-atraso}' adelante` : 'vas a tiempo';
   const rend = rendDe(st.hechas);
@@ -296,15 +303,21 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   }
 
   async function finalizar() {
-    if (!st) return;
-    const s = await guardarSesion(
+    if (!st || guardando) return;
+    setGuardando(true);
+    let s: Sesion;
+    try {
+      s = await guardarSesion(
       {
         fecha: hoy(), dia: st.dia, dia_nombre: plan.nombre, deporte: 'Gimnasio',
         duracion_min: Math.max(1, Math.round((Date.now() - st.inicio) / 60000)), sensacion: null, rpe_sesion: rpeSesion, notas: notas.trim(),
         sueno_h: st.prep?.sueno_h ?? null, energia: st.prep?.energia ?? null, agujetas: st.prep?.agujetas ?? null,
       },
       st.hechas.map(({ t, ...h }, i) => ({ ...h, descanso_seg: t ? descansoReal(st.hechas[i - 1]?.t, t, h.reps) : null })),
-    );
+      );
+    } finally {
+      setGuardando(false);
+    }
     setRendFinal(rendDe(st.hechas));
     actualizar(null);
     setGuardada(s);
@@ -475,7 +488,7 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
           <button type="button" className="ev-enlace" onClick={() => setHoja('nota')}>{notas ? `📝 ${notas}` : '+ Agregar nota (opcional)'}</button>
         </div>
         <div className="ev-pie actividad-ancho">
-          <button className="btn btn-primario ancho ev-principal" onClick={finalizar} disabled={!st.hechas.length}>
+          <button className="btn btn-primario ancho ev-principal" onClick={finalizar} disabled={!st.hechas.length || guardando}>
             Guardar en mi día<small>queda en Día · {fechaCorta(hoy())} · +50 XP</small>
           </button>
         </div>
