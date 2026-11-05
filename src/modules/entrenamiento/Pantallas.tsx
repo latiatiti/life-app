@@ -16,6 +16,8 @@ import { zonasDe, type Zona } from './biblioteca';
 import { MapaMuscular, textoZonas } from './MapaMuscular';
 import { ajustarDia, describirSemana } from './ciclo';
 import { inicioSemana } from './analisis';
+import { DetalleEjercicio, FaltaSemana, TarjetaDescansos } from './Estadisticas';
+import { fuerzaDe, pesoPorFuerza } from './fuerza';
 
 function FormOtroDeporte({ onListo }: { onListo: () => void }) {
   const [deporte, setDeporte] = useState('');
@@ -161,8 +163,10 @@ export function PantallaProgreso() {
   useBiblioteca();
   const { filas: sesiones } = useSesiones();
   const { filas: series } = useSeries();
-  const { dias } = useRutina();
+  const { dias, perfil, fila: filaRutina } = useRutina();
   const [medida, setMedida] = useState<Medida>('tonelaje');
+  const [detalle, setDetalle] = useState<string | null>(null);
+  const pc = perfil?.peso_kg ?? 0;
   if (!series.length) return <Vacio titulo="Sin datos todavía"><p>Cuando registres entrenos, acá ves tu volumen por semana, cómo sube tu fuerza en cada ejercicio y si te estancaste.</p></Vacio>;
 
   const ss = semanas(sesiones, series, 8);
@@ -175,18 +179,23 @@ export function PantallaProgreso() {
     const pts = progresoEjercicio(series, nombre);
     const t = tendencia(pts);
     const c = compararSemana(series, nombre);
+    const f = fuerzaDe(series, nombre, pc);
+    const ej = dias.flatMap((d) => d.ejercicios).find((x) => x.nombre === nombre);
+    const trabajo = ej ? pesoPorFuerza(series, ej, pc) : null;
     return (
-      <li key={nombre} className="lista-item">
+      <li key={nombre}>
+        <button type="button" className="lista-item boton-fila" onClick={() => setDetalle(nombre)} disabled={!f}>
         <div className="crece">
           <strong>{nombre}</strong>
           <small className="nota">
-            {pts.length ? `1RM estimado ${Math.round(pts[pts.length - 1].mejor)} kg · ${pts.length} sesiones` : 'Sin registros'}
+            {f ? `1RM ${Math.round(f.rm)} kg${f.confianza === 'primera' ? ' (1.ª vez)' : ''}${trabajo ? ` · trabajo ${trabajo.peso} kg × ${trabajo.reps}` : ''} · ${f.sesiones} ${f.sesiones === 1 ? 'sesión' : 'sesiones'}` : 'Sin registros todavía'}
             {c.esta.tonelaje && c.pasada.tonelaje ? <> · semana <Delta actual={c.esta.tonelaje} previo={c.pasada.tonelaje} /></> : null}
           </small>
         </div>
         <Linea puntos={pts.map((p) => p.mejor)} />
         {t === 'subiendo' && <Estado nivel="ok" texto="Subiendo" />}
         {t === 'estancado' && <Estado nivel="aviso" texto="Estancado" />}
+        </button>
       </li>
     );
   };
@@ -194,6 +203,8 @@ export function PantallaProgreso() {
   const cambio = pct(esta[medida], pasada[medida]);
   return (
     <div className="pila">
+      <FaltaSemana dias={dias} sesiones={sesiones} series={series} />
+      <TarjetaDescansos dias={dias} series={series} pesoCorporal={pc} fila={filaRutina} />
       <Tarjeta titulo="Mapa de la semana">
         <MapaMuscular valores={mapaSemana(series)} />
         <p className="nota" style={{ margin: '8px 0 0' }}>Rojo = músculo con 15 series o más esta semana; amarillo = poco trabajo; gris = nada. {textoZonas(mapaSemana(series))}</p>
@@ -222,7 +233,8 @@ export function PantallaProgreso() {
         </Tarjeta>
       ))}
       {otros.length > 0 && <Tarjeta titulo="Otros ejercicios"><ul className="lista">{otros.map(fila)}</ul></Tarjeta>}
-      <p className="nota">El 1RM estimado es el peso máximo que podrías levantar una vez, calculado con la fórmula de Epley a partir de tu mejor serie.</p>
+      <p className="nota">El 1RM estimado es el peso máximo que podrías levantar una vez, calculado con la fórmula de Epley a partir de tu mejor serie, contando las reps que te quedaban en reserva (RPE). "Trabajo" es el peso para la primera serie a las reps y el RPE del plan.</p>
+      <DetalleEjercicio nombre={detalle} dias={dias} series={series} pesoCorporal={pc} onCerrar={() => setDetalle(null)} />
     </div>
   );
 }
