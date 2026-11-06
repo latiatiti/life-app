@@ -22,6 +22,11 @@ que todo hilo respeta y el estado de la última auditoría. El informe completo 
    ella. Nada que pueda perder datos sin avisar y sin respaldo.
 7. **Dependencias**: `npm audit` sin altas ni críticas antes de cerrar una entrega.
 
+8. **Varias cuentas**: nada se comparte salvo lo que dos cuentas vinculadas aceptan (`eco_compartidos`).
+   Tabla nueva compartida = su regla de lectura propia con `life_vinculado()`, y solo el dueño cambia o borra.
+   La app pide siempre solo lo propio (`.eq('user_id', …)`) además de RLS. Datos personales de la dueña
+   (semana de ejemplo, semilla) nunca se muestran ni se cargan en otra cuenta.
+
 ## Encabezados (Netlify, `public/_headers`)
 HSTS, nosniff, sin marcos (`X-Frame-Options: DENY`), sin referer, permisos del navegador limitados
 (cámara y ubicación solo la propia app) y una regla de contenido (CSP) en modo **solo avisar**.
@@ -34,7 +39,17 @@ Aplicado (PR #17): encabezados, service worker que no guarda errores, Vite 8.3.5
 de desarrollo). `supabase/seguridad.sql` **aplicado en la nube el 2026-10-30** (migración
 `seguridad_gonzalito_1`, con su OK): los asesores bajaron de 10 a 5 avisos (quedan los esperables).
 
+Revisión multiusuario (2026-11-06, `supabase/multiusuario.sql`): todas las tablas con RLS y `user_id`
+obligatorio; app filtra por dueño; limpieza al cambiar de cuenta en un navegador; cuentas nuevas pausadas con
+tope de 5 y aviso por mail; Google con vinculación manual; conector rechaza cuentas pausadas/sin perfil y pasa a
+solo lectura con suscripción vencida; funciones nuevas sin permiso para `anon`. Respaldo previo en el esquema
+`respaldo` (no expuesto por la API). Ojo: el superadmin ve los perfiles de todos (incluidas las respuestas de la
+encuesta) y en el panel de Supabase ve todo: avisarlo a quien use LIFE.
+
 Pendiente:
+- El plan gratis de Supabase no hace copias automáticas: mantener la copia en la PC (`life-respaldo-pc`).
+- Netlify: el sitio tiene "team login"; para que entren otras personas hay que invitarlas o sacarlo
+  (la app ya tiene su propio login y las cuentas nuevas quedan en espera).
 - Pasar el repo de GitHub a **privado** (hoy es público).
 - Cuenta `mauro2@life.com` (sin datos, con una sesión abierta desde el 15/10): pausarla o borrarla.
 - Supabase → Authentication: confirmar que "Allow new users to sign up" esté apagado y activar la
