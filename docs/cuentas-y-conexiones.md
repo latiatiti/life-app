@@ -20,10 +20,40 @@ Las cuentas que se registren por fuera de la app nacen pausadas.
 
 Función `cuentas` (con sesión de superadmin): listar, crear, cambiar contraseña.
 
+## Varias cuentas en una sola base (2026-11-06, `supabase/multiusuario.sql`)
+- **Aislamiento:** toda tabla tiene `user_id` obligatorio (por defecto `auth.uid()`), RLS e índice. La app además
+  pide solo lo propio (`listar` filtra por `user_id`). Si en un navegador entra otra cuenta, se borra lo que quedó
+  a medias de la anterior (`fijarDueno` en `core/db.ts`).
+- **Compartir:** solo lo que dos cuentas aceptan. `life_vinculos` (invitar por usuario, aceptar, cortar:
+  `life_invitar`, `life_responder_vinculo`, `life_mis_vinculos`). `eco_compartidos.con_user_id` = la otra cuenta
+  (se enlaza sola si `persona` coincide con su nombre o usuario). Cada uno ve lo que cargó y lo que el otro cargó
+  con él; la vista `eco_compartidos_mios` lo da "desde mi lado" (`monto_mio` > 0 = me deben). Solo quien cargó una
+  fila la cambia o la borra.
+- **Planes y suscripciones:** `life_planes` (familia, básico, completo) y `life_suscripciones` (prueba, activa,
+  cortesía, vencida, cancelada, hasta). Solo el superadmin los cambia (Ajustes → Cuentas → Editar). Vencida o
+  cancelada = solo lectura en la app y en el conector. Sin cobro real.
+- **Cuentas nuevas:** se puede entrar con Google. Toda cuenta que se crea sola (Google o registro) nace **pausada**
+  ("esperando autorización"); con 5 esperando, la base no acepta más. La función `aviso-cuenta` le manda un mail
+  al superadmin (secretos `RESEND_API_KEY`, `AVISO_MAIL`, `APP_URL`; el mail no va en el repo). Se autoriza o
+  rechaza en Ajustes → Cuentas. Las que crea el superadmin nacen activas (`app_metadata.life_admin`).
+- **Google en una cuenta que ya existe:** Ajustes → Cómo entrás → Conectar Google (`linkIdentity`; requiere
+  "Manual linking" activado en Supabase Auth). Si se entra con Google sin conectarlo antes, se crea otra cuenta.
+- **Encuesta de bienvenida** (`ajustes/Bienvenida.tsx`): la primera vez que entra una cuenta nueva. Secciones,
+  plata, cobros, fijos, semana, cuerpo/entreno, comida y con quién comparte. Carga cuentas, categorías, ingresos,
+  pagos, semana tipo (así no ve la de ejemplo), metas de comida e invitación; guarda las respuestas en
+  `perfiles.bienvenida` (`life_guardar_bienvenida`). Las secciones elegidas filtran el menú (`veModulo`).
+
 ## Conexión con Claude (`supabase/functions/life-mcp`)
 Servidor MCP por HTTP. En Ajustes → Conexión con Claude se crea un link personal
 (`.../functions/v1/life-mcp?k=life_...`); en claude.ai → Configuración → Conectores →
 Agregar conector personalizado se pega ese link.
+
+**Con varias cuentas:** cada link (clave) es de una sola cuenta; Claude sabe de quién es por la clave, no por la
+computadora. Cada persona crea su link en SU Ajustes y lo agrega en SU Claude. Si las dos usan el mismo Claude,
+agregar dos conectores con nombre ("LIFE Titi", "LIFE Ulises"): el conector se presenta como `LIFE · <nombre>`,
+`quien_soy` lo confirma, cada respuesta trae `cuenta` y Claude pregunta si no queda claro para quién es.
+Lo compartido: `cuenta_compartida` y `anotar_compartido`. Cuenta pausada o sin perfil = el link no anda;
+suscripción vencida = solo lectura.
 
 Herramientas: `que_hay` (tablas, columnas y cantidades; toda tabla nueva con `user_id` aparece sola),
 `leer`, `crear`, `modificar`, `borrar`, `historial`, `deshacer`.

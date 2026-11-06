@@ -3,8 +3,9 @@
 //
 // Entrada (POST JSON):
 //   { accion: 'listar' }
-//   { accion: 'crear', usuario, clave, nombre?, rol?, modulos? }   usuario = "nombre" o un correo
+//   { accion: 'crear', usuario, clave, nombre?, rol?, modulos?, plan?, vincular? }   usuario = "nombre" o un correo
 //   { accion: 'clave', user_id, clave }                            cambia la contraseña
+//   { accion: 'rechazar', user_id }                                borra una cuenta que pidió entrar y no se autorizó
 // Roles, módulos y pausar se cambian directo en la tabla perfiles (las reglas lo permiten
 // solo al superadmin).
 
@@ -47,14 +48,18 @@ Deno.serve(async (req) => {
   if (p.accion === 'listar') {
     const { data: u, error } = await admin.auth.admin.listUsers({ perPage: 200 });
     if (error) return responder({ error: error.message }, 500);
-    const { data: perfiles } = await admin.from('perfiles').select('*');
+    const { data: perfiles } = await admin.from('perfiles').select('user_id, usuario, nombre, rol, modulos, activo, pedido_at, via, bienvenida_at');
+    const { data: susc } = await admin.from('life_suscripciones').select('user_id, plan_id, estado, hasta, nota');
     const porId = new Map((perfiles ?? []).map((x) => [x.user_id, x]));
+    const suscDe = new Map((susc ?? []).map((x) => [x.user_id, x]));
     return responder({
       cuentas: u.users.map((x) => ({
         user_id: x.id,
         email: x.email,
         ultimo_ingreso: x.last_sign_in_at,
         creada: x.created_at,
+        proveedores: (x.identities ?? []).map((i) => i.provider),
+        suscripcion: suscDe.get(x.id) ?? null,
         ...(porId.get(x.id) ?? { rol: 'usuario', activo: true, modulos: null, nombre: '', usuario: null }),
       })),
     });
@@ -66,7 +71,10 @@ Deno.serve(async (req) => {
     const rol = ROLES.includes(String(p.rol)) ? String(p.rol) : 'usuario';
     if (!/^[\w.@+-]{3,}$/.test(usuario)) return responder({ error: 'El usuario tiene que tener al menos 3 letras, sin espacios.' }, 400);
     if (clave.length < 8) return responder({ error: 'La contraseña tiene que tener al menos 8 caracteres.' }, 400);
-    const { data, error } = await admin.auth.admin.createUser({ email: correoDe(usuario), password: clave, email_confirm: true });
+    // life_admin = 'si' (app_metadata, que solo el servidor puede poner): la base la crea activa y sin mail de aviso.
+    const { data, error } = await admin.auth.admin.createUser({
+      email: correoDe(usuario), password: clave, email_confirm: true, app_metadata: { life_admin: 'si' },
+    });
     if (error) return responder({ error: /already/i.test(error.message) ? 'Ese usuario ya existe.' : error.message }, 400);
     const { error: e2 } = await admin.from('perfiles').upsert({
       user_id: data.user.id,
@@ -77,6 +85,11 @@ Deno.serve(async (req) => {
       activo: true,
     });
     if (e2) return responder({ error: e2.message }, 500);
+    // Plan: por defecto "Familia, cortesía" (cuenta de la casa).
+    const plan = typeof p.plan === 'string' && p.plan ? p.plan : 'familia';
+    await admin.from('life_suscripciones').upsert({ user_id: data.user.id, plan_id: plan, estado: plan === 'familia' ? 'cortesia' : 'activa' });
+    // Comparten gastos con el superadmin (ej. Ulises): vínculo ya aceptado.
+    if (p.vincular === true) await admin.from('life_vinculos').insert({ user_id: yo.user.id, otro_id: data.user.id, estado: 'aceptado' });
     return responder({ ok: true, user_id: data.user.id, email: data.user.email });
   }
 
@@ -84,6 +97,17 @@ Deno.serve(async (req) => {
     const clave = String(p.clave ?? '');
     if (clave.length < 8) return responder({ error: 'La contraseña tiene que tener al menos 8 caracteres.' }, 400);
     const { error } = await admin.auth.admin.updateUserById(String(p.user_id), { password: clave });
+    if (error) return responder({ error: error.message }, 400);
+    return responder({ ok: true });
+  }
+
+  if (p.accion === 'rechazar') {
+    const id = String(p.user_id ?? '');
+    const { data: otro } = await admin.from('perfiles').select('activo, rol').eq('user_id', id).maybeSingle();
+    if (!otro || otro.activo || otro.rol === 'superadmin' || id === yo.user.id) {
+      return responder({ error: 'Solo se pueden rechazar cuentas que están esperando autorización.' }, 400);
+    }
+    const { error } = await admin.auth.admin.deleteUser(id);
     if (error) return responder({ error: error.message }, 400);
     return responder({ ok: true });
   }

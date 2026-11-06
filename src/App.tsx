@@ -5,6 +5,7 @@ import { MODULOS } from './core/registry';
 import type { Modulo } from './core/types';
 import { useRuta } from './core/router';
 import { BotonCargar } from './hub/Cargar';
+import { Bienvenida } from './modules/ajustes/Bienvenida';
 import { Hub } from './hub/Hub';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
@@ -94,6 +95,8 @@ export function App() {
 
   return (
     <div className={`app ${hayBarra ? 'con-barra' : ''} ${esInicio ? 'en-inicio' : ''}`}>
+      {/* Cuenta nueva: la encuesta de bienvenida aparece una vez (null = la base ya la espera y no se hizo). */}
+      {almacen.tipo === 'nube' && perfil.activo && perfil.bienvenida_at === null && <Bienvenida />}
       {/* Arriba (compu y celu): LIFE abre el menú con todo; a la derecha, cargar, ajustes y dónde se guarda */}
       <header className="barra-sup">
         {!esInicio && (

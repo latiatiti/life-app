@@ -8,6 +8,10 @@
 // la clave personal es la que autoriza, y cada consulta se limita al dueño de esa clave.
 //
 // Todo cambio queda en api_registro con el antes y el después, y se puede deshacer.
+//
+// Varias cuentas (2026-11-06): cada clave es de UNA cuenta. Claude sabe de quién es por la clave
+// (no por la computadora): quien_soy lo dice, y cada respuesta que cambia algo trae "cuenta".
+// Lo único que cruza cuentas es eco_compartidos con una cuenta vinculada (life_vinculos aceptado).
 
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
@@ -17,7 +21,7 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
-const PRIVADAS = new Set(['perfiles', 'api_claves', 'api_registro']);
+const PRIVADAS = new Set(['perfiles', 'api_claves', 'api_registro', 'life_suscripciones', 'life_vinculos', 'eco_compartidos']);
 const MAX_FILAS = 500;
 
 /** Para qué sirve cada tabla (las nuevas aparecen igual, sin descripción). */
@@ -44,10 +48,14 @@ const DESCRIPCION: Record<string, string> = {
   dia_plantilla: 'Semana tipo: un bloque por fila (dia_semana 0=domingo, inicio/fin HH:MM, 24:00 = fin del día, tipo, opcional, come_alla). Vacía = usa la de fábrica de la app.',
   dia_dias: 'Una fila por fecha marcada: estado normal/libre/feriado/especial, prioridades [{texto,hecho}], nota, bloques = horario propio (null = semana tipo).',
   dia_tareas: 'Tareas con fecha (YYYY-MM-DD), hora (HH:MM) opcional, prioridad alta/media/baja; origen "claude" si las carga Claude.',
+  dia_rutinas: 'Cosas de todos los días que ocupan tiempo (bañarse, lavar platos, ordenar): minutos cada vez, veces por día, dias (lista 0=domingo…6=sábado; null = todos), momento manana/tarde/noche/cualquiera. Se descuentan del tiempo libre.',
+  dia_tiempo: 'En qué usó un rato (sobre todo del tiempo libre): fecha, que, minutos, clase productivo/rutina/ocio/descanso. Mejor usar anotar_tiempo.',
+  com_frecuencias: 'Cada cuánto va a comprar a cada lugar (aproximado): nombre, lugar super/verduleria/carniceria/otro, cada_dias, dia_habitual (0=domingo, opcional), ultima (última vez que fue, YYYY-MM-DD).',
 };
+if (DESCRIPCION.eco_ingresos) DESCRIPCION.eco_ingresos += ' frecuencia semanal/quincenal/mensual; proximo_cobro = fecha del próximo cobro; cuenta_id = dónde cobra (efectivo, Mercado Pago… sacalo de eco_cuentas); puede_adeudarse = suele pagar atrasado; adeudado = lo que le deben.';
 
 type Json = Record<string, unknown>;
-interface Quien { userId: string; claveId: string; permiso: 'leer' | 'escribir' }
+interface Quien { userId: string; claveId: string; permiso: 'leer' | 'escribir'; nombre: string; usuario: string | null; clave: string }
 
 const respuesta = (cuerpo: unknown, status = 200) =>
   new Response(cuerpo === null ? null : JSON.stringify(cuerpo), {
@@ -72,6 +80,44 @@ const HERRAMIENTAS = [
     description: 'Empezá por acá. Devuelve la fecha de hoy (Mendoza), las tablas de LIFE con sus columnas y cuántas filas tiene cada una. Usalo antes de leer o cargar para saber los nombres exactos de las columnas.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'quien_soy',
+    description: 'Dice de qué cuenta de LIFE es este conector (nombre, usuario, permiso, plan y con qué cuentas comparte gastos). Si en la conversación hay más de un conector LIFE, o no sabés para quién es un cambio, usalo y preguntá antes de cargar.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'cuenta_compartida',
+    description: 'Cuánto se deben con cada persona con la que comparte gastos (ej. Ulises) y los últimos movimientos, vistos desde esta cuenta: saldo > 0 = le deben, < 0 = debe. Si la otra persona tiene su propia cuenta vinculada, suma también lo que cargó ella.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        persona: { type: 'string', description: 'Opcional: solo con esta persona.' },
+        limite: { type: 'number', description: 'Movimientos a mostrar por persona (1 a 50, por defecto 10).' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'anotar_compartido',
+    description: 'Anota algo con una persona con la que comparte gastos: tipo gasto (algo que pagó uno y es de los dos), prestamo o pago (para saldar). pago = quién puso la plata: "yo" (esta cuenta) u "otro". parte = % del total que le toca a quien NO pagó (solo gastos, por defecto 50). Si la persona tiene cuenta vinculada, también lo ve en su LIFE.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        persona: { type: 'string', description: 'Nombre o usuario (ej. "Ulises").' },
+        tipo: { type: 'string', enum: ['gasto', 'prestamo', 'pago'] },
+        total: { type: 'number' },
+        pago: { type: 'string', enum: ['yo', 'otro'] },
+        parte: { type: 'number' },
+        descripcion: { type: 'string' },
+        fecha: { type: 'string', description: 'YYYY-MM-DD. Por defecto hoy.' },
+      },
+      required: ['persona', 'tipo', 'total', 'pago'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
   },
   {
     name: 'leer',
@@ -154,9 +200,321 @@ const HERRAMIENTAS = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
   },
+  {
+    name: 'ver_semana',
+    description: 'Muestra cómo es cada día (desde una fecha, 7 días por defecto): de dónde sale el horario (semana tipo o día cambiado), sus bloques y el reparto del tiempo: sueño, fijo, cosas de todos los días (dia_rutinas) y libre; más lo que anotó que hizo (dia_tiempo). Usalo antes de cambiar la semana o un día.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        desde: { type: 'string', description: 'YYYY-MM-DD. Por defecto hoy.' },
+        dias: { type: 'number', description: '1 a 14, por defecto 7.' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'cargar_semana_tipo',
+    description: 'Reemplaza la semana tipo (lo fijo que se repite) de uno o varios días de la semana con la lista de bloques que mandes. Cada bloque: {inicio "HH:MM", fin "HH:MM" (24:00 = fin del día), titulo, tipo descanso/casa/fabrica/reparto/gym/comida/traslado/libre/otro, nota?, opcional? (si se da), come_alla? (come en ese lugar)}. "casa" y "libre" cuentan como tiempo disponible; "descanso" es dormir. Si la semana tipo está vacía, cargá los 7 días. Se deshace entero con deshacer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dias: { type: 'array', items: { type: 'number' }, minItems: 1, maxItems: 7, description: 'Días de la semana a reemplazar (0 = domingo … 6 = sábado). Todos reciben los mismos bloques.' },
+        bloques: { type: 'array', items: { type: 'object', additionalProperties: true }, maxItems: 40 },
+      },
+      required: ['dias', 'bloques'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'cambiar_dia',
+    description: 'Cambia una fecha puntual sin tocar la semana tipo (un día atípico: no va a la fábrica, feriado, día libre, día especial). Mandá solo lo que cambia: estado normal/libre/feriado/especial, nombre, nota, prioridades [{texto,hecho}] y bloques = horario propio de ese día (mismo formato que cargar_semana_tipo) o null para volver a la semana tipo.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'YYYY-MM-DD.' },
+        estado: { type: 'string', enum: ['normal', 'libre', 'feriado', 'especial'] },
+        nombre: { type: 'string' },
+        nota: { type: 'string' },
+        prioridades: { type: 'array', items: { type: 'object', additionalProperties: true } },
+        bloques: { type: ['array', 'null'], items: { type: 'object', additionalProperties: true } },
+      },
+      required: ['fecha'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'anotar_tiempo',
+    description: 'Anota en qué usó un rato (para medir la productividad del tiempo libre). clase: productivo (estudiar, trámites, proyectos), rutina (cosas de la casa), ocio, descanso.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'YYYY-MM-DD. Por defecto hoy.' },
+        que: { type: 'string' },
+        minutos: { type: 'number' },
+        clase: { type: 'string', enum: ['productivo', 'rutina', 'ocio', 'descanso'] },
+        nota: { type: 'string' },
+      },
+      required: ['que', 'minutos'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
 ];
 
 class ErrorUso extends Error {}
+
+/* ---------- Día: semana tipo, días cambiados y tiempo libre ---------- */
+// La cuenta del tiempo libre es la misma que src/modules/dia/tiempo.ts (repartir): si cambia allá, cambiarla acá.
+
+const TIPOS_BLOQUE = new Set(['descanso', 'casa', 'fabrica', 'reparto', 'gym', 'comida', 'traslado', 'libre', 'otro']);
+const DISPONIBLE = new Set(['casa', 'libre']);
+const HORA = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+type Bloque = { inicio: string; fin: string; titulo: string; tipo: string; nota?: string | null; opcional?: boolean; come_alla?: boolean };
+
+const aMin = (h: string) => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };
+const diaSemana = (fecha: string) => new Date(`${fecha}T12:00:00Z`).getUTCDay();
+const sumar = (fecha: string, n: number) => { const d = new Date(`${fecha}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const horas = (m: number) => { const h = Math.floor(m / 60), r = Math.round(m % 60); return h ? (r ? `${h} h ${String(r).padStart(2, '0')}` : `${h} h`) : `${r} min`; };
+const DIAS_NOMBRE = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+function validarFecha(f: unknown): string {
+  const s = String(f ?? '');
+  if (!FECHA.test(s)) throw new ErrorUso(`Fecha inválida "${s}": usá YYYY-MM-DD.`);
+  return s;
+}
+
+function validarBloques(lista: unknown): Bloque[] {
+  if (!Array.isArray(lista)) throw new ErrorUso('bloques tiene que ser una lista.');
+  const bs = lista.map((x, i) => {
+    const b = x as Json;
+    const inicio = String(b.inicio ?? ''), fin = String(b.fin ?? ''), tipo = String(b.tipo ?? 'otro'), titulo = String(b.titulo ?? '').trim();
+    if (!HORA.test(inicio)) throw new ErrorUso(`Bloque ${i + 1}: inicio "${inicio}" tiene que ser HH:MM.`);
+    if (fin !== '24:00' && !HORA.test(fin)) throw new ErrorUso(`Bloque ${i + 1}: fin "${fin}" tiene que ser HH:MM o 24:00.`);
+    if (aMin(fin) <= aMin(inicio)) throw new ErrorUso(`Bloque ${i + 1} (${titulo}): termina antes de empezar. Si cruza la medianoche, partilo en dos (hasta 24:00 y desde 00:00 del otro día).`);
+    if (!TIPOS_BLOQUE.has(tipo)) throw new ErrorUso(`Bloque ${i + 1}: tipo "${tipo}" no existe. Tipos: ${[...TIPOS_BLOQUE].join(', ')}.`);
+    if (!titulo) throw new ErrorUso(`Bloque ${i + 1}: falta el titulo.`);
+    return { inicio, fin, titulo, tipo, nota: b.nota ? String(b.nota) : null, opcional: !!b.opcional, come_alla: !!b.come_alla };
+  }).sort((a, b) => aMin(a.inicio) - aMin(b.inicio));
+  for (let i = 1; i < bs.length; i++) {
+    if (aMin(bs[i].inicio) < aMin(bs[i - 1].fin)) throw new ErrorUso(`"${bs[i - 1].titulo}" y "${bs[i].titulo}" se pisan. Ajustá las horas.`);
+  }
+  return bs;
+}
+
+function repartir(bloques: Bloque[], rutinas: Json[], dow: number) {
+  let sueno = 0, fijo = 0, opcional = 0, disponible = 0, cubierto = 0;
+  for (const x of bloques) {
+    const m = Math.max(0, aMin(x.fin) - aMin(x.inicio));
+    cubierto += m;
+    if (x.tipo === 'descanso') sueno += m;
+    else if (DISPONIBLE.has(x.tipo)) disponible += m;
+    else { fijo += m; if (x.opcional) opcional += m; }
+  }
+  disponible += Math.max(0, 24 * 60 - cubierto);
+  const delDia = rutinas.filter((r) => r.activo !== false && (!(r.dias as number[] | null)?.length || (r.dias as number[]).includes(dow)));
+  const rut = delDia.reduce((s, r) => s + Number(r.minutos) * (Number(r.veces) || 1), 0);
+  return { sueno, fijo, opcional, rutinas: rut, libre: Math.max(0, disponible - rut), cosas_diarias: delDia.map((r) => r.nombre) };
+}
+
+async function filas(db: SupabaseClient, tabla: string, userId: string, armar?: (c: any) => any): Promise<Json[]> {
+  let c = db.from(tabla).select('*').eq('user_id', userId);
+  if (armar) c = armar(c);
+  const { data, error } = await c.limit(MAX_FILAS);
+  if (error) throw new ErrorUso(`${tabla}: ${error.message}`);
+  return (data ?? []) as Json[];
+}
+
+async function verSemana(db: SupabaseClient, q: Quien, args: Json) {
+  const desde = args.desde ? validarFecha(args.desde) : hoyMendoza();
+  const n = Math.min(Math.max(Number(args.dias) || 7, 1), 14);
+  const hasta = sumar(desde, n - 1);
+  const [plantilla, marcados, rutinas, usos] = await Promise.all([
+    filas(db, 'dia_plantilla', q.userId),
+    filas(db, 'dia_dias', q.userId, (c) => c.gte('fecha', desde).lte('fecha', hasta)),
+    filas(db, 'dia_rutinas', q.userId).catch(() => []),
+    filas(db, 'dia_tiempo', q.userId, (c) => c.gte('fecha', desde).lte('fecha', hasta)).catch(() => []),
+  ]);
+  const salida = [];
+  for (let i = 0; i < n; i++) {
+    const fecha = sumar(desde, i);
+    const dow = diaSemana(fecha);
+    const m = marcados.find((d) => d.fecha === fecha);
+    const propio = (m?.bloques as Bloque[] | null) ?? null;
+    let bloques: Bloque[] = propio ?? (plantilla.filter((b) => b.dia_semana === dow) as unknown as Bloque[]);
+    if (!propio && m?.estado === 'libre') bloques = [{ inicio: '00:00', fin: '09:00', titulo: 'Dormir', tipo: 'descanso' }, { inicio: '09:00', fin: '24:00', titulo: 'Día libre', tipo: 'libre' }];
+    bloques = [...bloques].sort((a, b) => aMin(a.inicio) - aMin(b.inicio));
+    const r = repartir(bloques, rutinas, dow);
+    const anotado: Record<string, number> = {};
+    for (const u of usos.filter((u) => u.fecha === fecha)) anotado[String(u.clase)] = (anotado[String(u.clase)] ?? 0) + Number(u.minutos);
+    salida.push({
+      fecha, dia: DIAS_NOMBRE[dow], estado: m?.estado ?? 'normal', nombre: m?.nombre ?? undefined, nota: m?.nota ?? undefined,
+      horario: propio ? 'propio de ese día' : m?.estado === 'libre' ? 'día libre' : 'semana tipo',
+      bloques: bloques.map((b) => `${b.inicio}-${b.fin} ${b.titulo} [${b.tipo}${b.opcional ? ', si se da' : ''}]`),
+      tiempo: { sueno: horas(r.sueno), fijo: horas(r.fijo), si_se_da: r.opcional ? horas(r.opcional) : undefined, cosas_diarias: horas(r.rutinas), libre: horas(r.libre) },
+      minutos: { sueno: r.sueno, fijo: r.fijo, cosas_diarias: r.rutinas, libre: r.libre },
+      anotado: Object.keys(anotado).length ? Object.fromEntries(Object.entries(anotado).map(([k, v]) => [k, horas(v)])) : undefined,
+    });
+  }
+  return {
+    hoy: hoyMendoza(),
+    semana_tipo_vacia: !plantilla.length || undefined,
+    aviso: plantilla.length ? undefined : 'La semana tipo está vacía en la nube (la app muestra una de ejemplo). Pedile que te la dicte y cargala con cargar_semana_tipo, los 7 días.',
+    cosas_de_todos_los_dias: rutinas.map((r) => ({ id: r.id, nombre: r.nombre, minutos: r.minutos, veces: r.veces, dias: r.dias ?? 'todos', activo: r.activo })),
+    dias: salida,
+  };
+}
+
+async function cargarSemanaTipo(db: SupabaseClient, q: Quien, args: Json) {
+  const dias = [...new Set(((args.dias as unknown[]) ?? []).map(Number))];
+  if (!dias.length || dias.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) throw new ErrorUso('dias: lista de números de 0 (domingo) a 6 (sábado).');
+  const bloques = validarBloques(args.bloques);
+  const todas = await filas(db, 'dia_plantilla', q.userId);
+  const antes = todas.filter((b) => dias.includes(Number(b.dia_semana)));
+  if (antes.length) {
+    const { error } = await db.from('dia_plantilla').delete().in('id', antes.map((b) => b.id as string)).eq('user_id', q.userId);
+    if (error) throw new ErrorUso(error.message);
+  }
+  const nuevas = dias.flatMap((d) => bloques.map((b) => ({ ...b, dia_semana: d, user_id: q.userId })));
+  let despues: Json[] = [];
+  if (nuevas.length) {
+    const { data, error } = await db.from('dia_plantilla').insert(nuevas).select();
+    if (error) {
+      if (antes.length) await db.from('dia_plantilla').insert(antes);
+      throw new ErrorUso(error.message);
+    }
+    despues = data as Json[];
+  }
+  const registro = await anotar(db, q, 'reemplazar', 'dia_plantilla', null, antes, despues);
+  const faltan = [0, 1, 2, 3, 4, 5, 6].filter((d) => !dias.includes(d) && !todas.some((b) => b.dia_semana === d));
+  return {
+    ok: true, registro_id: registro, dias: dias.map((d) => DIAS_NOMBRE[d]), bloques: bloques.length,
+    aviso: faltan.length ? `Todavía no hay semana tipo para: ${faltan.map((d) => DIAS_NOMBRE[d]).join(', ')}. En la app esos días se ven vacíos hasta que los cargues.` : undefined,
+  };
+}
+
+async function cambiarDia(db: SupabaseClient, q: Quien, args: Json) {
+  const fecha = validarFecha(args.fecha);
+  const cambios: Json = {};
+  if (args.estado !== undefined) {
+    if (!['normal', 'libre', 'feriado', 'especial'].includes(String(args.estado))) throw new ErrorUso('estado: normal, libre, feriado o especial.');
+    cambios.estado = args.estado;
+  }
+  if (args.nombre !== undefined) cambios.nombre = args.nombre || null;
+  if (args.nota !== undefined) cambios.nota = args.nota || null;
+  if (args.prioridades !== undefined) {
+    if (!Array.isArray(args.prioridades)) throw new ErrorUso('prioridades tiene que ser una lista [{texto, hecho}].');
+    cambios.prioridades = (args.prioridades as Json[]).map((p) => ({ texto: String(p.texto ?? ''), hecho: !!p.hecho })).filter((p) => p.texto);
+  }
+  if (args.bloques !== undefined) cambios.bloques = args.bloques === null ? null : validarBloques(args.bloques);
+  if (!Object.keys(cambios).length) throw new ErrorUso('No mandaste nada para cambiar.');
+  const { data: antes } = await db.from('dia_dias').select('*').eq('user_id', q.userId).eq('fecha', fecha).maybeSingle();
+  if (antes) {
+    const { data, error } = await db.from('dia_dias').update(cambios).eq('id', antes.id).eq('user_id', q.userId).select().single();
+    if (error) throw new ErrorUso(error.message);
+    const registro = await anotar(db, q, 'modificar', 'dia_dias', antes.id, antes, data);
+    return { ok: true, fecha, dia: DIAS_NOMBRE[diaSemana(fecha)], registro_id: registro, cambiado: Object.keys(cambios) };
+  }
+  const { data, error } = await db.from('dia_dias').insert({ fecha, estado: 'normal', prioridades: [], bloques: null, ...cambios, user_id: q.userId }).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'crear', 'dia_dias', (data as Json).id as string, null, data);
+  return { ok: true, fecha, dia: DIAS_NOMBRE[diaSemana(fecha)], registro_id: registro, cambiado: Object.keys(cambios) };
+}
+
+async function anotarTiempo(db: SupabaseClient, q: Quien, args: Json) {
+  const fecha = args.fecha ? validarFecha(args.fecha) : hoyMendoza();
+  const minutos = Math.round(Number(args.minutos));
+  if (!(minutos >= 1 && minutos <= 1440)) throw new ErrorUso('minutos: entre 1 y 1440.');
+  const clase = String(args.clase ?? 'productivo');
+  if (!['productivo', 'rutina', 'ocio', 'descanso'].includes(clase)) throw new ErrorUso('clase: productivo, rutina, ocio o descanso.');
+  const que = String(args.que ?? '').trim();
+  if (!que) throw new ErrorUso('Falta qué hizo.');
+  const { data, error } = await db.from('dia_tiempo').insert({ fecha, que, minutos, clase, nota: args.nota ? String(args.nota) : null, origen: 'claude', user_id: q.userId }).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'crear', 'dia_tiempo', (data as Json).id as string, null, data);
+  return { ok: true, registro_id: registro, fecha, que, minutos, clase };
+}
+
+/* ---------- Quién es y lo compartido con otras cuentas ---------- */
+
+async function vinculos(db: SupabaseClient, q: Quien) {
+  const { data } = await db.from('life_vinculos').select('id, user_id, otro_id, estado').eq('estado', 'aceptado')
+    .or(`user_id.eq.${q.userId},otro_id.eq.${q.userId}`);
+  const otros = (data ?? []).map((v) => (v.user_id === q.userId ? v.otro_id : v.user_id) as string);
+  if (!otros.length) return [] as { id: string; nombre: string; usuario: string | null }[];
+  const { data: ps } = await db.from('perfiles').select('user_id, nombre, usuario').in('user_id', otros);
+  return (ps ?? []).map((p) => ({ id: p.user_id as string, nombre: (p.nombre || p.usuario || 'Otra cuenta') as string, usuario: p.usuario as string | null }));
+}
+
+async function quienSoy(db: SupabaseClient, q: Quien) {
+  const [{ data: s }, vs] = await Promise.all([
+    db.from('life_suscripciones').select('plan_id, estado, hasta').eq('user_id', q.userId).maybeSingle(),
+    vinculos(db, q),
+  ]);
+  return {
+    cuenta: q.nombre, usuario: q.usuario, permiso: q.permiso, conector: q.clave,
+    plan: s ?? null,
+    comparte_gastos_con: vs.map((v) => v.nombre),
+    como_se_sabe: 'Por la clave del link de este conector: cada cuenta tiene la suya. No se puede saber desde qué computadora escriben.',
+  };
+}
+
+const redondo = (n: number) => Math.round(n * 100) / 100;
+
+async function cuentaCompartida(db: SupabaseClient, q: Quien, args: Json) {
+  const vs = await vinculos(db, q);
+  const limite = Math.min(Math.max(Number(args.limite) || 10, 1), 50);
+  // Lo que cargué yo (con cualquiera) y lo que cargaron conmigo las cuentas vinculadas (signo al revés).
+  const [{ data: mias, error }, { data: deOtros }] = await Promise.all([
+    db.from('eco_compartidos').select('*').eq('user_id', q.userId).order('fecha').limit(2000),
+    vs.length ? db.from('eco_compartidos').select('*').eq('con_user_id', q.userId).in('user_id', vs.map((v) => v.id)).order('fecha').limit(2000)
+      : Promise.resolve({ data: [] as Json[] }),
+  ]);
+  if (error) throw new ErrorUso(error.message);
+  const filas = [
+    ...(mias ?? []).map((f) => ({ f, persona: (vs.find((v) => v.id === f.con_user_id)?.nombre ?? f.persona) as string, monto: Number(f.monto), cargo: q.nombre })),
+    ...(deOtros ?? []).map((f) => { const n = vs.find((v) => v.id === f.user_id)?.nombre ?? 'Otra cuenta'; return { f, persona: n, monto: -Number(f.monto), cargo: n }; }),
+  ].filter((x) => !args.persona || x.persona.toLowerCase() === String(args.persona).toLowerCase());
+  const personas = [...new Set(filas.map((x) => x.persona))];
+  return {
+    cuenta: q.nombre,
+    personas: personas.map((p) => {
+      const de = filas.filter((x) => x.persona === p).sort((a, b) => String(a.f.fecha).localeCompare(String(b.f.fecha)));
+      const saldo = redondo(de.reduce((s, x) => s + x.monto, 0));
+      return {
+        persona: p, saldo,
+        resumen: Math.abs(saldo) < 1 ? `Con ${p} están a mano` : saldo > 0 ? `${p} le debe $${saldo}` : `Le debe a ${p} $${-saldo}`,
+        ultimos: de.slice(-limite).reverse().map((x) => ({ id: x.f.id, fecha: x.f.fecha, tipo: x.f.tipo, descripcion: x.f.descripcion, total: x.f.total, efecto: x.monto, lo_cargo: x.cargo })),
+      };
+    }),
+  };
+}
+
+async function anotarCompartido(db: SupabaseClient, q: Quien, args: Json) {
+  const tipo = String(args.tipo ?? 'gasto');
+  if (!['gasto', 'prestamo', 'pago'].includes(tipo)) throw new ErrorUso('tipo: gasto, prestamo o pago.');
+  const pago = String(args.pago ?? 'yo');
+  if (!['yo', 'otro'].includes(pago)) throw new ErrorUso('pago: "yo" u "otro".');
+  const total = Number(args.total);
+  if (!(total > 0)) throw new ErrorUso('total tiene que ser mayor a 0.');
+  const parte = tipo === 'gasto' ? Math.min(100, Math.max(0, args.parte === undefined ? 50 : Number(args.parte))) : 100;
+  const persona = String(args.persona ?? '').trim();
+  if (!persona) throw new ErrorUso('Falta la persona.');
+  const vs = await vinculos(db, q);
+  const vinc = vs.find((v) => v.nombre.toLowerCase() === persona.toLowerCase() || v.usuario?.toLowerCase() === persona.toLowerCase());
+  const m = redondo(total * parte / 100);
+  const fila = {
+    user_id: q.userId, fecha: args.fecha ? validarFecha(args.fecha) : hoyMendoza(), persona: vinc?.nombre ?? persona, con_user_id: vinc?.id ?? null,
+    tipo, descripcion: String(args.descripcion ?? '').trim(), total, pago, parte, monto: pago === 'yo' ? m : -m,
+  };
+  const { data, error } = await db.from('eco_compartidos').insert(fila).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'crear', 'eco_compartidos', (data as Json).id as string, null, data);
+  return { ok: true, cuenta: q.nombre, registro_id: registro, persona: fila.persona, lo_ve_tambien: vinc ? vinc.nombre : undefined, efecto: fila.monto };
+}
 
 async function tablasPermitidas(db: SupabaseClient) {
   const { data, error } = await db.rpc('life_columnas');
@@ -185,8 +543,12 @@ async function anotar(db: SupabaseClient, q: Quien, accion: string, tabla: strin
 }
 
 async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json): Promise<unknown> {
-  const escribe = ['crear', 'modificar', 'borrar', 'deshacer'].includes(nombre);
+  const escribe = ['crear', 'modificar', 'borrar', 'deshacer', 'cargar_semana_tipo', 'cambiar_dia', 'anotar_tiempo', 'anotar_compartido'].includes(nombre);
   if (escribe && q.permiso !== 'escribir') throw new ErrorUso('Esta clave es solo de lectura.');
+
+  if (nombre === 'quien_soy') return quienSoy(db, q);
+  if (nombre === 'cuenta_compartida') return cuentaCompartida(db, q, args);
+  if (nombre === 'anotar_compartido') return anotarCompartido(db, q, args);
 
   if (nombre === 'historial') {
     const limite = Math.min(Math.max(Number(args.limite) || 20, 1), 100);
@@ -195,6 +557,11 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     if (error) throw new Error(error.message);
     return data;
   }
+
+  if (nombre === 'ver_semana') return verSemana(db, q, args);
+  if (nombre === 'cargar_semana_tipo') return cargarSemanaTipo(db, q, args);
+  if (nombre === 'cambiar_dia') return cambiarDia(db, q, args);
+  if (nombre === 'anotar_tiempo') return anotarTiempo(db, q, args);
 
   const tablas = await tablasPermitidas(db);
 
@@ -209,7 +576,8 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
         columnas: cols.filter((c) => c.columna !== 'user_id').map((c) => `${c.columna} (${c.tipo}${c.nulable ? '' : ', obligatoria'}${c.defecto ? ', tiene valor por defecto' : ''})`),
       });
     }
-    return { hoy: hoyMendoza(), zona_horaria: 'America/Argentina/Mendoza', moneda: 'ARS', permiso: q.permiso, tablas: salida };
+    return { cuenta: q.nombre, hoy: hoyMendoza(), zona_horaria: 'America/Argentina/Mendoza', moneda: 'ARS', permiso: q.permiso,
+      compartido: 'Lo que se comparte con otra persona (ej. Ulises) se lee con cuenta_compartida y se carga con anotar_compartido.', tablas: salida };
   }
 
   if (nombre === 'deshacer') {
@@ -217,7 +585,7 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     if (error) throw new Error(error.message);
     if (!r) throw new ErrorUso('No encontré ese cambio en el historial.');
     if (r.deshecho) throw new ErrorUso('Ese cambio ya estaba deshecho.');
-    if (!tablas.has(r.tabla)) throw new ErrorUso(`La tabla ${r.tabla} ya no existe.`);
+    if (!tablas.has(r.tabla) && r.tabla !== 'eco_compartidos') throw new ErrorUso(`La tabla ${r.tabla} ya no existe.`);
     if (r.accion === 'crear') {
       const { error: e } = await db.from(r.tabla).delete().eq('id', r.fila_id).eq('user_id', q.userId);
       if (e) throw new Error(e.message);
@@ -227,6 +595,18 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     } else if (r.accion === 'borrar') {
       const { error: e } = await db.from(r.tabla).insert({ ...r.antes, user_id: q.userId });
       if (e) throw new Error(e.message);
+    } else if (r.accion === 'reemplazar') {
+      // Varias filas de una vez (ej. semana tipo): se borran las nuevas y vuelven las de antes.
+      const nuevas = ((r.despues as Json[]) ?? []).map((f) => f.id as string);
+      if (nuevas.length) {
+        const { error: e } = await db.from(r.tabla).delete().in('id', nuevas).eq('user_id', q.userId);
+        if (e) throw new Error(e.message);
+      }
+      const viejas = ((r.antes as Json[]) ?? []).map((f) => ({ ...f, user_id: q.userId }));
+      if (viejas.length) {
+        const { error: e } = await db.from(r.tabla).insert(viejas);
+        if (e) throw new Error(e.message);
+      }
     } else {
       throw new ErrorUso('Ese cambio no se puede deshacer.');
     }
@@ -306,13 +686,17 @@ async function quien(db: SupabaseClient, req: Request): Promise<Quien | null> {
   const auth = req.headers.get('authorization') ?? '';
   const clave = url.searchParams.get('k') ?? req.headers.get('x-life-clave') ?? (auth.startsWith('Bearer life_') ? auth.slice(7) : '');
   if (!clave.startsWith('life_')) return null;
-  const { data } = await db.from('api_claves').select('id, user_id, permiso, revocada').eq('hash', await sha256(clave)).maybeSingle();
+  const { data } = await db.from('api_claves').select('id, user_id, permiso, revocada, nombre').eq('hash', await sha256(clave)).maybeSingle();
   if (!data || data.revocada) return null;
-  const { data: perfil } = await db.from('perfiles').select('activo, rol').eq('user_id', data.user_id).maybeSingle();
-  if (perfil && !perfil.activo) return null;
+  const { data: perfil } = await db.from('perfiles').select('activo, rol, nombre, usuario').eq('user_id', data.user_id).maybeSingle();
+  // Sin perfil o con la cuenta pausada / esperando autorización, el conector no anda.
+  if (!perfil || !perfil.activo) return null;
   await db.from('api_claves').update({ ultimo_uso: new Date().toISOString() }).eq('id', data.id);
-  const permiso = perfil?.rol === 'lector' ? 'leer' : data.permiso;
-  return { userId: data.user_id, claveId: data.id, permiso };
+  // Suscripción vencida o cancelada = solo lectura (igual que en la app). El superadmin nunca se bloquea.
+  const { data: ok } = await db.rpc('life_suscripcion_ok', { uid: data.user_id });
+  const bloqueada = perfil.rol !== 'superadmin' && ok === false;
+  const permiso = perfil.rol === 'lector' || bloqueada ? 'leer' : data.permiso;
+  return { userId: data.user_id, claveId: data.id, permiso, nombre: perfil.nombre || perfil.usuario || 'sin nombre', usuario: perfil.usuario, clave: data.nombre };
 }
 
 async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | null> {
@@ -329,10 +713,17 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
       return ok({
         protocolVersion: typeof params.protocolVersion === 'string' ? params.protocolVersion : '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'LIFE', version: '1.0.0' },
-        instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras). ' +
+        serverInfo: { name: `LIFE · ${q.nombre}`, version: '1.2.0' },
+        instructions: `Este conector es de la cuenta de LIFE de ${q.nombre}${q.usuario ? ` (usuario "${q.usuario}")` : ''}: todo lo que leas o cargues es de esa cuenta. ` +
+          'Si en la conversación hay más de un conector LIFE, o no está claro para quién es un pedido, preguntá de quién es antes de cargar (quien_soy lo confirma). ' +
+          'Gastos y deudas con otra persona (ej. Ulises): cuenta_compartida y anotar_compartido. ' +
+          'LIFE es una app personal (economía, pagos, entreno, stock, comida, compras, día). ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
-          'Antes de cargar algo que ella te contó, confirmá los datos clave (monto, fecha, cuenta) si no están claros. ' +
+          'Para su semana y su tiempo: ver_semana muestra cada día con sueño, fijo, cosas de todos los días y tiempo libre; ' +
+          'cargar_semana_tipo guarda lo fijo que se repite; cambiar_dia cambia una fecha puntual sin tocar la semana; ' +
+          'las cosas de todos los días (bañarse, platos…) van en dia_rutinas con crear; anotar_tiempo registra en qué usó un rato; ' +
+          'cada cuánto va a comprar va en com_frecuencias. ' +
+          'Antes de cargar algo que te contaron, confirmá los datos clave (monto, fecha, cuenta) si no están claros. ' +
           'Fechas en YYYY-MM-DD, montos en pesos argentinos sin separadores. Todo cambio queda en historial y se puede deshacer.',
       });
     case 'ping':
@@ -342,7 +733,9 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
     case 'tools/call': {
       const nombre = String(params.name ?? '');
       try {
-        const r = await ejecutar(db, q, nombre, (params.arguments as Json) ?? {});
+        let r = await ejecutar(db, q, nombre, (params.arguments as Json) ?? {});
+        // Toda respuesta dice de qué cuenta es, para que Claude no confunda a quién le cargó algo.
+        if (r && typeof r === 'object' && !Array.isArray(r) && !('cuenta' in (r as Json))) r = { cuenta: q.nombre, ...(r as Json) };
         return ok({ content: [{ type: 'text', text: JSON.stringify(r) }] });
       } catch (e) {
         return ok({ content: [{ type: 'text', text: (e as Error).message }], isError: true });

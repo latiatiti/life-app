@@ -348,6 +348,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--acento-text
 .login-ver { position: absolute; right: 6px; top: 6px; bottom: 6px; padding: 0 12px; border: 0; border-radius: var(--radio-chico); background: var(--acento-suave); color: var(--acento-texto); font-weight: 700; cursor: pointer; }
 .login-entrar { min-height: 52px; font-size: 1.05rem; }
 .login-pie { text-align: center; margin: 4px 0 0; }
+.login-o { display: flex; align-items: center; gap: 10px; color: var(--texto-3); font-size: 0.85rem; margin: 6px 0; }
+.login-o::before, .login-o::after { content: ''; flex: 1; border-top: 1px solid var(--borde); }
+.login-google { min-height: var(--alto-toque); display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
 
 /* ---------- Cuentas y conexión con Claude ---------- */
 .lista-simple { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; }
@@ -857,3 +860,12 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .trofeo { display: inline-block; animation: trofeo 900ms var(--resorte) both; }
 @keyframes trofeo { 0% { transform: scale(0) rotate(-30deg); } 60% { transform: scale(1.35) rotate(8deg); } }
 .btn, .medidor, .segmentado button, .ent-vivo button { position: relative; overflow: hidden; }
+
+/* ---------- Bienvenida (encuesta de la primera vez) y cuentas ---------- */
+.fila-bienvenida { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.fila-bienvenida > * { min-width: 0; }
+.fila-bienvenida input { max-width: 100%; }
+.chips-dias { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
+.chip-dia { min-width: var(--alto-toque); min-height: var(--alto-toque); border: 1px solid var(--borde-fuerte); background: var(--capa-2); color: var(--texto-2); font-family: var(--letra-dato); font-weight: 700; border-radius: var(--radio-chico); cursor: pointer; }
+.chip-dia.activo { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
+.cuenta-espera { border-left: 3px solid var(--atencion); padding-left: 10px; }
