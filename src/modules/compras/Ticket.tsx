@@ -40,6 +40,8 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
   const primero = items.findIndex((i) => !i.para);
   const [i, setI] = useState(primero < 0 ? 0 : primero);
   const it = items[i];
+  const [partir, setPartir] = useState<number | null>(null);
+  useEffect(() => setPartir(null), [it?.id]);
 
   useEffect(() => { // Busca la foto del producto una sola vez y la guarda.
     if (!it || it.imagen !== undefined) return;
@@ -55,6 +57,22 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
     const nuevos = items.map((x) => (x.id === it.id ? { ...x, para: p } : x));
     onCambio(nuevos);
     const sig = nuevos.findIndex((x, k) => k > i && !x.para);
+    const cualquiera = nuevos.findIndex((x) => !x.para);
+    if (sig >= 0) setI(sig);
+    else if (cualquiera >= 0) setI(cualquiera);
+    else onListo();
+  }
+
+  /** Parte un renglón en dos: `mias` para Yo y el resto para Ulises (ej. 6 latas tuyas y 2 de él). */
+  function dividir(mias: number) {
+    const cant = it.cantidad;
+    const totalYo = Math.round((it.total * mias / cant) * 100) / 100;
+    const yo: ItemTicket = { ...it, cantidad: mias, total: totalYo, para: 'yo' };
+    const ul: ItemTicket = { ...it, id: uid(), cantidad: cant - mias, total: Math.round((it.total - totalYo) * 100) / 100, para: 'ulises' };
+    const nuevos = items.flatMap((x) => (x.id === it.id ? [yo, ul] : [x]));
+    onCambio(nuevos);
+    setPartir(null);
+    const sig = nuevos.findIndex((x, k) => k > i + 1 && !x.para);
     const cualquiera = nuevos.findIndex((x) => !x.para);
     if (sig >= 0) setI(sig);
     else if (cualquiera >= 0) setI(cualquiera);
@@ -93,6 +111,27 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
       <div className="com-quien">
         {QUIENES.map((p) => <button key={p} className={`btn ${it.para === p ? 'btn-primario' : ''}`} onClick={() => asignar(p)}>{PERSONAS[p]}</button>)}
       </div>
+      {!it.peso && it.cantidad > 1 && (partir === null ? (
+        <button className="btn ancho" onClick={() => setPartir(Math.ceil(it.cantidad / 2))}>✂ Repartir distinto (unos para cada uno)</button>
+      ) : (
+        <div className="tarjeta pila">
+          <div className="fila-campos" style={{ alignItems: 'end' }}>
+            <Campo etiqueta="Para mí">
+              <div className="fila-derecha">
+                <button type="button" className="btn-icono" aria-label="Menos para mí" disabled={partir <= 1} onClick={() => setPartir(partir - 1)}>{Icono.menos}</button>
+                <span className="num" style={{ minWidth: 28, textAlign: 'center' }}>{partir}</span>
+                <button type="button" className="btn-icono" aria-label="Más para mí" disabled={partir >= it.cantidad - 1} onClick={() => setPartir(partir + 1)}>{Icono.mas}</button>
+              </div>
+            </Campo>
+            <Campo etiqueta="Para Ulises"><span className="num">{it.cantidad - partir}</span></Campo>
+          </div>
+          <p className="nota">Vos {dinero(Math.round(it.total * partir / it.cantidad))} · Ulises {dinero(it.total - Math.round(it.total * partir / it.cantidad))}</p>
+          <div className="barra-acciones">
+            <button className="btn-link" onClick={() => setPartir(null)}>Cancelar</button>
+            <button className="btn btn-primario" onClick={() => dividir(partir)}>Listo</button>
+          </div>
+        </div>
+      ))}
       <div className="barra-acciones">
         <button className="btn" disabled={i === 0} onClick={() => setI(i - 1)}>← Anterior</button>
         <button className="btn-link" onClick={() => { onCambio(items.filter((x) => x.id !== it.id)); setI(Math.max(0, Math.min(i, items.length - 2))); }}>No es un producto</button>
