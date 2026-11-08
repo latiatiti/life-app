@@ -5,8 +5,9 @@ import { confirmar } from '../../ui/Deshacer';
 import { Icono, Modal } from '../../ui/ui';
 import { TD, type NivelPrioridad } from '../dia/modelo';
 import {
-  columnas, diasQuieta, estaQuieta, etapaDe, guardarConfig, mover, ordenArriba, PRIORIDADES, siguienteEtapa,
-  useConfigTablero, useTarjetas, type Etapa, type PasoTarjeta, type Tarjeta,
+  aInstante, aLocal, atajosRecordar, columnas, conNovedad, cuandoCorto, diasQuieta, estaQuieta, etapaDe, guardarConfig,
+  linkWhatsapp, mover, ordenArriba, pasoActual, PRIORIDADES, siguienteEtapa, useConfigTablero, useTarjetas, useWhatsapp,
+  type Etapa, type Novedad, type PasoTarjeta, type Tarjeta,
 } from './modelo';
 import './tablero.css';
 
@@ -38,6 +39,7 @@ function festejar(x: number, y: number) {
 type Borrador = {
   id: string | null; titulo: string; nota: string; prioridad: NivelPrioridad; categoria: string; etapa: string;
   pasos: PasoTarjeta[]; fecha: string; hora: string;
+  novedades: Novedad[]; recordar: string; contactoNombre: string; contactoTel: string;
 };
 
 let pideAnotar = false;
@@ -83,9 +85,11 @@ export function PantallaTablero() {
     setBorrador(t ? {
       id: t.id, titulo: t.titulo, nota: t.nota ?? '', prioridad: t.prioridad, categoria: t.categoria ?? '',
       etapa: etapaDe(t, etapas), pasos: (t.pasos ?? []).map((p) => ({ ...p })), fecha: t.fecha ?? '', hora: t.hora ?? '',
+      novedades: t.novedades ?? [], recordar: aLocal(t.recordar_en), contactoNombre: t.contacto?.nombre ?? '', contactoTel: t.contacto?.telefono ?? '',
     } : {
       id: null, titulo: '', nota: '', prioridad: 'media', categoria: filtro !== 'todas' ? filtro : '',
       etapa: etapa ?? (compu ? etapas[0].id : etapaActual), pasos: [], fecha: '', hora: '',
+      novedades: [], recordar: '', contactoNombre: '', contactoTel: '',
     });
   }
 
@@ -233,6 +237,8 @@ function TarjetaVista({ t, etapas, elegida, gestos }: { t: Tarjeta; etapas: Etap
   const hechos = pasos.filter((p) => p.hecho).length;
   const prio = PRIORIDADES.find((p) => p.id === t.prioridad)!;
   const q = !t.hecho && estaQuieta(t) ? diasQuieta(t) : 0;
+  const ahora = !t.hecho ? pasoActual(t) : null;
+  const aviso = !t.hecho && t.recordar_en ? cuandoCorto(t.recordar_en) : '';
   return (
     <div className="tb-envoltura">
       <div className={`tb-tarjeta p-${t.prioridad} ${t.hecho ? 'hecha' : ''} ${elegida ? 'elegida' : ''}`} data-id={t.id} tabIndex={0} role="button"
@@ -246,13 +252,15 @@ function TarjetaVista({ t, etapas, elegida, gestos }: { t: Tarjeta; etapas: Etap
         </div>
         <div className="tb-titulo">{t.titulo}</div>
         {t.nota && <div className="tb-nota">{t.nota}</div>}
-        {(pasos.length > 0 || t.fecha || q > 0) && (
+        {ahora && <div className="tb-ahora"><b>Ahora:</b> {ahora}</div>}
+        {(pasos.length > 0 || t.fecha || q > 0 || aviso) && (
           <div className="tb-inf">
             {pasos.length > 0 && <>
               <span className="tb-pasos" aria-hidden="true">{pasos.map((p, i) => <i key={i} className={p.hecho ? 'si' : ''} />)}</span>
               <span>{hechos}/{pasos.length} pasos</span>
             </>}
             {t.fecha && <span>📅 {fechaCorta(t.fecha)}{t.hora ? ` ${t.hora}` : ''}</span>}
+            {aviso && <span className={t.recordatorio_enviado ? 'tb-avisado' : 'tb-aviso'}>{t.recordatorio_enviado ? '✓ avisado' : '⏰'} {aviso}</span>}
             {q > 0 && <span className="tb-quieta">● quieta {q} días</span>}
           </div>
         )}
@@ -382,6 +390,8 @@ function FormTarjeta({ inicial, etapas, categorias, config, onListo }: {
 }) {
   const [b, setB] = useState<Borrador>(inicial);
   const [nuevaCat, setNuevaCat] = useState<string | null>(null);
+  const [novedad, setNovedad] = useState('');
+  const wa = useWhatsapp();
   const [error, setError] = useState('');
   const { filas } = useTarjetas();
   const fijar = (c: Partial<Borrador>) => setB((x) => ({ ...x, ...c }));
@@ -395,18 +405,26 @@ function FormTarjeta({ inicial, etapas, categorias, config, onListo }: {
       categoria = nuevaCat.trim();
       if (!categorias.includes(categoria)) await guardarConfig(config, { categorias: [...categorias, categoria] });
     }
+    const antes = b.id ? filas.find((t) => t.id === b.id) : undefined;
+    const recordar_en = aInstante(b.recordar);
+    const cambiaAviso = (antes?.recordar_en ? aLocal(antes.recordar_en) : '') !== b.recordar;
+    const tel = b.contactoTel.trim();
+    let novedades = b.novedades;
+    if (novedad.trim()) novedades = conNovedad({ novedades }, novedad.trim());
     const datos = {
       titulo: b.titulo.trim(), nota: b.nota.trim() || null, prioridad: b.prioridad, categoria: categoria || null,
       etapa: b.etapa, hecho: b.etapa === ult, pasos: b.pasos.filter((p) => p.texto.trim()),
       fecha: b.fecha || null, hora: b.fecha && b.hora ? b.hora : null,
+      recordar_en, ...(cambiaAviso || !antes ? { recordatorio_enviado: null } : {}),
+      contacto: b.contactoNombre.trim() || tel ? { nombre: b.contactoNombre.trim() || undefined, telefono: tel || undefined } : null,
     };
     if (b.id) {
-      const antes = filas.find((t) => t.id === b.id);
       const cambia = antes && etapaDe(antes, etapas) !== b.etapa;
-      await modificar<Tarjeta>(TD.tareas, b.id, { ...datos, ...(cambia ? { movida: hoy() } : {}) });
+      if (cambia) novedades = conNovedad({ novedades }, `Pasó a ${etapas.find((e) => e.id === b.etapa)?.nombre ?? b.etapa}`);
+      await modificar<Tarjeta>(TD.tareas, b.id, { ...datos, novedades, ...(cambia ? { movida: hoy() } : {}) });
     } else {
       const col = columnas(filas, etapas).get(b.etapa) ?? [];
-      await crear<Tarjeta>(TD.tareas, { ...datos, id: uid(), origen: 'app', movida: hoy(), orden: ordenArriba(col) });
+      await crear<Tarjeta>(TD.tareas, { ...datos, novedades, id: uid(), origen: 'app', movida: hoy(), orden: ordenArriba(col) });
     }
     onListo(b.etapa);
   }
@@ -455,13 +473,54 @@ function FormTarjeta({ inicial, etapas, categorias, config, onListo }: {
         </label>
         <div className="campo"><span>Qué implica (pasos)</span>
           {b.pasos.map((p, i) => (
-            <div key={i} className="tb-paso">
+            <div key={i} className={`tb-paso ${i === b.pasos.findIndex((x) => !x.hecho && x.texto.trim()) ? 'actual' : ''}`}>
               <input type="checkbox" checked={p.hecho} aria-label="Hecho" onChange={() => fijar({ pasos: b.pasos.map((x, j) => (j === i ? { ...x, hecho: !x.hecho } : x)) })} />
               <input value={p.texto} onChange={(e) => fijar({ pasos: b.pasos.map((x, j) => (j === i ? { ...x, texto: e.target.value } : x)) })} aria-label={`Paso ${i + 1}`} />
+              <button type="button" className="btn-icono tb-subir" aria-label="Subir paso" disabled={i === 0} onClick={() => {
+                const l = [...b.pasos]; [l[i - 1], l[i]] = [l[i], l[i - 1]]; fijar({ pasos: l });
+              }}>▲</button>
               <button type="button" className="btn-icono" aria-label="Sacar paso" onClick={() => fijar({ pasos: b.pasos.filter((_, j) => j !== i) })}>{Icono.cerrar}</button>
             </div>
           ))}
           <button type="button" className="btn tb-sumar" onClick={() => fijar({ pasos: [...b.pasos, { texto: '', hecho: false }] })}>+ Sumar paso</button>
+          {b.pasos.some((x) => x.texto.trim()) && <small className="nota">El primero sin tildar es en el que estás (se ve en la tarjeta).</small>}
+        </div>
+        <div className="campo"><span>Cómo va (novedades)</span>
+          {b.novedades.length > 0 && (
+            <ul className="tb-novedades">
+              {[...b.novedades].reverse().slice(0, 8).map((n, i) => (
+                <li key={i}><time>{cuandoCorto(n.fecha)}</time> {n.texto}</li>
+              ))}
+            </ul>
+          )}
+          <input value={novedad} onChange={(e) => setNovedad(e.target.value)} placeholder="Ej: Llamé, me contestan el lunes" aria-label="Nueva novedad" />
+          <small className="nota">Se guarda con la fecha y hora al tocar {b.id ? 'Guardar' : 'Anotar'}.</small>
+        </div>
+        <div className="campo"><span>Recordarme por WhatsApp</span>
+          <div className="tb-opciones">
+            {atajosRecordar().map((a) => (
+              <button key={a.texto} type="button" className="tb-opc" aria-pressed={b.recordar === a.local} onClick={() => fijar({ recordar: a.local })}>{a.texto}</button>
+            ))}
+            {b.recordar && <button type="button" className="tb-opc" onClick={() => fijar({ recordar: '' })}>Sin aviso</button>}
+          </div>
+          <input type="datetime-local" value={b.recordar} onChange={(e) => fijar({ recordar: e.target.value })} aria-label="Día y hora del aviso" />
+          {b.recordar && (wa.conectado
+            ? <small className="nota">Te llega un WhatsApp a tu número {cuandoCorto(aInstante(b.recordar))} (puede tardar hasta 5 minutos).</small>
+            : <div className="tb-cruce">Falta conectar tu WhatsApp para que te llegue<a className="btn" href="#/ajustes">Conectar</a></div>)}
+        </div>
+        <div className="campo"><span>Avisarle a alguien</span>
+          <div className="fila-campos">
+            <input value={b.contactoNombre} onChange={(e) => fijar({ contactoNombre: e.target.value })} placeholder="Nombre" aria-label="Nombre de a quién avisar" />
+            <input value={b.contactoTel} onChange={(e) => fijar({ contactoTel: e.target.value })} placeholder="Teléfono (+549…)" inputMode="tel" aria-label="Teléfono" />
+          </div>
+          {(() => {
+            const sigue = b.pasos.find((x) => !x.hecho && x.texto.trim())?.texto;
+            const texto = `Hola${b.contactoNombre.trim() ? ` ${b.contactoNombre.trim()}` : ''}! Te escribo por: ${b.titulo.trim()}${sigue ? ` (${sigue})` : ''}.`;
+            const link = linkWhatsapp(b.contactoTel, texto);
+            return link
+              ? <a className="btn" href={link} target="_blank" rel="noopener noreferrer">Mandar WhatsApp a {b.contactoNombre.trim() || 'ese número'}</a>
+              : <small className="nota">Con el teléfono te armo el mensaje listo para mandar desde tu WhatsApp.</small>;
+          })()}
         </div>
         <div className="fila-campos">
           <label className="campo"><span>Fecha (opcional)</span><input type="date" value={b.fecha} onChange={(e) => fijar({ fecha: e.target.value })} /></label>

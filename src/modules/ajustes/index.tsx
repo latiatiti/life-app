@@ -7,6 +7,7 @@ import type { Modulo } from '../../core/types';
 import { Campo, Icono, Tarjeta } from '../../ui/ui';
 import { usePerfil } from '../../core/auth';
 import { ConexionClaude } from './Claude';
+import { ConexionWhatsapp } from './Whatsapp';
 import { PanelCuentas } from './Cuentas';
 import { cargarConfiguracionInicial } from './semilla';
 
@@ -105,6 +106,7 @@ function PantallaAjustes() {
 
       <PanelCuentas />
       <ConexionClaude />
+      <ConexionWhatsapp />
 
       <Tarjeta titulo="Tu configuración inicial">
         <p className="nota">Carga tus cuentas (Mercado Pago, efectivo, Cocos), tus categorías, tus dos trabajos de los sábados tus gastos fijos (alquiler, internet, gimnasio, celular), los básicos de la casa, tus platos y metas de comida. Si ya existen, no los duplica.</p>
