@@ -17,7 +17,7 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
-const PRIVADAS = new Set(['perfiles', 'api_claves', 'api_registro']);
+const PRIVADAS = new Set(['perfiles', 'api_claves', 'api_registro', 'avi_whatsapp']);
 const MAX_FILAS = 500;
 
 /** Para qué sirve cada tabla (las nuevas aparecen igual, sin descripción). */
@@ -237,7 +237,7 @@ const HERRAMIENTAS = [
   },
   {
     name: 'tablero_anotar',
-    description: 'Anota una tarjeta en el Tablero: un pendiente, una tarea o una idea. Ej. "dejá pendiente ordenar el reparto con prioridad alta" → titulo "Ordenar el reparto", prioridad alta, categoria Reparto. Si te cuenta qué implica, mandalo en pasos. Con fecha aparece también en su Día. Por defecto va arriba de "Por hacer".',
+    description: 'Anota una tarjeta en el Tablero: un pendiente, una tarea o una idea. Ej. "dejá pendiente ordenar el reparto con prioridad alta" → titulo "Ordenar el reparto", prioridad alta, categoria Reparto. Si te cuenta qué implica, mandalo en pasos. Con fecha aparece también en su Día. Con recordar le llega un WhatsApp a su número a esa hora (si lo conectó en Ajustes). Por defecto va arriba de "Por hacer".',
     inputSchema: {
       type: 'object',
       properties: {
@@ -249,6 +249,7 @@ const HERRAMIENTAS = [
         pasos: { type: 'array', items: { type: 'string' }, maxItems: 30, description: 'Lo que implica, un paso por elemento.' },
         fecha: { type: 'string', description: 'YYYY-MM-DD, opcional.' },
         hora: { type: 'string', description: 'HH:MM, opcional (solo con fecha).' },
+        recordar: { type: 'string', description: 'Cuándo mandarle un recordatorio a su WhatsApp, "YYYY-MM-DDTHH:MM" hora de Mendoza (ej. "mañana tengo que ir a la feria" → mañana 09:00 si no dice hora). "" lo saca.' },
       },
       required: ['titulo'],
       additionalProperties: false,
@@ -257,7 +258,7 @@ const HERRAMIENTAS = [
   },
   {
     name: 'tablero_mover',
-    description: 'Pasa una tarjeta del Tablero a otra etapa (ej. "pasá lo del gato a hecho"). Identificala por id o por parte del título; si hay varias que coinciden, te las devuelve para elegir. También sirve para tildar pasos o cambiar la prioridad.',
+    description: 'Pasa una tarjeta del Tablero a otra etapa (ej. "pasá lo del gato a hecho"). Identificala por id o por parte del título; si hay varias que coinciden, te las devuelve para elegir. También sirve para tildar, sumar o sacar pasos, cambiar la prioridad, anotar cómo va (novedad) o ponerle un recordatorio por WhatsApp.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -266,6 +267,9 @@ const HERRAMIENTAS = [
         etapa: { type: 'string', description: 'id o nombre de la etapa destino (ej. "hecho", "En proceso").' },
         prioridad: { type: 'string', enum: ['alta', 'media', 'baja'] },
         pasos_hechos: { type: 'array', items: { type: 'number' }, description: 'Números de paso (desde 1) que quedan tildados.' },
+        pasos: { type: 'array', items: { type: 'string' }, maxItems: 30, description: 'Reemplaza la lista de pasos entera (para sumar, sacar o reordenar). Conserva tildados los que tengan el mismo texto.' },
+        novedad: { type: 'string', description: 'Cómo va: se suma con fecha a sus novedades (ej. "Llamé, contestan el lunes").' },
+        recordar: { type: 'string', description: 'Cuándo mandarle un recordatorio a su WhatsApp, "YYYY-MM-DDTHH:MM" hora de Mendoza (ej. "mañana tengo que ir a la feria" → mañana 09:00 si no dice hora). "" lo saca.' },
       },
       additionalProperties: false,
     },
@@ -309,6 +313,24 @@ const quietaDias = (t: Json) => {
   return Math.max(0, Math.round((Date.parse(`${hoyMendoza()}T12:00:00Z`) - Date.parse(`${desde}T12:00:00Z`)) / 864e5));
 };
 
+/** "YYYY-MM-DDTHH:MM" hora de Mendoza → timestamptz. "" = sacar el recordatorio. */
+function instanteRecordar(v: unknown): string | null {
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})$/);
+  if (!m) throw new ErrorUso('recordar: "YYYY-MM-DDTHH:MM" (hora de Mendoza).');
+  return `${m[1]}T${m[2]}:00-03:00`;
+}
+
+function novedadNueva(lista: unknown, texto: string): Json[] {
+  return [...((lista as Json[]) ?? []), { fecha: new Date().toISOString(), texto }].slice(-40);
+}
+
+async function whatsappConectado(db: SupabaseClient, q: Quien): Promise<boolean> {
+  const { data } = await db.from('avi_whatsapp').select('activo').eq('user_id', q.userId).maybeSingle();
+  return !!(data as Json | null)?.activo;
+}
+
 async function tableroVer(db: SupabaseClient, q: Quien, args: Json) {
   const { etapas, categorias } = await configTablero(db, q);
   const ts = await filas(db, 'dia_tareas', q.userId);
@@ -327,6 +349,8 @@ async function tableroVer(db: SupabaseClient, q: Quien, args: Json) {
         pasos: ((t.pasos as Json[]) ?? []).length ? (t.pasos as Json[]).map((p, i) => `${i + 1}. ${p.hecho ? '[x]' : '[ ]'} ${p.texto}`) : undefined,
         fecha: t.fecha ?? undefined, hora: t.hora ?? undefined,
         quieta_dias: e.id === ult ? undefined : quietaDias(t), origen: t.origen,
+        recordar: t.recordar_en ?? undefined, avisado: t.recordatorio_enviado ?? undefined,
+        novedades: ((t.novedades as Json[]) ?? []).length ? (t.novedades as Json[]).slice(-3) : undefined,
       })),
     };
   });
@@ -355,13 +379,16 @@ async function tableroAnotar(db: SupabaseClient, q: Quien, args: Json) {
   const ordenes = ts.filter((t) => etapaDeT(t, etapas) === etapa.id).map((t) => t.orden).filter((o) => typeof o === 'number') as number[];
   const orden = ordenes.length ? Math.min(...ordenes) - 1 : 0;
   const ult = etapas[etapas.length - 1].id;
+  const recordar_en = args.recordar !== undefined ? instanteRecordar(args.recordar) : null;
   const { data, error } = await db.from('dia_tareas').insert({
     user_id: q.userId, titulo, prioridad, categoria, etapa: etapa.id, hecho: etapa.id === ult, nota: args.nota ? String(args.nota) : null,
     pasos, fecha, hora, orden, movida: hoyMendoza(), origen: 'claude',
+    ...(recordar_en ? { recordar_en, novedades: novedadNueva([], 'Anotada por chat') } : {}),
   }).select().single();
   if (error) throw new ErrorUso(error.message);
   const registro = await anotar(db, q, 'crear', 'dia_tareas', (data as Json).id as string, null, data);
-  return { ok: true, registro_id: registro, id: (data as Json).id, titulo, etapa: etapa.nombre, prioridad, categoria, pasos: pasos.length, fecha };
+  const aviso = recordar_en && !(await whatsappConectado(db, q)) ? 'Ojo: todavía no conectó su WhatsApp (Ajustes → Recordatorios por WhatsApp), así que el aviso no le va a llegar.' : undefined;
+  return { ok: true, registro_id: registro, id: (data as Json).id, titulo, etapa: etapa.nombre, prioridad, categoria, pasos: pasos.length, fecha, recordar: recordar_en ?? undefined, aviso };
 }
 
 async function tableroMover(db: SupabaseClient, q: Quien, args: Json) {
@@ -383,7 +410,10 @@ async function tableroMover(db: SupabaseClient, q: Quien, args: Json) {
   const ult = etapas[etapas.length - 1].id;
   if (args.etapa) {
     const e = buscarEtapa(etapas, args.etapa);
-    if (e.id !== etapaDeT(t, etapas)) cambios.movida = hoyMendoza();
+    if (e.id !== etapaDeT(t, etapas)) {
+      cambios.movida = hoyMendoza();
+      cambios.novedades = novedadNueva(t.novedades, `Pasó a ${e.nombre}`);
+    }
     cambios.etapa = e.id;
     cambios.hecho = e.id === ult;
   }
@@ -391,15 +421,29 @@ async function tableroMover(db: SupabaseClient, q: Quien, args: Json) {
     if (!['alta', 'media', 'baja'].includes(String(args.prioridad))) throw new ErrorUso('prioridad: alta, media o baja.');
     cambios.prioridad = args.prioridad;
   }
+  if (Array.isArray(args.pasos)) {
+    const antes = new Map(((t.pasos as Json[]) ?? []).map((p) => [sinTildes(String(p.texto)), !!p.hecho]));
+    cambios.pasos = (args.pasos as unknown[]).map((x) => String(x).trim()).filter(Boolean)
+      .map((texto) => ({ texto, hecho: antes.get(sinTildes(texto)) ?? false }));
+  }
   if (Array.isArray(args.pasos_hechos)) {
     const marcados = new Set((args.pasos_hechos as unknown[]).map(Number));
-    cambios.pasos = ((t.pasos as Json[]) ?? []).map((p, i) => ({ ...p, hecho: marcados.has(i + 1) }));
+    cambios.pasos = (((cambios.pasos as Json[]) ?? (t.pasos as Json[])) ?? []).map((p, i) => ({ ...p, hecho: marcados.has(i + 1) }));
   }
-  if (!Object.keys(cambios).length) throw new ErrorUso('No mandaste nada para cambiar (etapa, prioridad o pasos_hechos).');
+  if (args.novedad && String(args.novedad).trim()) {
+    cambios.novedades = novedadNueva(cambios.novedades ?? t.novedades, String(args.novedad).trim());
+  }
+  let aviso: string | undefined;
+  if (args.recordar !== undefined) {
+    cambios.recordar_en = instanteRecordar(args.recordar);
+    cambios.recordatorio_enviado = null;
+    if (cambios.recordar_en && !(await whatsappConectado(db, q))) aviso = 'Ojo: todavía no conectó su WhatsApp (Ajustes → Recordatorios por WhatsApp), así que el aviso no le va a llegar.';
+  }
+  if (!Object.keys(cambios).length) throw new ErrorUso('No mandaste nada para cambiar (etapa, prioridad, pasos, novedad o recordar).');
   const { data, error } = await db.from('dia_tareas').update(cambios).eq('id', t.id).eq('user_id', q.userId).select().single();
   if (error) throw new ErrorUso(error.message);
   const registro = await anotar(db, q, 'modificar', 'dia_tareas', t.id as string, t, data);
-  return { ok: true, registro_id: registro, titulo: t.titulo, etapa: etapas.find((e) => e.id === etapaDeT(data as Json, etapas))?.nombre, cambiado: Object.keys(cambios) };
+  return { ok: true, registro_id: registro, titulo: t.titulo, etapa: etapas.find((e) => e.id === etapaDeT(data as Json, etapas))?.nombre, cambiado: Object.keys(cambios), aviso };
 }
 
 /* ---------- Día: semana tipo, días cambiados y tiempo libre ---------- */
@@ -765,7 +809,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
       return ok({
         protocolVersion: typeof params.protocolVersion === 'string' ? params.protocolVersion : '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'LIFE', version: '1.2.0' },
+        serverInfo: { name: 'LIFE', version: '1.3.0' },
         instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras, día). ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
           'Para su semana y su tiempo: ver_semana muestra cada día con sueño, fijo, cosas de todos los días y tiempo libre; ' +
@@ -773,6 +817,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
           'las cosas de todos los días (bañarse, platos…) van en dia_rutinas con crear; anotar_tiempo registra en qué usó un rato; ' +
           'cada cuánto va a comprar va en com_frecuencias. ' +
           'Pendientes, tareas e ideas van al Tablero: tablero_anotar ("dejá pendiente X con prioridad alta"), tablero_mover ("pasá X a hecho") y tablero_ver ("¿qué tengo pendiente?"). ' +
+          'Si dice "mañana tengo que ir a la feria" o "recordame…", anotalo con recordar (hora de Mendoza) y le llega un WhatsApp a su número. ' +
           'Antes de cargar algo que ella te contó, confirmá los datos clave (monto, fecha, cuenta) si no están claros. ' +
           'Fechas en YYYY-MM-DD, montos en pesos argentinos sin separadores. Todo cambio queda en historial y se puede deshacer.',
       });

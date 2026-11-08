@@ -20,6 +20,88 @@ export interface Tarjeta extends Tarea {
   pasos?: PasoTarjeta[] | null;
   orden?: number | null;
   movida?: string | null;
+  /** Lo que fue pasando, con fecha (la más nueva al final). */
+  novedades?: Novedad[] | null;
+  /** Cuándo mandarle el recordatorio por WhatsApp (timestamptz). */
+  recordar_en?: string | null;
+  recordatorio_enviado?: string | null;
+  /** A quién hay que avisarle (abre WhatsApp con el mensaje listo). */
+  contacto?: Contacto | null;
+}
+
+export interface Novedad { fecha: string; texto: string }
+export interface Contacto { nombre?: string; telefono?: string }
+
+/** Tabla con el número y la clave de CallMeBot (fuera de TABLAS: no va en el respaldo). */
+export const TABLA_WHATSAPP = 'avi_whatsapp';
+export interface ConfigWhatsapp extends Fila {
+  telefono: string; apikey: string; activo: boolean; ultimo_envio?: string | null; ultimo_error?: string | null;
+}
+export function useWhatsapp() {
+  const { filas, cargado } = useTabla<ConfigWhatsapp>(TABLA_WHATSAPP);
+  const fila = filas[0];
+  return { fila, cargado, conectado: !!(fila?.activo && fila.telefono && fila.apikey) };
+}
+
+const MAX_NOVEDADES = 40;
+/** Suma una novedad con la fecha y hora de ahora (devuelve la lista nueva, no escribe). */
+export function conNovedad(t: Pick<Tarjeta, 'novedades'> | undefined, texto: string): Novedad[] {
+  const lista = [...(t?.novedades ?? []), { fecha: new Date().toISOString(), texto }];
+  return lista.slice(-MAX_NOVEDADES);
+}
+
+/** El paso en el que está: el primero sin tildar. */
+export function pasoActual(t: Pick<Tarjeta, 'pasos'>): string | null {
+  return (t.pasos ?? []).find((p) => !p.hecho && p.texto.trim())?.texto ?? null;
+}
+
+// ── Recordatorios: la hora que ella elige es hora de Mendoza (-03:00, sin horario de verano). ──
+const ZONA = 'America/Argentina/Mendoza';
+/** 'YYYY-MM-DDTHH:MM' (hora de Mendoza) → ISO con zona. */
+export function aInstante(local: string): string | null {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(local) ? `${local}:00-03:00` : null;
+}
+/** ISO → 'YYYY-MM-DDTHH:MM' en hora de Mendoza (para el campo de fecha y hora). */
+export function aLocal(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(d).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+/** "hoy 20:00", "mañana 9:00", "sáb 14/11 9:00". */
+export function cuandoCorto(iso: string | null | undefined): string {
+  const l = aLocal(iso);
+  if (!l) return '';
+  const [f, h] = l.split('T');
+  const hora = h.replace(/^0/, '');
+  const dif = diasEntre(hoy(), f);
+  if (dif === 0) return `hoy ${hora}`;
+  if (dif === 1) return `mañana ${hora}`;
+  if (dif === -1) return `ayer ${hora}`;
+  const d = new Date(`${f}T12:00:00`);
+  const dia = d.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '');
+  return `${dia} ${d.getDate()}/${d.getMonth() + 1} ${hora}`;
+}
+/** Atajos de recordatorio relativos a ahora (hora de Mendoza). */
+export function atajosRecordar(): { texto: string; local: string }[] {
+  const ahora = aLocal(new Date().toISOString());
+  const [f, h] = ahora.split('T');
+  const enUnaHora = aLocal(new Date(Date.now() + 3600_000).toISOString());
+  const manana = aLocal(new Date(Date.now() + 86400_000).toISOString()).split('T')[0];
+  const lista = [{ texto: 'En 1 hora', local: enUnaHora }];
+  if (h < '20:00') lista.push({ texto: 'Hoy 20:00', local: `${f}T20:00` });
+  lista.push({ texto: 'Mañana 9:00', local: `${manana}T09:00` });
+  return lista;
+}
+
+/** Link de WhatsApp con el mensaje listo (lo manda ella desde su teléfono). */
+export function linkWhatsapp(telefono: string, texto: string): string | null {
+  const n = telefono.replace(/\D/g, '');
+  if (n.length < 8) return null;
+  return `https://wa.me/${n}?text=${encodeURIComponent(texto)}`;
 }
 
 interface ConfigTablero extends Fila { etapas: Etapa[]; categorias: string[] }
@@ -112,9 +194,10 @@ export async function mover(t: Tarjeta, etapa: string, etapas: Etapa[], col: Tar
   else if (i === 0) orden = o(0) - 1;
   else orden = (o(i - 1) + o(i)) / 2;
   const cambia = etapaDe(t, etapas) !== etapa;
+  const nombre = etapas.find((e) => e.id === etapa)?.nombre ?? etapa;
   await modificar<Tarjeta>(TD.tareas, t.id, {
     etapa, hecho: etapa === ultima(etapas), orden,
-    ...(cambia ? { movida: hoy() } : {}),
+    ...(cambia ? { movida: hoy(), novedades: conNovedad(t, `Pasó a ${nombre}`) } : {}),
   });
 }
 
