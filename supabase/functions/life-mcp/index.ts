@@ -43,8 +43,13 @@ const DESCRIPCION: Record<string, string> = {
   com_tickets: 'Tickets guardados (QR, texto leído, productos).',
   dia_plantilla: 'Semana tipo: un bloque por fila (dia_semana 0=domingo, inicio/fin HH:MM, 24:00 = fin del día, tipo, opcional, come_alla). Vacía = usa la de fábrica de la app.',
   dia_dias: 'Una fila por fecha marcada: estado normal/libre/feriado/especial, prioridades [{texto,hecho}], nota, bloques = horario propio (null = semana tipo).',
-  dia_tareas: 'Tareas con fecha (YYYY-MM-DD), hora (HH:MM) opcional, prioridad alta/media/baja; origen "claude" si las carga Claude.',
+  dia_tareas: 'Tareas y tarjetas del Tablero (pendientes e ideas): titulo, nota, prioridad alta/media/baja, categoria, etapa (id de dia_tablero), pasos [{texto,hecho}], fecha (YYYY-MM-DD, opcional: con fecha aparece en el Día), hora HH:MM, hecho (= está en la última etapa), movida (último cambio de etapa); origen "claude" si las carga Claude. Mejor usar tablero_anotar / tablero_mover / tablero_ver.',
+  dia_tablero: 'Etapas [{id,nombre}] (la última = hecho) y categorías del Tablero (una fila). Vacía = Por hacer (hacer), En proceso (proceso), Hecho (hecho) y Reparto, Pagos, Casa, Compras, Ideas de desarrollo.',
+  dia_rutinas: 'Cosas de todos los días que ocupan tiempo (bañarse, lavar platos, ordenar): minutos cada vez, veces por día, dias (lista 0=domingo…6=sábado; null = todos), momento manana/tarde/noche/cualquiera. Se descuentan del tiempo libre.',
+  dia_tiempo: 'En qué usó un rato (sobre todo del tiempo libre): fecha, que, minutos, clase productivo/rutina/ocio/descanso. Mejor usar anotar_tiempo.',
+  com_frecuencias: 'Cada cuánto va a comprar a cada lugar (aproximado): nombre, lugar super/verduleria/carniceria/otro, cada_dias, dia_habitual (0=domingo, opcional), ultima (última vez que fue, YYYY-MM-DD).',
 };
+if (DESCRIPCION.eco_ingresos) DESCRIPCION.eco_ingresos += ' frecuencia semanal/quincenal/mensual; proximo_cobro = fecha del próximo cobro; cuenta_id = dónde cobra (efectivo, Mercado Pago… sacalo de eco_cuentas); puede_adeudarse = suele pagar atrasado; adeudado = lo que le deben.';
 
 type Json = Record<string, unknown>;
 interface Quien { userId: string; claveId: string; permiso: 'leer' | 'escribir' }
@@ -154,9 +159,420 @@ const HERRAMIENTAS = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
   },
+  {
+    name: 'ver_semana',
+    description: 'Muestra cómo es cada día (desde una fecha, 7 días por defecto): de dónde sale el horario (semana tipo o día cambiado), sus bloques y el reparto del tiempo: sueño, fijo, cosas de todos los días (dia_rutinas) y libre; más lo que anotó que hizo (dia_tiempo). Usalo antes de cambiar la semana o un día.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        desde: { type: 'string', description: 'YYYY-MM-DD. Por defecto hoy.' },
+        dias: { type: 'number', description: '1 a 14, por defecto 7.' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'cargar_semana_tipo',
+    description: 'Reemplaza la semana tipo (lo fijo que se repite) de uno o varios días de la semana con la lista de bloques que mandes. Cada bloque: {inicio "HH:MM", fin "HH:MM" (24:00 = fin del día), titulo, tipo descanso/casa/fabrica/reparto/gym/comida/traslado/libre/otro, nota?, opcional? (si se da), come_alla? (come en ese lugar)}. "casa" y "libre" cuentan como tiempo disponible; "descanso" es dormir. Si la semana tipo está vacía, cargá los 7 días. Se deshace entero con deshacer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dias: { type: 'array', items: { type: 'number' }, minItems: 1, maxItems: 7, description: 'Días de la semana a reemplazar (0 = domingo … 6 = sábado). Todos reciben los mismos bloques.' },
+        bloques: { type: 'array', items: { type: 'object', additionalProperties: true }, maxItems: 40 },
+      },
+      required: ['dias', 'bloques'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'cambiar_dia',
+    description: 'Cambia una fecha puntual sin tocar la semana tipo (un día atípico: no va a la fábrica, feriado, día libre, día especial). Mandá solo lo que cambia: estado normal/libre/feriado/especial, nombre, nota, prioridades [{texto,hecho}] y bloques = horario propio de ese día (mismo formato que cargar_semana_tipo) o null para volver a la semana tipo.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'YYYY-MM-DD.' },
+        estado: { type: 'string', enum: ['normal', 'libre', 'feriado', 'especial'] },
+        nombre: { type: 'string' },
+        nota: { type: 'string' },
+        prioridades: { type: 'array', items: { type: 'object', additionalProperties: true } },
+        bloques: { type: ['array', 'null'], items: { type: 'object', additionalProperties: true } },
+      },
+      required: ['fecha'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'anotar_tiempo',
+    description: 'Anota en qué usó un rato (para medir la productividad del tiempo libre). clase: productivo (estudiar, trámites, proyectos), rutina (cosas de la casa), ocio, descanso.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'YYYY-MM-DD. Por defecto hoy.' },
+        que: { type: 'string' },
+        minutos: { type: 'number' },
+        clase: { type: 'string', enum: ['productivo', 'rutina', 'ocio', 'descanso'] },
+        nota: { type: 'string' },
+      },
+      required: ['que', 'minutos'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'tablero_ver',
+    description: 'Muestra el Tablero de pendientes e ideas por etapa (Por hacer, En proceso, Hecho o las que ella armó), con prioridad, categoría, pasos y hace cuántos días está quieta cada tarjeta. Usalo para "¿qué tengo pendiente?" y antes de mover algo.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        etapa: { type: 'string', description: 'Solo esta etapa (id o nombre).' },
+        categoria: { type: 'string', description: 'Solo esta categoría.' },
+        incluir_hechas: { type: 'boolean', description: 'Sumar las de la última etapa (por defecto solo las 20 más nuevas).' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'tablero_anotar',
+    description: 'Anota una tarjeta en el Tablero: un pendiente, una tarea o una idea. Ej. "dejá pendiente ordenar el reparto con prioridad alta" → titulo "Ordenar el reparto", prioridad alta, categoria Reparto. Si te cuenta qué implica, mandalo en pasos. Con fecha aparece también en su Día. Por defecto va arriba de "Por hacer".',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        titulo: { type: 'string' },
+        prioridad: { type: 'string', enum: ['alta', 'media', 'baja'], description: 'Por defecto media.' },
+        categoria: { type: 'string', description: 'Reparto, Pagos, Casa, Compras, Ideas de desarrollo u otra (si es nueva se suma a la lista).' },
+        etapa: { type: 'string', description: 'id o nombre de la etapa. Por defecto la primera.' },
+        nota: { type: 'string' },
+        pasos: { type: 'array', items: { type: 'string' }, maxItems: 30, description: 'Lo que implica, un paso por elemento.' },
+        fecha: { type: 'string', description: 'YYYY-MM-DD, opcional.' },
+        hora: { type: 'string', description: 'HH:MM, opcional (solo con fecha).' },
+      },
+      required: ['titulo'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'tablero_mover',
+    description: 'Pasa una tarjeta del Tablero a otra etapa (ej. "pasá lo del gato a hecho"). Identificala por id o por parte del título; si hay varias que coinciden, te las devuelve para elegir. También sirve para tildar pasos o cambiar la prioridad.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        titulo: { type: 'string', description: 'Parte del título, si no tenés el id.' },
+        etapa: { type: 'string', description: 'id o nombre de la etapa destino (ej. "hecho", "En proceso").' },
+        prioridad: { type: 'string', enum: ['alta', 'media', 'baja'] },
+        pasos_hechos: { type: 'array', items: { type: 'number' }, description: 'Números de paso (desde 1) que quedan tildados.' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
 ];
 
 class ErrorUso extends Error {}
+
+/* ---------- Tablero de pendientes e ideas (misma lógica que src/modules/tablero/modelo.ts) ---------- */
+
+type EtapaT = { id: string; nombre: string };
+const ETAPAS_BASE: EtapaT[] = [{ id: 'hacer', nombre: 'Por hacer' }, { id: 'proceso', nombre: 'En proceso' }, { id: 'hecho', nombre: 'Hecho' }];
+const CATEGORIAS_BASE = ['Reparto', 'Pagos', 'Casa', 'Compras', 'Ideas de desarrollo'];
+const sinTildes = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+async function configTablero(db: SupabaseClient, q: Quien) {
+  const { data } = await db.from('dia_tablero').select('*').eq('user_id', q.userId).maybeSingle();
+  const fila = data as Json | null;
+  const etapas = ((fila?.etapas as EtapaT[]) ?? []).length ? fila!.etapas as EtapaT[] : ETAPAS_BASE;
+  const categorias = ((fila?.categorias as string[]) ?? []).length ? fila!.categorias as string[] : CATEGORIAS_BASE;
+  return { fila, etapas, categorias };
+}
+
+function buscarEtapa(etapas: EtapaT[], valor: unknown): EtapaT {
+  const v = sinTildes(String(valor ?? ''));
+  const e = etapas.find((x) => x.id === v || sinTildes(x.nombre) === v) ?? etapas.find((x) => sinTildes(x.nombre).includes(v));
+  if (!e) throw new ErrorUso(`No hay una etapa "${valor}". Etapas: ${etapas.map((x) => `${x.nombre} (${x.id})`).join(', ')}.`);
+  return e;
+}
+
+function etapaDeT(t: Json, etapas: EtapaT[]) {
+  const ult = etapas[etapas.length - 1].id;
+  if (t.hecho) return ult;
+  if (t.etapa && t.etapa !== ult && etapas.some((e) => e.id === t.etapa)) return String(t.etapa);
+  return etapas[0].id;
+}
+
+const quietaDias = (t: Json) => {
+  const desde = String(t.movida ?? String(t.created_at ?? '').slice(0, 10) ?? hoyMendoza());
+  return Math.max(0, Math.round((Date.parse(`${hoyMendoza()}T12:00:00Z`) - Date.parse(`${desde}T12:00:00Z`)) / 864e5));
+};
+
+async function tableroVer(db: SupabaseClient, q: Quien, args: Json) {
+  const { etapas, categorias } = await configTablero(db, q);
+  const ts = await filas(db, 'dia_tareas', q.userId);
+  const ult = etapas[etapas.length - 1].id;
+  const soloEtapa = args.etapa ? buscarEtapa(etapas, args.etapa).id : null;
+  const cat = args.categoria ? sinTildes(String(args.categoria)) : null;
+  const columnas = etapas.filter((e) => !soloEtapa || e.id === soloEtapa).map((e) => {
+    let lista = ts.filter((t) => etapaDeT(t, etapas) === e.id && (!cat || sinTildes(String(t.categoria ?? '')) === cat));
+    lista.sort((a, b) => (Number(a.orden ?? -1e9) - Number(b.orden ?? -1e9)) || String(b.created_at).localeCompare(String(a.created_at)));
+    const total = lista.length;
+    if (e.id === ult && !args.incluir_hechas) lista = lista.sort((a, b) => String(b.movida ?? '').localeCompare(String(a.movida ?? ''))).slice(0, 20);
+    return {
+      etapa: e.nombre, id: e.id, total,
+      tarjetas: lista.map((t) => ({
+        id: t.id, titulo: t.titulo, prioridad: t.prioridad, categoria: t.categoria ?? undefined, nota: t.nota ?? undefined,
+        pasos: ((t.pasos as Json[]) ?? []).length ? (t.pasos as Json[]).map((p, i) => `${i + 1}. ${p.hecho ? '[x]' : '[ ]'} ${p.texto}`) : undefined,
+        fecha: t.fecha ?? undefined, hora: t.hora ?? undefined,
+        quieta_dias: e.id === ult ? undefined : quietaDias(t), origen: t.origen,
+      })),
+    };
+  });
+  return { hoy: hoyMendoza(), etapas: etapas.map((e) => `${e.nombre} (${e.id})`), categorias, columnas };
+}
+
+async function tableroAnotar(db: SupabaseClient, q: Quien, args: Json) {
+  const titulo = String(args.titulo ?? '').trim();
+  if (!titulo) throw new ErrorUso('Falta el título.');
+  const { fila, etapas, categorias } = await configTablero(db, q);
+  const etapa = args.etapa ? buscarEtapa(etapas, args.etapa) : etapas[0];
+  const prioridad = String(args.prioridad ?? 'media');
+  if (!['alta', 'media', 'baja'].includes(prioridad)) throw new ErrorUso('prioridad: alta, media o baja.');
+  let categoria: string | null = args.categoria ? String(args.categoria).trim() : null;
+  if (categoria) {
+    const igual = categorias.find((c) => sinTildes(c) === sinTildes(categoria!));
+    if (igual) categoria = igual;
+    else if (fila) await db.from('dia_tablero').update({ categorias: [...categorias, categoria] }).eq('id', fila.id).eq('user_id', q.userId);
+    else await db.from('dia_tablero').insert({ user_id: q.userId, etapas, categorias: [...categorias, categoria] });
+  }
+  const fecha = args.fecha ? validarFecha(args.fecha) : null;
+  const hora = fecha && args.hora ? String(args.hora) : null;
+  if (hora && !HORA.test(hora)) throw new ErrorUso('hora: HH:MM.');
+  const pasos = ((args.pasos as unknown[]) ?? []).map((p) => ({ texto: String(p).trim(), hecho: false })).filter((p) => p.texto);
+  const ts = await filas(db, 'dia_tareas', q.userId);
+  const ordenes = ts.filter((t) => etapaDeT(t, etapas) === etapa.id).map((t) => t.orden).filter((o) => typeof o === 'number') as number[];
+  const orden = ordenes.length ? Math.min(...ordenes) - 1 : 0;
+  const ult = etapas[etapas.length - 1].id;
+  const { data, error } = await db.from('dia_tareas').insert({
+    user_id: q.userId, titulo, prioridad, categoria, etapa: etapa.id, hecho: etapa.id === ult, nota: args.nota ? String(args.nota) : null,
+    pasos, fecha, hora, orden, movida: hoyMendoza(), origen: 'claude',
+  }).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'crear', 'dia_tareas', (data as Json).id as string, null, data);
+  return { ok: true, registro_id: registro, id: (data as Json).id, titulo, etapa: etapa.nombre, prioridad, categoria, pasos: pasos.length, fecha };
+}
+
+async function tableroMover(db: SupabaseClient, q: Quien, args: Json) {
+  const { etapas } = await configTablero(db, q);
+  let t: Json | undefined;
+  if (args.id) {
+    const { data } = await db.from('dia_tareas').select('*').eq('id', String(args.id)).eq('user_id', q.userId).maybeSingle();
+    t = (data as Json) ?? undefined;
+  } else if (args.titulo) {
+    const v = sinTildes(String(args.titulo));
+    const ts = (await filas(db, 'dia_tareas', q.userId)).filter((x) => sinTildes(String(x.titulo)).includes(v));
+    const abiertas = ts.filter((x) => !x.hecho);
+    const candidatas = abiertas.length ? abiertas : ts;
+    if (candidatas.length > 1) return { ok: false, aviso: 'Hay varias que coinciden: decime cuál (por id).', opciones: candidatas.map((x) => ({ id: x.id, titulo: x.titulo, etapa: etapas.find((e) => e.id === etapaDeT(x, etapas))?.nombre })) };
+    t = candidatas[0];
+  } else throw new ErrorUso('Mandá el id o parte del título.');
+  if (!t) throw new ErrorUso('No encontré esa tarjeta. Mirá tablero_ver.');
+  const cambios: Json = {};
+  const ult = etapas[etapas.length - 1].id;
+  if (args.etapa) {
+    const e = buscarEtapa(etapas, args.etapa);
+    if (e.id !== etapaDeT(t, etapas)) cambios.movida = hoyMendoza();
+    cambios.etapa = e.id;
+    cambios.hecho = e.id === ult;
+  }
+  if (args.prioridad) {
+    if (!['alta', 'media', 'baja'].includes(String(args.prioridad))) throw new ErrorUso('prioridad: alta, media o baja.');
+    cambios.prioridad = args.prioridad;
+  }
+  if (Array.isArray(args.pasos_hechos)) {
+    const marcados = new Set((args.pasos_hechos as unknown[]).map(Number));
+    cambios.pasos = ((t.pasos as Json[]) ?? []).map((p, i) => ({ ...p, hecho: marcados.has(i + 1) }));
+  }
+  if (!Object.keys(cambios).length) throw new ErrorUso('No mandaste nada para cambiar (etapa, prioridad o pasos_hechos).');
+  const { data, error } = await db.from('dia_tareas').update(cambios).eq('id', t.id).eq('user_id', q.userId).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'modificar', 'dia_tareas', t.id as string, t, data);
+  return { ok: true, registro_id: registro, titulo: t.titulo, etapa: etapas.find((e) => e.id === etapaDeT(data as Json, etapas))?.nombre, cambiado: Object.keys(cambios) };
+}
+
+/* ---------- Día: semana tipo, días cambiados y tiempo libre ---------- */
+// La cuenta del tiempo libre es la misma que src/modules/dia/tiempo.ts (repartir): si cambia allá, cambiarla acá.
+
+const TIPOS_BLOQUE = new Set(['descanso', 'casa', 'fabrica', 'reparto', 'gym', 'comida', 'traslado', 'libre', 'otro']);
+const DISPONIBLE = new Set(['casa', 'libre']);
+const HORA = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+type Bloque = { inicio: string; fin: string; titulo: string; tipo: string; nota?: string | null; opcional?: boolean; come_alla?: boolean };
+
+const aMin = (h: string) => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };
+const diaSemana = (fecha: string) => new Date(`${fecha}T12:00:00Z`).getUTCDay();
+const sumar = (fecha: string, n: number) => { const d = new Date(`${fecha}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const horas = (m: number) => { const h = Math.floor(m / 60), r = Math.round(m % 60); return h ? (r ? `${h} h ${String(r).padStart(2, '0')}` : `${h} h`) : `${r} min`; };
+const DIAS_NOMBRE = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+function validarFecha(f: unknown): string {
+  const s = String(f ?? '');
+  if (!FECHA.test(s)) throw new ErrorUso(`Fecha inválida "${s}": usá YYYY-MM-DD.`);
+  return s;
+}
+
+function validarBloques(lista: unknown): Bloque[] {
+  if (!Array.isArray(lista)) throw new ErrorUso('bloques tiene que ser una lista.');
+  const bs = lista.map((x, i) => {
+    const b = x as Json;
+    const inicio = String(b.inicio ?? ''), fin = String(b.fin ?? ''), tipo = String(b.tipo ?? 'otro'), titulo = String(b.titulo ?? '').trim();
+    if (!HORA.test(inicio)) throw new ErrorUso(`Bloque ${i + 1}: inicio "${inicio}" tiene que ser HH:MM.`);
+    if (fin !== '24:00' && !HORA.test(fin)) throw new ErrorUso(`Bloque ${i + 1}: fin "${fin}" tiene que ser HH:MM o 24:00.`);
+    if (aMin(fin) <= aMin(inicio)) throw new ErrorUso(`Bloque ${i + 1} (${titulo}): termina antes de empezar. Si cruza la medianoche, partilo en dos (hasta 24:00 y desde 00:00 del otro día).`);
+    if (!TIPOS_BLOQUE.has(tipo)) throw new ErrorUso(`Bloque ${i + 1}: tipo "${tipo}" no existe. Tipos: ${[...TIPOS_BLOQUE].join(', ')}.`);
+    if (!titulo) throw new ErrorUso(`Bloque ${i + 1}: falta el titulo.`);
+    return { inicio, fin, titulo, tipo, nota: b.nota ? String(b.nota) : null, opcional: !!b.opcional, come_alla: !!b.come_alla };
+  }).sort((a, b) => aMin(a.inicio) - aMin(b.inicio));
+  for (let i = 1; i < bs.length; i++) {
+    if (aMin(bs[i].inicio) < aMin(bs[i - 1].fin)) throw new ErrorUso(`"${bs[i - 1].titulo}" y "${bs[i].titulo}" se pisan. Ajustá las horas.`);
+  }
+  return bs;
+}
+
+function repartir(bloques: Bloque[], rutinas: Json[], dow: number) {
+  let sueno = 0, fijo = 0, opcional = 0, disponible = 0, cubierto = 0;
+  for (const x of bloques) {
+    const m = Math.max(0, aMin(x.fin) - aMin(x.inicio));
+    cubierto += m;
+    if (x.tipo === 'descanso') sueno += m;
+    else if (DISPONIBLE.has(x.tipo)) disponible += m;
+    else { fijo += m; if (x.opcional) opcional += m; }
+  }
+  disponible += Math.max(0, 24 * 60 - cubierto);
+  const delDia = rutinas.filter((r) => r.activo !== false && (!(r.dias as number[] | null)?.length || (r.dias as number[]).includes(dow)));
+  const rut = delDia.reduce((s, r) => s + Number(r.minutos) * (Number(r.veces) || 1), 0);
+  return { sueno, fijo, opcional, rutinas: rut, libre: Math.max(0, disponible - rut), cosas_diarias: delDia.map((r) => r.nombre) };
+}
+
+async function filas(db: SupabaseClient, tabla: string, userId: string, armar?: (c: any) => any): Promise<Json[]> {
+  let c = db.from(tabla).select('*').eq('user_id', userId);
+  if (armar) c = armar(c);
+  const { data, error } = await c.limit(MAX_FILAS);
+  if (error) throw new ErrorUso(`${tabla}: ${error.message}`);
+  return (data ?? []) as Json[];
+}
+
+async function verSemana(db: SupabaseClient, q: Quien, args: Json) {
+  const desde = args.desde ? validarFecha(args.desde) : hoyMendoza();
+  const n = Math.min(Math.max(Number(args.dias) || 7, 1), 14);
+  const hasta = sumar(desde, n - 1);
+  const [plantilla, marcados, rutinas, usos] = await Promise.all([
+    filas(db, 'dia_plantilla', q.userId),
+    filas(db, 'dia_dias', q.userId, (c) => c.gte('fecha', desde).lte('fecha', hasta)),
+    filas(db, 'dia_rutinas', q.userId).catch(() => []),
+    filas(db, 'dia_tiempo', q.userId, (c) => c.gte('fecha', desde).lte('fecha', hasta)).catch(() => []),
+  ]);
+  const salida = [];
+  for (let i = 0; i < n; i++) {
+    const fecha = sumar(desde, i);
+    const dow = diaSemana(fecha);
+    const m = marcados.find((d) => d.fecha === fecha);
+    const propio = (m?.bloques as Bloque[] | null) ?? null;
+    let bloques: Bloque[] = propio ?? (plantilla.filter((b) => b.dia_semana === dow) as unknown as Bloque[]);
+    if (!propio && m?.estado === 'libre') bloques = [{ inicio: '00:00', fin: '09:00', titulo: 'Dormir', tipo: 'descanso' }, { inicio: '09:00', fin: '24:00', titulo: 'Día libre', tipo: 'libre' }];
+    bloques = [...bloques].sort((a, b) => aMin(a.inicio) - aMin(b.inicio));
+    const r = repartir(bloques, rutinas, dow);
+    const anotado: Record<string, number> = {};
+    for (const u of usos.filter((u) => u.fecha === fecha)) anotado[String(u.clase)] = (anotado[String(u.clase)] ?? 0) + Number(u.minutos);
+    salida.push({
+      fecha, dia: DIAS_NOMBRE[dow], estado: m?.estado ?? 'normal', nombre: m?.nombre ?? undefined, nota: m?.nota ?? undefined,
+      horario: propio ? 'propio de ese día' : m?.estado === 'libre' ? 'día libre' : 'semana tipo',
+      bloques: bloques.map((b) => `${b.inicio}-${b.fin} ${b.titulo} [${b.tipo}${b.opcional ? ', si se da' : ''}]`),
+      tiempo: { sueno: horas(r.sueno), fijo: horas(r.fijo), si_se_da: r.opcional ? horas(r.opcional) : undefined, cosas_diarias: horas(r.rutinas), libre: horas(r.libre) },
+      minutos: { sueno: r.sueno, fijo: r.fijo, cosas_diarias: r.rutinas, libre: r.libre },
+      anotado: Object.keys(anotado).length ? Object.fromEntries(Object.entries(anotado).map(([k, v]) => [k, horas(v)])) : undefined,
+    });
+  }
+  return {
+    hoy: hoyMendoza(),
+    semana_tipo_vacia: !plantilla.length || undefined,
+    aviso: plantilla.length ? undefined : 'La semana tipo está vacía en la nube (la app muestra una de ejemplo). Pedile que te la dicte y cargala con cargar_semana_tipo, los 7 días.',
+    cosas_de_todos_los_dias: rutinas.map((r) => ({ id: r.id, nombre: r.nombre, minutos: r.minutos, veces: r.veces, dias: r.dias ?? 'todos', activo: r.activo })),
+    dias: salida,
+  };
+}
+
+async function cargarSemanaTipo(db: SupabaseClient, q: Quien, args: Json) {
+  const dias = [...new Set(((args.dias as unknown[]) ?? []).map(Number))];
+  if (!dias.length || dias.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) throw new ErrorUso('dias: lista de números de 0 (domingo) a 6 (sábado).');
+  const bloques = validarBloques(args.bloques);
+  const todas = await filas(db, 'dia_plantilla', q.userId);
+  const antes = todas.filter((b) => dias.includes(Number(b.dia_semana)));
+  if (antes.length) {
+    const { error } = await db.from('dia_plantilla').delete().in('id', antes.map((b) => b.id as string)).eq('user_id', q.userId);
+    if (error) throw new ErrorUso(error.message);
+  }
+  const nuevas = dias.flatMap((d) => bloques.map((b) => ({ ...b, dia_semana: d, user_id: q.userId })));
+  let despues: Json[] = [];
+  if (nuevas.length) {
+    const { data, error } = await db.from('dia_plantilla').insert(nuevas).select();
+    if (error) {
+      if (antes.length) await db.from('dia_plantilla').insert(antes);
+      throw new ErrorUso(error.message);
+    }
+    despues = data as Json[];
+  }
+  const registro = await anotar(db, q, 'reemplazar', 'dia_plantilla', null, antes, despues);
+  const faltan = [0, 1, 2, 3, 4, 5, 6].filter((d) => !dias.includes(d) && !todas.some((b) => b.dia_semana === d));
+  return {
+    ok: true, registro_id: registro, dias: dias.map((d) => DIAS_NOMBRE[d]), bloques: bloques.length,
+    aviso: faltan.length ? `Todavía no hay semana tipo para: ${faltan.map((d) => DIAS_NOMBRE[d]).join(', ')}. En la app esos días se ven vacíos hasta que los cargues.` : undefined,
+  };
+}
+
+async function cambiarDia(db: SupabaseClient, q: Quien, args: Json) {
+  const fecha = validarFecha(args.fecha);
+  const cambios: Json = {};
+  if (args.estado !== undefined) {
+    if (!['normal', 'libre', 'feriado', 'especial'].includes(String(args.estado))) throw new ErrorUso('estado: normal, libre, feriado o especial.');
+    cambios.estado = args.estado;
+  }
+  if (args.nombre !== undefined) cambios.nombre = args.nombre || null;
+  if (args.nota !== undefined) cambios.nota = args.nota || null;
+  if (args.prioridades !== undefined) {
+    if (!Array.isArray(args.prioridades)) throw new ErrorUso('prioridades tiene que ser una lista [{texto, hecho}].');
+    cambios.prioridades = (args.prioridades as Json[]).map((p) => ({ texto: String(p.texto ?? ''), hecho: !!p.hecho })).filter((p) => p.texto);
+  }
+  if (args.bloques !== undefined) cambios.bloques = args.bloques === null ? null : validarBloques(args.bloques);
+  if (!Object.keys(cambios).length) throw new ErrorUso('No mandaste nada para cambiar.');
+  const { data: antes } = await db.from('dia_dias').select('*').eq('user_id', q.userId).eq('fecha', fecha).maybeSingle();
+  if (antes) {
+    const { data, error } = await db.from('dia_dias').update(cambios).eq('id', antes.id).eq('user_id', q.userId).select().single();
+    if (error) throw new ErrorUso(error.message);
+    const registro = await anotar(db, q, 'modificar', 'dia_dias', antes.id, antes, data);
+    return { ok: true, fecha, dia: DIAS_NOMBRE[diaSemana(fecha)], registro_id: registro, cambiado: Object.keys(cambios) };
+  }
+  const { data, error } = await db.from('dia_dias').insert({ fecha, estado: 'normal', prioridades: [], bloques: null, ...cambios, user_id: q.userId }).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'crear', 'dia_dias', (data as Json).id as string, null, data);
+  return { ok: true, fecha, dia: DIAS_NOMBRE[diaSemana(fecha)], registro_id: registro, cambiado: Object.keys(cambios) };
+}
+
+async function anotarTiempo(db: SupabaseClient, q: Quien, args: Json) {
+  const fecha = args.fecha ? validarFecha(args.fecha) : hoyMendoza();
+  const minutos = Math.round(Number(args.minutos));
+  if (!(minutos >= 1 && minutos <= 1440)) throw new ErrorUso('minutos: entre 1 y 1440.');
+  const clase = String(args.clase ?? 'productivo');
+  if (!['productivo', 'rutina', 'ocio', 'descanso'].includes(clase)) throw new ErrorUso('clase: productivo, rutina, ocio o descanso.');
+  const que = String(args.que ?? '').trim();
+  if (!que) throw new ErrorUso('Falta qué hizo.');
+  const { data, error } = await db.from('dia_tiempo').insert({ fecha, que, minutos, clase, nota: args.nota ? String(args.nota) : null, origen: 'claude', user_id: q.userId }).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'crear', 'dia_tiempo', (data as Json).id as string, null, data);
+  return { ok: true, registro_id: registro, fecha, que, minutos, clase };
+}
 
 async function tablasPermitidas(db: SupabaseClient) {
   const { data, error } = await db.rpc('life_columnas');
@@ -185,7 +601,7 @@ async function anotar(db: SupabaseClient, q: Quien, accion: string, tabla: strin
 }
 
 async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json): Promise<unknown> {
-  const escribe = ['crear', 'modificar', 'borrar', 'deshacer'].includes(nombre);
+  const escribe = ['crear', 'modificar', 'borrar', 'deshacer', 'cargar_semana_tipo', 'cambiar_dia', 'anotar_tiempo', 'tablero_anotar', 'tablero_mover'].includes(nombre);
   if (escribe && q.permiso !== 'escribir') throw new ErrorUso('Esta clave es solo de lectura.');
 
   if (nombre === 'historial') {
@@ -195,6 +611,14 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     if (error) throw new Error(error.message);
     return data;
   }
+
+  if (nombre === 'ver_semana') return verSemana(db, q, args);
+  if (nombre === 'cargar_semana_tipo') return cargarSemanaTipo(db, q, args);
+  if (nombre === 'cambiar_dia') return cambiarDia(db, q, args);
+  if (nombre === 'anotar_tiempo') return anotarTiempo(db, q, args);
+  if (nombre === 'tablero_ver') return tableroVer(db, q, args);
+  if (nombre === 'tablero_anotar') return tableroAnotar(db, q, args);
+  if (nombre === 'tablero_mover') return tableroMover(db, q, args);
 
   const tablas = await tablasPermitidas(db);
 
@@ -227,6 +651,18 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     } else if (r.accion === 'borrar') {
       const { error: e } = await db.from(r.tabla).insert({ ...r.antes, user_id: q.userId });
       if (e) throw new Error(e.message);
+    } else if (r.accion === 'reemplazar') {
+      // Varias filas de una vez (ej. semana tipo): se borran las nuevas y vuelven las de antes.
+      const nuevas = ((r.despues as Json[]) ?? []).map((f) => f.id as string);
+      if (nuevas.length) {
+        const { error: e } = await db.from(r.tabla).delete().in('id', nuevas).eq('user_id', q.userId);
+        if (e) throw new Error(e.message);
+      }
+      const viejas = ((r.antes as Json[]) ?? []).map((f) => ({ ...f, user_id: q.userId }));
+      if (viejas.length) {
+        const { error: e } = await db.from(r.tabla).insert(viejas);
+        if (e) throw new Error(e.message);
+      }
     } else {
       throw new ErrorUso('Ese cambio no se puede deshacer.');
     }
@@ -329,9 +765,14 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
       return ok({
         protocolVersion: typeof params.protocolVersion === 'string' ? params.protocolVersion : '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'LIFE', version: '1.0.0' },
-        instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras). ' +
+        serverInfo: { name: 'LIFE', version: '1.2.0' },
+        instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras, día). ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
+          'Para su semana y su tiempo: ver_semana muestra cada día con sueño, fijo, cosas de todos los días y tiempo libre; ' +
+          'cargar_semana_tipo guarda lo fijo que se repite; cambiar_dia cambia una fecha puntual sin tocar la semana; ' +
+          'las cosas de todos los días (bañarse, platos…) van en dia_rutinas con crear; anotar_tiempo registra en qué usó un rato; ' +
+          'cada cuánto va a comprar va en com_frecuencias. ' +
+          'Pendientes, tareas e ideas van al Tablero: tablero_anotar ("dejá pendiente X con prioridad alta"), tablero_mover ("pasá X a hecho") y tablero_ver ("¿qué tengo pendiente?"). ' +
           'Antes de cargar algo que ella te contó, confirmá los datos clave (monto, fecha, cuenta) si no están claros. ' +
           'Fechas en YYYY-MM-DD, montos en pesos argentinos sin separadores. Todo cambio queda en historial y se puede deshacer.',
       });
