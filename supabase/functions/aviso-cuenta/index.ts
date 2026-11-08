@@ -1,9 +1,10 @@
-// Función "aviso-cuenta": cuando alguien crea una cuenta nueva en LIFE (con Google o con correo),
-// le manda un mail al superadmin para que la autorice desde Ajustes → Cuentas.
+// Función "aviso-cuenta": cuando alguien crea una cuenta nueva en LIFE le manda un mail al superadmin.
+// Con Google la cuenta ya queda activa (el mail es para enterarse y pausarla si no la conoce);
+// por correo queda esperando y el mail es para autorizarla, en los dos casos desde Ajustes → Cuentas.
 //
 // La llama la base (trigger life_perfil_nuevo, vía pg_net) con { user_id }. Se despliega SIN
 // verificación de JWT, pero no se puede usar para mandar cualquier cosa: solo avisa de una cuenta
-// que de verdad está esperando, creada hace menos de 15 minutos y que todavía no fue avisada.
+// que de verdad es nueva (creada sola hace menos de 15 minutos) y que todavía no fue avisada.
 //
 // Secretos (Supabase → Edge Functions → Secrets), nunca en el repo:
 //   RESEND_API_KEY  clave de resend.com (plan gratis: 3.000 mails por mes)
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
   const { data: p } = await admin.from('perfiles').select('activo, pedido_at, aviso_at, nombre, via').eq('user_id', userId).maybeSingle();
   const reciente = p?.pedido_at && Date.now() - new Date(p.pedido_at).getTime() < 15 * 60_000;
-  if (!p || p.activo || p.aviso_at || !reciente) return responder({ ok: true, avisado: false });
+  if (!p || p.aviso_at || !reciente) return responder({ ok: true, avisado: false });
 
   // Se marca ANTES de mandar: dos llamadas seguidas no mandan dos mails.
   const { data: marcado } = await admin.from('perfiles').update({ aviso_at: new Date().toISOString() })
@@ -51,11 +52,14 @@ Deno.serve(async (req) => {
   const cuando = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Mendoza', dateStyle: 'short', timeStyle: 'short' }).format(new Date());
 
   const html = `<div style="font-family:system-ui,sans-serif;max-width:480px">
-    <h2 style="margin:0 0 8px">Alguien quiere entrar a LIFE</h2>
+    <h2 style="margin:0 0 8px">${p.activo ? 'Se creó una cuenta nueva en LIFE' : 'Alguien quiere entrar a LIFE'}</h2>
     <p><strong>${escapar(nombre)}</strong><br>${escapar(correo)}<br>Entró con ${via} · ${cuando}</p>
-    <p>La cuenta quedó <strong>en espera</strong>: no ve nada hasta que la autorices.</p>
-    <p>Para autorizarla: abrí LIFE → Ajustes → Cuentas y roles → <em>Autorizar</em>.<br>
-    Si no sabés quién es, no hagas nada (queda pausada) o borrala desde Supabase → Authentication.</p>
+    ${p.activo
+      ? `<p>La cuenta ya está activa y empieza vacía: solo ve sus propios datos.</p>
+         <p>Si no sabés quién es: abrí LIFE → Ajustes → Cuentas y roles → Editar → sacale "Cuenta activa".</p>`
+      : `<p>La cuenta quedó <strong>en espera</strong>: no ve nada hasta que la autorices.</p>
+         <p>Para autorizarla: abrí LIFE → Ajustes → Cuentas y roles → <em>Autorizar</em>.<br>
+         Si no sabés quién es, no hagas nada (queda pausada) o tocá <em>Rechazar</em>.</p>`}
     ${app ? `<p><a href="${escapar(app)}#/ajustes" style="background:#3ee6a4;color:#000;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir LIFE</a></p>` : ''}
   </div>`;
 
@@ -65,7 +69,7 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       from: Deno.env.get('AVISO_DE') ?? 'LIFE <onboarding@resend.dev>',
       to: [para],
-      subject: `LIFE: ${nombre} pidió una cuenta`,
+      subject: p.activo ? `LIFE: ${nombre} se creó una cuenta` : `LIFE: ${nombre} pidió una cuenta`,
       html,
     }),
   });

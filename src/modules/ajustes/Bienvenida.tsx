@@ -257,7 +257,7 @@ export function Bienvenida({ onListo }: { onListo?: () => void }) {
       {paso === 8 && (
         <>
           <p>¿Compartís gastos con alguien (con quien vivís, pareja, amigo)?</p>
-          <Campo etiqueta="Si tiene LIFE: su usuario" ayuda="Le llega una invitación. Cuando la acepte, los dos ven lo que se deben.">
+          <Campo etiqueta="Si tiene LIFE: su usuario" ayuda="Le llega una invitación. Cuando la acepte, eligen en Ajustes qué comparten: gastos, casa y compras, tareas, platos o entreno.">
             <input value={d.comparteCon} autoCapitalize="none" onChange={(e) => poner({ comparteCon: e.target.value })} placeholder="ej. ulises" />
           </Campo>
           <Campo etiqueta="Si no tiene LIFE: su nombre" ayuda="Igual podés llevar la cuenta con esa persona.">

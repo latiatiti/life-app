@@ -869,3 +869,5 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .chip-dia { min-width: var(--alto-toque); min-height: var(--alto-toque); border: 1px solid var(--borde-fuerte); background: var(--capa-2); color: var(--texto-2); font-family: var(--letra-dato); font-weight: 700; border-radius: var(--radio-chico); cursor: pointer; }
 .chip-dia.activo { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
 .cuenta-espera { border-left: 3px solid var(--atencion); padding-left: 10px; }
+.lista-simple li:has(.areas-vinculo) { flex-wrap: wrap; }
+.areas-vinculo { flex-basis: 100%; margin-top: 8px; }

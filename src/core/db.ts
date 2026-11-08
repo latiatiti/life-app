@@ -83,10 +83,12 @@ class AlmacenNube implements Almacen {
   async listar<T extends Fila>(tabla: string) {
     // Además de las reglas de la base (RLS), se pide solo lo propio: en tablas compartidas
     // (eco_compartidos) lo del otro se lee aparte, desde su vista "desde mi lado".
+    // Si una cuenta vinculada comparte esa área (ej. la lista del súper), también trae sus filas.
     const { data: s } = await this.cliente.auth.getSession();
     const uid = s.session?.user.id;
     if (!uid) return [];
-    const { data, error } = await this.cliente.from(tabla).select('*').eq('user_id', uid).order('created_at');
+    const duenos = [uid, ...(compartido.get(tabla) ?? [])];
+    const { data, error } = await this.cliente.from(tabla).select('*').in('user_id', duenos).order('created_at');
     if (error) throw new Error(error.message);
     return (data ?? []) as T[];
   }
@@ -106,9 +108,20 @@ class AlmacenNube implements Almacen {
     if (error) throw new Error(error.message);
   }
   async borrar(tabla: string, id: string) {
-    const { error } = await this.cliente.from(tabla).delete().eq('id', id);
+    const { data, error } = await this.cliente.from(tabla).delete().eq('id', id).select('id');
     if (error) throw new Error(error.message);
+    if (!data?.length) throw new Error('Esto lo cargó la otra persona: solo ella lo puede borrar.');
   }
+}
+
+/* ---------- Lo que otras cuentas comparten conmigo ----------
+ * Tabla → cuentas vinculadas cuyas filas se mezclan con las mías (áreas en modo "mezcla" que
+ * los dos marcaron, ver supabase/compartir.sql). Se carga al entrar y al cambiar lo compartido. */
+let compartido = new Map<string, string[]>();
+export async function cargarCompartido() {
+  if (!cliente) return;
+  const { data, error } = await cliente.rpc('life_compartido_conmigo');
+  compartido = error ? new Map() : new Map(((data ?? []) as Array<{ tabla: string; duenos: string[] }>).map((r) => [r.tabla, r.duenos]));
 }
 
 /* ---------- Instancia activa ---------- */

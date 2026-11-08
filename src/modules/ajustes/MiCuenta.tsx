@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { UserIdentity } from '@supabase/supabase-js';
 import { conectarGoogle, LogoGoogle, usePerfil } from '../../core/auth';
-import { supabase } from '../../core/db';
+import { cargarCompartido, recargarTodo, supabase } from '../../core/db';
 import { fechaCorta } from '../../core/format';
 import { confirmar } from '../../ui/Deshacer';
 import { Tarjeta } from '../../ui/ui';
@@ -12,7 +12,20 @@ import { Bienvenida } from './Bienvenida';
  * gastos (vínculos entre cuentas), su plan y repetir la encuesta de bienvenida.
  */
 
-interface Vinculo { id: string; otro_id: string; nombre: string; usuario: string | null; estado: 'pendiente' | 'aceptado' | 'rechazado'; lo_pedi_yo: boolean }
+interface Vinculo {
+  id: string; otro_id: string; nombre: string; usuario: string | null; estado: 'pendiente' | 'aceptado' | 'rechazado'; lo_pedi_yo: boolean;
+  /** Lo que marqué yo, lo que marcó el otro y lo que se comparte de verdad (los dos lo marcaron). */
+  mis_areas: string[]; sus_areas: string[]; comunes: string[];
+}
+
+/** Áreas que se pueden compartir (supabase/compartir.sql, tabla life_areas). */
+const AREAS: Array<[string, string, string]> = [
+  ['gastos', 'Gastos y deudas', 'Lo que se deben entre ustedes'],
+  ['casa', 'Casa y compras', 'Una sola lista del súper, compras, precios y lo que hay en casa'],
+  ['tareas', 'Tareas', 'Las tareas de los dos en una lista'],
+  ['comida', 'Platos', 'Los platos y recetas de los dos'],
+  ['entreno', 'Entreno', 'Ejercicios propios, y ver la rutina y el progreso del otro'],
+];
 interface Plan { plan: string; estado: string; hasta: string | null; al_dia: boolean }
 
 const ESTADOS: Record<string, string> = { prueba: 'De prueba', activa: 'Activa', cortesia: 'Sin cargo', vencida: 'Vencida', cancelada: 'Cancelada' };
@@ -68,7 +81,7 @@ export function MiCuenta() {
           </li>
         </ul>
         <p className="nota">Conectar Google a esta cuenta hace que “Entrar con Google” abra <strong>esta misma</strong> cuenta, con todos tus datos.
-          Si entrás con Google sin conectarlo antes, se crea otra cuenta vacía que queda esperando autorización.</p>
+          Si entrás con Google sin conectarlo antes, se crea otra cuenta nueva y vacía.</p>
         {plan && (
           <p className="nota">Plan: <strong>{plan.plan}</strong> · {ESTADOS[plan.estado] ?? plan.estado}{plan.hasta ? ` hasta ${fechaCorta(plan.hasta)}` : ''}
             {!plan.al_dia && ' · tu cuenta está en solo lectura hasta que se renueve'}</p>
@@ -79,21 +92,47 @@ export function MiCuenta() {
         {msg && <p className="nota" role="status">{msg}</p>}
       </Tarjeta>
 
-      <Tarjeta titulo="Con quién compartís gastos">
-        <p className="nota" style={{ marginTop: 0 }}>Cada cuenta ve solo lo suyo. Lo único que se comparte entre dos cuentas vinculadas son los gastos, préstamos y pagos entre ustedes.</p>
+      <Tarjeta titulo="Con quién compartís">
+        <p className="nota" style={{ marginTop: 0 }}>Cada cuenta ve solo lo suyo. Con una cuenta vinculada (ej. con quien vivís) elegís qué áreas comparten:
+          un área se comparte solo cuando <strong>los dos</strong> la marcan. Lo que cargó el otro lo podés ver y cambiar, pero borrarlo solo puede quien lo cargó.</p>
         <ul className="lista-simple">
           {vinculos.filter((v) => v.estado !== 'rechazado').map((v) => (
             <li key={v.id}>
               <span><strong>{v.nombre}</strong> <small className="nota">· {v.estado === 'aceptado' ? 'vinculada' : v.lo_pedi_yo ? 'esperando que acepte' : 'te invitó'}</small></span>
               <span className="acciones">
                 {v.estado === 'pendiente' && !v.lo_pedi_yo && (
-                  <button className="btn btn-primario" onClick={() => hacer(() => supabase!.rpc('life_responder_vinculo', { vinculo: v.id, respuesta: 'aceptar' }), `Listo: ahora compartís gastos con ${v.nombre}.`)}>Aceptar</button>
+                  <button className="btn btn-primario" onClick={() => hacer(() => supabase!.rpc('life_responder_vinculo', { vinculo: v.id, respuesta: 'aceptar' }), `Listo: ya están vinculados con ${v.nombre}. Elegí abajo qué comparten.`)}>Aceptar</button>
                 )}
                 <button className="btn" onClick={async () => {
-                  if (!await confirmar(v.estado === 'aceptado' ? `¿Dejar de compartir gastos con ${v.nombre}? Lo cargado queda, pero ya no se ven entre ustedes.` : '¿Cancelar la invitación?')) return;
+                  if (!await confirmar(v.estado === 'aceptado' ? `¿Desvincularte de ${v.nombre}? Lo cargado queda, pero ya no se ven nada entre ustedes.` : '¿Cancelar la invitación?')) return;
                   void hacer(() => supabase!.rpc('life_responder_vinculo', { vinculo: v.id, respuesta: v.estado === 'pendiente' && !v.lo_pedi_yo ? 'rechazar' : 'cortar' }), 'Listo.');
-                }}>{v.estado === 'aceptado' ? 'Dejar de compartir' : v.lo_pedi_yo ? 'Cancelar' : 'Rechazar'}</button>
+                }}>{v.estado === 'aceptado' ? 'Desvincular' : v.lo_pedi_yo ? 'Cancelar' : 'Rechazar'}</button>
               </span>
+              {v.estado === 'aceptado' && (
+                <fieldset className="check-grupo areas-vinculo">
+                  <legend>Qué compartís con {v.nombre}</legend>
+                  {AREAS.map(([id, nombre, ayuda]) => {
+                    const mia = v.mis_areas.includes(id);
+                    const suya = v.sus_areas.includes(id);
+                    return (
+                      <label key={id} className="check">
+                        <input type="checkbox" checked={mia} onChange={() => {
+                          const nuevas = mia ? v.mis_areas.filter((x) => x !== id) : [...v.mis_areas, id];
+                          void hacer(async () => {
+                            const r = await supabase!.rpc('life_vinculo_areas', { vinculo: v.id, areas: nuevas });
+                            await cargarCompartido();
+                            recargarTodo();
+                            return r;
+                          }, mia ? `Dejaste de compartir ${nombre.toLowerCase()} con ${v.nombre}.`
+                            : suya ? `Listo: ya comparten ${nombre.toLowerCase()}.` : `Marcado. Se comparte cuando ${v.nombre} también lo marque.`);
+                        }} />
+                        <span><strong>{nombre}</strong> <small className="nota">· {ayuda}{' · '}
+                          {v.comunes.includes(id) ? 'compartido' : mia ? `falta que ${v.nombre} lo marque` : suya ? `${v.nombre} ya lo marcó` : 'no'}</small></span>
+                      </label>
+                    );
+                  })}
+                </fieldset>
+              )}
             </li>
           ))}
         </ul>

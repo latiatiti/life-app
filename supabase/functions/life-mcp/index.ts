@@ -440,13 +440,31 @@ async function anotarTiempo(db: SupabaseClient, q: Quien, args: Json) {
 
 /* ---------- Quién es y lo compartido con otras cuentas ---------- */
 
-async function vinculos(db: SupabaseClient, q: Quien) {
-  const { data } = await db.from('life_vinculos').select('id, user_id, otro_id, estado').eq('estado', 'aceptado')
+interface Vinculada { id: string; nombre: string; usuario: string | null; areas: string[] }
+
+/** Cuentas vinculadas y qué áreas comparten de verdad (las que marcaron los dos). */
+async function vinculos(db: SupabaseClient, q: Quien): Promise<Vinculada[]> {
+  const { data } = await db.from('life_vinculos').select('user_id, otro_id, que, que_otro').eq('estado', 'aceptado')
     .or(`user_id.eq.${q.userId},otro_id.eq.${q.userId}`);
-  const otros = (data ?? []).map((v) => (v.user_id === q.userId ? v.otro_id : v.user_id) as string);
-  if (!otros.length) return [] as { id: string; nombre: string; usuario: string | null }[];
-  const { data: ps } = await db.from('perfiles').select('user_id, nombre, usuario').in('user_id', otros);
-  return (ps ?? []).map((p) => ({ id: p.user_id as string, nombre: (p.nombre || p.usuario || 'Otra cuenta') as string, usuario: p.usuario as string | null }));
+  const areas = new Map((data ?? []).map((v) => [
+    (v.user_id === q.userId ? v.otro_id : v.user_id) as string,
+    ((v.que ?? []) as string[]).filter((a) => ((v.que_otro ?? []) as string[]).includes(a)),
+  ]));
+  if (!areas.size) return [];
+  const { data: ps } = await db.from('perfiles').select('user_id, nombre, usuario').in('user_id', [...areas.keys()]);
+  return (ps ?? []).map((p) => ({
+    id: p.user_id as string, nombre: (p.nombre || p.usuario || 'Otra cuenta') as string, usuario: p.usuario as string | null,
+    areas: areas.get(p.user_id as string) ?? [],
+  }));
+}
+
+/** De quién son las filas de esta tabla que puede ver (o editar) esta cuenta: la propia y las compartidas por área. */
+async function duenosDe(db: SupabaseClient, q: Quien, tabla: string, paraEditar: boolean) {
+  const { data: as } = await db.from('life_areas').select('area, modo').eq('tabla', tabla);
+  const validas = (as ?? []).filter((a) => !paraEditar || a.modo === 'mezcla').map((a) => a.area as string);
+  if (!validas.length) return { ids: [q.userId], nombres: new Map<string, string>() };
+  const vs = (await vinculos(db, q)).filter((v) => v.areas.some((a) => validas.includes(a)));
+  return { ids: [q.userId, ...vs.map((v) => v.id)], nombres: new Map(vs.map((v) => [v.id, v.nombre])) };
 }
 
 async function quienSoy(db: SupabaseClient, q: Quien) {
@@ -457,7 +475,7 @@ async function quienSoy(db: SupabaseClient, q: Quien) {
   return {
     cuenta: q.nombre, usuario: q.usuario, permiso: q.permiso, conector: q.clave,
     plan: s ?? null,
-    comparte_gastos_con: vs.map((v) => v.nombre),
+    comparte_con: vs.map((v) => ({ cuenta: v.nombre, areas: v.areas })),
     como_se_sabe: 'Por la clave del link de este conector: cada cuenta tiene la suya. No se puede saber desde qué computadora escriben.',
   };
 }
@@ -465,7 +483,7 @@ async function quienSoy(db: SupabaseClient, q: Quien) {
 const redondo = (n: number) => Math.round(n * 100) / 100;
 
 async function cuentaCompartida(db: SupabaseClient, q: Quien, args: Json) {
-  const vs = await vinculos(db, q);
+  const vs = (await vinculos(db, q)).filter((v) => v.areas.includes('gastos'));
   const limite = Math.min(Math.max(Number(args.limite) || 10, 1), 50);
   // Lo que cargué yo (con cualquiera) y lo que cargaron conmigo las cuentas vinculadas (signo al revés).
   const [{ data: mias, error }, { data: deOtros }] = await Promise.all([
@@ -503,7 +521,7 @@ async function anotarCompartido(db: SupabaseClient, q: Quien, args: Json) {
   const parte = tipo === 'gasto' ? Math.min(100, Math.max(0, args.parte === undefined ? 50 : Number(args.parte))) : 100;
   const persona = String(args.persona ?? '').trim();
   if (!persona) throw new ErrorUso('Falta la persona.');
-  const vs = await vinculos(db, q);
+  const vs = (await vinculos(db, q)).filter((v) => v.areas.includes('gastos'));
   const vinc = vs.find((v) => v.nombre.toLowerCase() === persona.toLowerCase() || v.usuario?.toLowerCase() === persona.toLowerCase());
   const m = redondo(total * parte / 100);
   const fila = {
@@ -590,7 +608,10 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
       const { error: e } = await db.from(r.tabla).delete().eq('id', r.fila_id).eq('user_id', q.userId);
       if (e) throw new Error(e.message);
     } else if (r.accion === 'modificar') {
-      const { error: e } = await db.from(r.tabla).update(limpiar(r.antes)).eq('id', r.fila_id).eq('user_id', q.userId);
+      // Si la fila era de una cuenta vinculada, se vuelve atrás solo si todavía comparten esa área.
+      const dueno = String((r.antes as Json)?.user_id ?? q.userId);
+      if (dueno !== q.userId && !(await duenosDe(db, q, r.tabla, true)).ids.includes(dueno)) throw new ErrorUso('Ya no comparten esa área: no se puede deshacer.');
+      const { error: e } = await db.from(r.tabla).update(limpiar(r.antes)).eq('id', r.fila_id).eq('user_id', dueno);
       if (e) throw new Error(e.message);
     } else if (r.accion === 'borrar') {
       const { error: e } = await db.from(r.tabla).insert({ ...r.antes, user_id: q.userId });
@@ -621,7 +642,9 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
   const existe = (c: string) => cols.some((x) => x.columna === c);
 
   if (nombre === 'leer') {
-    let consulta = db.from(tabla).select('*').eq('user_id', q.userId);
+    // Lo propio y lo que una cuenta vinculada comparte en esa área (cada fila dice "de" quién es si no es propia).
+    const duenos = await duenosDe(db, q, tabla, false);
+    let consulta = db.from(tabla).select('*').in('user_id', duenos.ids);
     for (const [c, v] of Object.entries((args.filtros as Json) ?? {})) {
       if (!existe(c)) throw new ErrorUso(`La tabla ${tabla} no tiene la columna "${c}".`);
       consulta = v === null ? consulta.is(c, null) : consulta.eq(c, v as string);
@@ -641,7 +664,13 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     const limite = Math.min(Math.max(Number(args.limite) || 100, 1), MAX_FILAS);
     const { data, error } = await consulta.limit(limite);
     if (error) throw new ErrorUso(error.message);
-    return { tabla, filas: (data ?? []).map((f) => { const { user_id: _, ...resto } = f as Json; return resto; }) };
+    return {
+      tabla,
+      filas: (data ?? []).map((f) => {
+        const { user_id: dueno, ...resto } = f as Json;
+        return dueno === q.userId ? resto : { ...resto, de: duenos.nombres.get(dueno as string) ?? 'otra cuenta' };
+      }),
+    };
   }
 
   if (nombre === 'crear') {
@@ -655,7 +684,9 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
   }
 
   const id = String(args.id ?? '');
-  const { data: antes, error: e1 } = await db.from(tabla).select('*').eq('id', id).eq('user_id', q.userId).maybeSingle();
+  // Modificar alcanza a lo compartido en modo "mezcla" (ej. la lista del súper); borrar, solo lo propio.
+  const editables = nombre === 'modificar' ? (await duenosDe(db, q, tabla, true)).ids : [q.userId];
+  const { data: antes, error: e1 } = await db.from(tabla).select('*').eq('id', id).in('user_id', editables).maybeSingle();
   if (e1) throw new ErrorUso(e1.message);
   if (!antes) throw new ErrorUso(`No hay una fila con id ${id} en ${tabla}.`);
 
@@ -663,7 +694,7 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     const cambios = limpiar((args.cambios as Json) ?? {});
     delete cambios.id;
     if (!Object.keys(cambios).length) throw new ErrorUso('No mandaste cambios.');
-    const { data, error } = await db.from(tabla).update(cambios).eq('id', id).eq('user_id', q.userId).select().single();
+    const { data, error } = await db.from(tabla).update(cambios).eq('id', id).eq('user_id', (antes as Json).user_id as string).select().single();
     if (error) throw new ErrorUso(error.message);
     const registro = await anotar(db, q, 'modificar', tabla, id, antes, data);
     return { ok: true, tabla, registro_id: registro, fila: data };
@@ -717,6 +748,8 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
         instructions: `Este conector es de la cuenta de LIFE de ${q.nombre}${q.usuario ? ` (usuario "${q.usuario}")` : ''}: todo lo que leas o cargues es de esa cuenta. ` +
           'Si en la conversación hay más de un conector LIFE, o no está claro para quién es un pedido, preguntá de quién es antes de cargar (quien_soy lo confirma). ' +
           'Gastos y deudas con otra persona (ej. Ulises): cuenta_compartida y anotar_compartido. ' +
+          'Si comparte un área con otra cuenta (casa, tareas, platos, entreno), leer también trae esas filas con "de": quién la cargó; ' +
+          'lo nuevo siempre se carga en esta cuenta. ' +
           'LIFE es una app personal (economía, pagos, entreno, stock, comida, compras, día). ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
           'Para su semana y su tiempo: ver_semana muestra cada día con sueño, fijo, cosas de todos los días y tiempo libre; ' +

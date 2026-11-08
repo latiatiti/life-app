@@ -177,6 +177,8 @@ create table if not exists public.life_vinculos (
   created_at timestamptz not null default now(),
   check (user_id <> otro_id)
 );
+-- que = lo que comparte quien invitó; que_otro = lo que comparte el invitado (áreas: compartir.sql).
+alter table public.life_vinculos add column if not exists que_otro text[] not null default array['gastos'];
 create unique index if not exists life_vinculos_par on public.life_vinculos (least(user_id, otro_id), greatest(user_id, otro_id));
 alter table public.life_vinculos enable row level security;
 do $$ begin
@@ -198,13 +200,17 @@ language sql stable security definer set search_path = public as $$
     and ((v.user_id = a and v.otro_id = b) or (v.user_id = b and v.otro_id = a)));
 $$;
 
--- Mis vínculos con el nombre del otro (solo nombre y usuario: nada más del otro).
+-- Mis vínculos, con lo que marqué yo, lo que marcó el otro y lo que de verdad se comparte.
 create or replace function public.life_mis_vinculos()
-returns table (id uuid, otro_id uuid, nombre text, usuario text, estado text, lo_pedi_yo boolean)
+returns table (id uuid, otro_id uuid, nombre text, usuario text, estado text, lo_pedi_yo boolean,
+               mis_areas text[], sus_areas text[], comunes text[])
 language sql stable security definer set search_path = public as $$
   select v.id,
          case when v.user_id = auth.uid() then v.otro_id else v.user_id end,
-         coalesce(nullif(p.nombre, ''), p.usuario, 'Otra cuenta'), p.usuario, v.estado, v.user_id = auth.uid()
+         coalesce(nullif(p.nombre, ''), p.usuario, 'Otra cuenta'), p.usuario, v.estado, v.user_id = auth.uid(),
+         case when v.user_id = auth.uid() then v.que else v.que_otro end,
+         case when v.user_id = auth.uid() then v.que_otro else v.que end,
+         array(select unnest(v.que) intersect select unnest(v.que_otro))
   from public.life_vinculos v
   join public.perfiles p on p.user_id = case when v.user_id = auth.uid() then v.otro_id else v.user_id end
   where auth.uid() in (v.user_id, v.otro_id);
@@ -355,10 +361,12 @@ $$;
 revoke all on function public.life_columnas() from public, anon, authenticated;
 grant execute on function public.life_columnas() to service_role;
 
--- ---------- 7. Cuentas nuevas (Google o registro): en espera hasta que el superadmin autorice ----------
--- · Toda cuenta nueva nace PAUSADA (no ve ni escribe nada hasta que la activen en Ajustes → Cuentas).
--- · Tope: si ya hay 5 cuentas esperando, no se pueden crear más (por si alguien encuentra la página).
--- · Aviso por mail al superadmin: la función aviso-cuenta (el mail de destino es un secreto, no está en el repo).
+-- ---------- 7. Cuentas nuevas ----------
+-- · Con Google (2026-11-08, pedido de ella): la cuenta se crea sola y ACTIVA, con plan "Completo · de prueba".
+--   Tope anti-abuso: como mucho 20 cuentas nuevas por día; pasado eso, la base no acepta más hasta el otro día.
+-- · Por correo y contraseña (sin pasar por el superadmin): nace PAUSADA, esperando autorización (tope: 5 esperando).
+-- · En los dos casos le llega un mail al superadmin (función aviso-cuenta; el mail de destino es un secreto,
+--   no está en el repo). Desde Ajustes → Cuentas puede pausar cualquier cuenta.
 alter table public.perfiles add column if not exists pedido_at timestamptz;      -- cuándo pidió entrar (cuentas nuevas)
 alter table public.perfiles add column if not exists aviso_at timestamptz;       -- cuándo se mandó el mail de aviso
 alter table public.perfiles add column if not exists via text;                   -- 'google', 'correo', 'admin'
@@ -378,15 +386,26 @@ begin
     on conflict (user_id) do nothing;
     return new;
   end if;
-  select count(*) into esperando from public.perfiles where not activo and pedido_at is not null and pedido_at > now() - interval '30 days';
-  if esperando >= 5 then
-    raise exception 'LIFE no acepta cuentas nuevas por ahora.';
+  if proveedor = 'google' then
+    if (select count(*) from public.perfiles where pedido_at > now() - interval '1 day') >= 20 then
+      raise exception 'LIFE no acepta cuentas nuevas por ahora.';
+    end if;
+  else
+    select count(*) into esperando from public.perfiles where not activo and pedido_at is not null and pedido_at > now() - interval '30 days';
+    if esperando >= 5 then
+      raise exception 'LIFE no acepta cuentas nuevas por ahora.';
+    end if;
   end if;
   if corto = '' or exists (select 1 from public.perfiles where usuario = corto) then corto := null; end if;
   insert into public.perfiles (user_id, usuario, nombre, rol, activo, pedido_at, via)
-  values (new.id, corto, nombre_g, 'usuario', false, now(), case when proveedor = 'google' then 'google' else 'correo' end)
+  values (new.id, corto, nombre_g, 'usuario', proveedor = 'google', now(), case when proveedor = 'google' then 'google' else 'correo' end)
   on conflict (user_id) do nothing;
-  -- Aviso por mail (asincrónico: si falla, la cuenta igual queda esperando y se ve en Ajustes).
+  if proveedor = 'google' then
+    insert into public.life_suscripciones (user_id, plan_id, estado, nota)
+    values (new.id, 'completo', 'prueba', 'Se creó con Google')
+    on conflict (user_id) do nothing;
+  end if;
+  -- Aviso por mail (asincrónico: si falla, la cuenta igual se ve en Ajustes → Cuentas).
   begin
     perform net.http_post(
       url := 'https://jxnlgszmywoebjjpacod.supabase.co/functions/v1/aviso-cuenta',

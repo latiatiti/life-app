@@ -24,7 +24,15 @@ Función `cuentas` (con sesión de superadmin): listar, crear, cambiar contrase�
 - **Aislamiento:** toda tabla tiene `user_id` obligatorio (por defecto `auth.uid()`), RLS e índice. La app además
   pide solo lo propio (`listar` filtra por `user_id`). Si en un navegador entra otra cuenta, se borra lo que quedó
   a medias de la anterior (`fijarDueno` en `core/db.ts`).
-- **Compartir:** solo lo que dos cuentas aceptan. `life_vinculos` (invitar por usuario, aceptar, cortar:
+- **Compartir por áreas** (2026-11-08, `supabase/compartir.sql`, correr después de multiusuario.sql): cada lado
+  marca qué comparte (`life_vinculos.que` / `que_otro`) y un área se comparte solo si la marcan los dos:
+  gastos, casa (súper, compras, precios, tickets, stock), tareas (`dia_tareas` y futuras `tar_*`), comida
+  (platos) y entreno (ejercicios propios; rutina, sesiones y series solo para ver). `life_areas` dice qué tabla es
+  de qué área y si es "mezcla" (una sola lista, los dos editan) o "ver". Crear = fila propia; borrar = solo el
+  dueño. La app trae lo compartido con `life_compartido_conmigo()` (`cargarCompartido` en `core/db.ts`) y el
+  conector con `duenosDe` (leer marca `de` en lo ajeno; modificar alcanza a lo "mezcla").
+  Ojo: en Casa, "para quién" (Yo / Ulises / Los dos) todavía está pensado desde la cuenta de ella.
+- **Compartir (base):** solo lo que dos cuentas aceptan. `life_vinculos` (invitar por usuario, aceptar, cortar:
   `life_invitar`, `life_responder_vinculo`, `life_mis_vinculos`). `eco_compartidos.con_user_id` = la otra cuenta
   (se enlaza sola si `persona` coincide con su nombre o usuario). Cada uno ve lo que cargó y lo que el otro cargó
   con él; la vista `eco_compartidos_mios` lo da "desde mi lado" (`monto_mio` > 0 = me deben). Solo quien cargó una
@@ -32,8 +40,8 @@ Función `cuentas` (con sesión de superadmin): listar, crear, cambiar contrase�
 - **Planes y suscripciones:** `life_planes` (familia, básico, completo) y `life_suscripciones` (prueba, activa,
   cortesía, vencida, cancelada, hasta). Solo el superadmin los cambia (Ajustes → Cuentas → Editar). Vencida o
   cancelada = solo lectura en la app y en el conector. Sin cobro real.
-- **Cuentas nuevas:** se puede entrar con Google. Toda cuenta que se crea sola (Google o registro) nace **pausada**
-  ("esperando autorización"); con 5 esperando, la base no acepta más. La función `aviso-cuenta` le manda un mail
+- **Cuentas nuevas:** con Google la cuenta se crea sola, **activa** y vacía (plan Completo · de prueba; tope de 20
+  por día). Por correo sin pasar por el superadmin nace **pausada** (tope de 5 esperando). La función `aviso-cuenta` le manda un mail
   al superadmin (secretos `RESEND_API_KEY`, `AVISO_MAIL`, `APP_URL`; el mail no va en el repo). Se autoriza o
   rechaza en Ajustes → Cuentas. Las que crea el superadmin nacen activas (`app_metadata.life_admin`).
 - **Google en una cuenta que ya existe:** Ajustes → Cómo entrás → Conectar Google (`linkIdentity`; requiere

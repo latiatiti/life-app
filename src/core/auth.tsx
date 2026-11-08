@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { fijarDueno, recargarTodo, supabase } from './db';
+import { cargarCompartido, fijarDueno, recargarTodo, supabase } from './db';
 import { guardarConfigNube, configDesdeEntorno } from './config';
 
 /* ---------- Perfil: quién está conectado y qué puede hacer ---------- */
@@ -55,6 +55,7 @@ export async function recargarPerfil() {
 async function cargarPerfil(s: Session) {
   if (!supabase) return;
   fijarDueno(s.user.id);
+  await cargarCompartido();
   const { data, error } = await supabase.from('perfiles').select('*').eq('user_id', s.user.id).maybeSingle();
   // Si la base todavía no tiene perfiles (SQL de cuentas sin aplicar), sigue andando como siempre.
   const base: Perfil = { ...PERFIL_LOCAL, user_id: s.user.id, usuario: s.user.email?.split('@')[0] ?? null };
@@ -82,8 +83,7 @@ export function ConSesion({ children }: { children: ReactNode }) {
       setSesion(s);
       if (!s) fijarPerfil(null);
       else if (evento === 'SIGNED_IN' || evento === 'USER_UPDATED') {
-        void cargarPerfil(s);
-        recargarTodo();
+        void cargarPerfil(s).then(recargarTodo);
       }
     });
     // Al volver a la app (otra pestaña, celular), traer cambios hechos en otro dispositivo.
@@ -155,7 +155,7 @@ function Login() {
           <LogoGoogle /> Entrar con Google
         </button>
         <p className="nota login-pie">¿Ya tenés usuario? Entrá con él y conectá Google en Ajustes: así las dos formas abren la misma cuenta.
-          Si es tu primera vez, tu cuenta queda esperando que quien administra LIFE la autorice.</p>
+          ¿Primera vez? Entrá con Google y tu cuenta se crea sola, vacía y solo para vos.</p>
         {!configDesdeEntorno() && (
           <button className="btn-link" onClick={() => { guardarConfigNube(null); window.location.reload(); }}>
             Volver al modo local

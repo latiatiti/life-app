@@ -36,9 +36,9 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 
 ## Varias cuentas (2026-11-06, `supabase/multiusuario.sql`, `docs/cuentas-y-conexiones.md`)
 - Una base para todos: cada fila con dueño y RLS; la app filtra por `user_id`; `fijarDueno` limpia lo de otra cuenta en el mismo navegador.
-- Cuentas vinculadas (`life_vinculos`) comparten solo `eco_compartidos` (con `con_user_id`; vista `eco_compartidos_mios`).
+- Cuentas vinculadas (`life_vinculos`) eligen qué áreas comparten (`supabase/compartir.sql`: gastos, casa, tareas, comida, entreno; cuenta solo si los dos la marcan). `life_areas` mapea tabla → área y modo mezcla/ver; la app suma lo compartido en `listar` (`cargarCompartido`). Gastos: `eco_compartidos.con_user_id` + vista `eco_compartidos_mios`. Toda tabla nueva compartible se suma a `life_areas`.
 - Planes/suscripciones (`life_planes`, `life_suscripciones`) los maneja el superadmin; vencida = solo lectura.
-- Entrar con Google; cuentas nuevas pausadas (tope 5) + mail al superadmin (función `aviso-cuenta`, secretos en Supabase); conectar Google a una cuenta existente en Ajustes.
+- Entrar con Google: la cuenta se crea sola y activa (tope 20/día); por correo nace pausada (tope 5); mail al superadmin (función `aviso-cuenta`, secretos en Supabase); conectar Google a una cuenta existente en Ajustes.
 - Encuesta de bienvenida (`ajustes/Bienvenida.tsx`) para cuentas nuevas; `perfiles.bienvenida` guarda las respuestas.
 - Conector: cada clave = una cuenta; `quien_soy`, `cuenta_compartida`, `anotar_compartido`; se presenta como `LIFE · <nombre>`.
 
