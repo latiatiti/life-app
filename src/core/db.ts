@@ -81,7 +81,14 @@ class AlmacenNube implements Almacen {
   constructor(private cliente: SupabaseClient) {}
 
   async listar<T extends Fila>(tabla: string) {
-    const { data, error } = await this.cliente.from(tabla).select('*').order('created_at');
+    // Además de las reglas de la base (RLS), se pide solo lo propio: en tablas compartidas
+    // (eco_compartidos) lo del otro se lee aparte, desde su vista "desde mi lado".
+    // Si una cuenta vinculada comparte esa área (ej. la lista del súper), también trae sus filas.
+    const { data: s } = await this.cliente.auth.getSession();
+    const uid = s.session?.user.id;
+    if (!uid) return [];
+    const duenos = [uid, ...(compartido.get(tabla) ?? [])];
+    const { data, error } = await this.cliente.from(tabla).select('*').in('user_id', duenos).order('created_at');
     if (error) throw new Error(error.message);
     return (data ?? []) as T[];
   }
@@ -101,9 +108,20 @@ class AlmacenNube implements Almacen {
     if (error) throw new Error(error.message);
   }
   async borrar(tabla: string, id: string) {
-    const { error } = await this.cliente.from(tabla).delete().eq('id', id);
+    const { data, error } = await this.cliente.from(tabla).delete().eq('id', id).select('id');
     if (error) throw new Error(error.message);
+    if (!data?.length) throw new Error('Esto lo cargó la otra persona: solo ella lo puede borrar.');
   }
+}
+
+/* ---------- Lo que otras cuentas comparten conmigo ----------
+ * Tabla → cuentas vinculadas cuyas filas se mezclan con las mías (áreas en modo "mezcla" que
+ * los dos marcaron, ver supabase/compartir.sql). Se carga al entrar y al cambiar lo compartido. */
+let compartido = new Map<string, string[]>();
+export async function cargarCompartido() {
+  if (!cliente) return;
+  const { data, error } = await cliente.rpc('life_compartido_conmigo');
+  compartido = error ? new Map() : new Map(((data ?? []) as Array<{ tabla: string; duenos: string[] }>).map((r) => [r.tabla, r.duenos]));
 }
 
 /* ---------- Instancia activa ---------- */
@@ -112,7 +130,7 @@ let cliente: SupabaseClient | null = null;
 const cfg = configNube();
 if (cfg) {
   try {
-    cliente = createClient(cfg.url, cfg.anonKey);
+    cliente = createClient(cfg.url, cfg.anonKey, { auth: { flowType: 'pkce' } });
   } catch {
     cliente = null;
   }
@@ -156,6 +174,24 @@ export async function recargar(tabla: string) {
 
 export function recargarTodo() {
   cache.forEach((_, tabla) => void recargar(tabla));
+}
+
+/**
+ * Si en este navegador entra otra cuenta (ej. Ulises en la compu de ella), se borra lo que quedó
+ * de la anterior: lo cargado en memoria y lo que estaba a medias (entreno, compra, pagos, avisos).
+ * Los datos del modo local tampoco se ofrecen para subir a la cuenta nueva.
+ */
+const CLAVE_DUENO = 'life.dueno';
+const DEL_DUENO = ['life.entreno.encurso', 'life.compras.encurso', 'life.compras.carrito', 'life.pagos.aldia', 'life.avisos.cerrados'];
+export function fijarDueno(uid: string) {
+  const antes = leerStorage(CLAVE_DUENO);
+  if (antes === uid) return;
+  if (antes) {
+    for (const k of DEL_DUENO) escribirStorage(k, null);
+    escribirStorage(MARCA_SUBIDO, 'no');
+    cache.forEach((_, tabla) => fijar(tabla, { filas: [], cargado: false }));
+  }
+  escribirStorage(CLAVE_DUENO, uid);
 }
 
 function suscribir(tabla: string, fn: () => void) {

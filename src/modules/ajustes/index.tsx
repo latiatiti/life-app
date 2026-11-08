@@ -8,6 +8,7 @@ import { Campo, Icono, Tarjeta } from '../../ui/ui';
 import { usePerfil } from '../../core/auth';
 import { ConexionClaude } from './Claude';
 import { PanelCuentas } from './Cuentas';
+import { MiCuenta } from './MiCuenta';
 import { cargarConfiguracionInicial } from './semilla';
 
 function PantallaAjustes() {
@@ -103,10 +104,12 @@ function PantallaAjustes() {
         )}
       </Tarjeta>
 
+      {almacen.tipo === 'nube' && <MiCuenta />}
       <PanelCuentas />
       <ConexionClaude />
 
-      <Tarjeta titulo="Tu configuración inicial">
+      {/* Datos reales de la dueña de LIFE: solo para su cuenta (superadmin), nunca para las demás. */}
+      {(almacen.tipo === 'local' || perfil.rol === 'superadmin') && <Tarjeta titulo="Tu configuración inicial">
         <p className="nota">Carga tus cuentas (Mercado Pago, efectivo, Cocos), tus categorías, tus dos trabajos de los sábados tus gastos fijos (alquiler, internet, gimnasio, celular), los básicos de la casa, tus platos y metas de comida. Si ya existen, no los duplica.</p>
         <div className="acciones">
           <button className="btn btn-primario" onClick={async () => {
@@ -118,7 +121,7 @@ function PantallaAjustes() {
             }
           }}>Cargar mi configuración</button>
         </div>
-      </Tarjeta>
+      </Tarjeta>}
 
       <Tarjeta titulo="Datos de prueba">
         <p className="nota" style={{ marginTop: 0 }}>Un historial simulado de entrenamiento para probar la app: 4 ciclos con progresión, descargas, un resfrío, un viaje, días salteados, cambios de ejercicio y notas en cada entreno. Se identifica aparte y se borra sin tocar tus datos.</p>

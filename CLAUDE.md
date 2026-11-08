@@ -34,6 +34,14 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `supabase/cuentas.sql`: `perfiles` (rol superadmin/usuario/lector, modulos, activo), reglas de escritura con `life_puede_escribir()` en toda tabla con `user_id`, `api_claves`, `api_registro`, `life_columnas()`. `usePerfil()` en `core/auth.tsx`.
 - Funciones: `cuentas` (superadmin: listar/crear/clave) y `life-mcp` (conector MCP para Claude con clave personal, sin JWT; leer/crear/modificar/borrar/deshacer con registro).
 
+## Varias cuentas (2026-11-06, `supabase/multiusuario.sql`, `docs/cuentas-y-conexiones.md`)
+- Una base para todos: cada fila con dueño y RLS; la app filtra por `user_id`; `fijarDueno` limpia lo de otra cuenta en el mismo navegador.
+- Cuentas vinculadas (`life_vinculos`) eligen qué áreas comparten (`supabase/compartir.sql`: gastos, casa, tareas, comida, entreno; cuenta solo si los dos la marcan). `life_areas` mapea tabla → área y modo mezcla/ver; la app suma lo compartido en `listar` (`cargarCompartido`). Gastos: `eco_compartidos.con_user_id` + vista `eco_compartidos_mios`. Toda tabla nueva compartible se suma a `life_areas`.
+- Planes/suscripciones (`life_planes`, `life_suscripciones`) los maneja el superadmin; vencida = solo lectura.
+- Entrar con Google: la cuenta se crea sola y activa (tope 20/día); por correo nace pausada (tope 5); mail al superadmin (función `aviso-cuenta`, secretos en Supabase); conectar Google a una cuenta existente en Ajustes.
+- Encuesta de bienvenida (`ajustes/Bienvenida.tsx`) para cuentas nuevas; `perfiles.bienvenida` guarda las respuestas.
+- Conector: cada clave = una cuenta; `quien_soy`, `cuenta_compartida`, `anotar_compartido`; se presenta como `LIFE · <nombre>`.
+
 ## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql` + `dia.sql`, en ese orden)
 - `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
 - Compras (`supabase/compras.sql`, aplicado en la nube): `com_supers` (bloques jsonb = orden de pasillos de ese súper), `com_items` (catálogo propio; precios jsonb = último precio online por cadena; producto_id enlaza al stock), `com_precios` (historial: online/ticket/manual), `com_compras` (estimado vs total del ticket, items jsonb, reparto y ticket jsonb).
