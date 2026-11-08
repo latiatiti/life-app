@@ -2,6 +2,8 @@ import './economia.css';
 import { dinero, hoy, mesActual, sumarDias } from '../../core/format';
 import type { ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
 import { Icono } from '../../ui/ui';
+import { PantallaCompartidos } from './Compartidos';
+import { personasDe, saldoCon, textoSaldo, useCompartidos } from './compartidos';
 import { PantallaCuentas } from './Cuentas';
 import { PantallaIngresos } from './Ingresos';
 import { PantallaMovimientos } from './Movimientos';
@@ -38,7 +40,11 @@ function useAgendaEconomia(): ItemAgenda[] {
 
 /** Cada movimiento registrado suma experiencia. */
 function useActividadEconomia(): string[] {
-  return useMovimientos().filas.map((m) => m.fecha);
+  const movs = useMovimientos().filas;
+  const compartidos = useCompartidos().filas;
+  const ids = new Set(movs.map((m) => m.id));
+  // Lo compartido sin movimiento propio (ej. lo pagó Ulises) también suma.
+  return [...movs.map((m) => m.fecha), ...compartidos.filter((c) => !c.movimiento_id || !ids.has(c.movimiento_id)).map((c) => c.fecha)];
 }
 
 function useSenalesEconomia(): Senal[] {
@@ -47,9 +53,24 @@ function useSenalesEconomia(): Senal[] {
   const { filas: movs } = useMovimientos();
   const { filas: fuentes } = useIngresos();
   const { filas: pagos } = usePagos();
-  if (!cargado || cuentas.length === 0) return [];
-  const mes = mesActual();
+  const { filas: compartidos } = useCompartidos();
   const senales: Senal[] = [];
+
+  // Cuenta con cada persona (Ulises, Chris…): se ve aunque no haya cuentas cargadas.
+  for (const persona of personasDe(compartidos)) {
+    const saldo = saldoCon(compartidos, persona);
+    if (Math.abs(saldo) < 1) continue;
+    senales.push({
+      id: `eco-compartido-${persona}`, modulo: 'economia', nivel: 'info',
+      titulo: textoSaldo(saldo, persona),
+      detalle: 'Gastos compartidos, préstamos y pagos para saldar.',
+      ruta: '#/economia/ulises',
+      accion: { texto: saldo > 0 ? 'Me pagó' : 'Le pagué', ruta: '#/economia/ulises' },
+    });
+  }
+
+  if (!cargado || cuentas.length === 0) return senales;
+  const mes = mesActual();
 
   const deben = fuentes.filter((i) => Number(i.adeudado) > 0);
   if (deben.length) {
@@ -116,6 +137,7 @@ export const moduloEconomia: Modulo = {
     { ruta: 'movimientos', titulo: 'Movimientos', componente: PantallaMovimientos },
     { ruta: 'ingresos', titulo: 'Ingresos', componente: PantallaIngresos },
     { ruta: 'proyeccion', titulo: 'Proyección', componente: PantallaProyeccion },
+    { ruta: 'ulises', titulo: 'Compartido', componente: PantallaCompartidos },
     { ruta: 'cuentas', titulo: 'Cuentas y categorías', componente: PantallaCuentas },
   ],
   Resumen: ResumenHub,
