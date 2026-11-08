@@ -34,10 +34,10 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - `supabase/cuentas.sql`: `perfiles` (rol superadmin/usuario/lector, modulos, activo), reglas de escritura con `life_puede_escribir()` en toda tabla con `user_id`, `api_claves`, `api_registro`, `life_columnas()`. `usePerfil()` en `core/auth.tsx`.
 - Funciones: `cuentas` (superadmin: listar/crear/clave) y `life-mcp` (conector MCP para Claude con clave personal, sin JWT; leer/crear/modificar/borrar/deshacer con registro).
 
-## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql` + `dia.sql`, en ese orden)
+## Tablas (`supabase/schema.sql` + `entreno-v2.sql` + `entreno-ciclos.sql` + `entreno-ejercicios.sql` + `dia.sql` + `tablero.sql`, en ese orden)
 - `eco_cuentas`, `eco_categorias`, `eco_movimientos`, `eco_ingresos`, `pag_pagos`, `ent_sesiones`, `ent_series`, `ent_rutinas` (dias jsonb), `ent_ejercicios` (ejercicios propios con zonas y variantes), `stk_productos`, `ali_platos` (ingredientes jsonb), `ali_comidas`, `ali_extras` (agua/suplementos), `ali_metas` (una fila).
 - Compras (`supabase/compras.sql`, aplicado en la nube): `com_supers` (bloques jsonb = orden de pasillos de ese súper), `com_items` (catálogo propio; precios jsonb = último precio online por cadena; producto_id enlaza al stock), `com_precios` (historial: online/ticket/manual), `com_compras` (estimado vs total del ticket, items jsonb, reparto y ticket jsonb).
-- Día (`supabase/dia.sql`, aplicado en la nube): `dia_plantilla` (semana tipo, un bloque por fila: dia_semana 0=dom, inicio/fin 'HH:MM' con '24:00' = fin, tipo, opcional, come_alla), `dia_dias` (una fila por fecha: estado normal/libre/feriado/especial, nombre, nota, prioridades jsonb [{texto,hecho}], bloques jsonb = horario propio o null = semana tipo), `dia_tareas` (fecha, hora, prioridad alta/media/baja, origen 'app'|'claude'). Pensadas para la API de lectura/escritura de Claude.
+- Día (`supabase/dia.sql`, aplicado en la nube): `dia_plantilla` (semana tipo, un bloque por fila: dia_semana 0=dom, inicio/fin 'HH:MM' con '24:00' = fin, tipo, opcional, come_alla), `dia_dias` (una fila por fecha: estado normal/libre/feriado/especial, nombre, nota, prioridades jsonb [{texto,hecho}], bloques jsonb = horario propio o null = semana tipo), `dia_tareas` (fecha, hora, prioridad alta/media/baja, origen 'app'|'claude'; también son las tarjetas del Tablero). Pensadas para la API de lectura/escritura de Claude.
 - Prefijos por módulo: `eco_`, `pag_`, `ent_`, `stk_`, `ali_`; `com_`; `dia_`; próximos `tar_` (tareas), `cal_` (calendario), `mer_` (mercado).
 - Toda tabla nueva: con `user_id` y política RLS, igual que las existentes.
 
@@ -73,6 +73,12 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Feriados nacionales 2026–2027 + Santiago Apóstol (Mendoza) en `FERIADOS`; los "puente" no cuentan como feriado automático.
 - Gimnasio: domingo cerrado, sábado abre a las 7, entrenos ~1 h 30 (`GIMNASIO`). Días de fábrica come allá: bloques `come_alla`, `comeEnFabrica(bloques)` para Alimentación.
 - Al hub: señales (tareas atrasadas, prioridad de hoy, feriado mañana), agenda (tareas, feriados, días libres) y XP por tarea hecha.
+
+## Tablero de pendientes e ideas (2026-11-08)
+- `src/modules/tablero/` (ruta `#/tablero`, sección propia; boceto aprobado en project-files `diseno/tablero-boceto.html`). Kanban: etapas editables (por defecto Por hacer / En proceso / Hecho; la última = hecho, da XP), prioridad alta/media/baja, categoría (Reparto, Pagos, Casa, Compras, Ideas de desarrollo + propias), pasos, fecha opcional.
+- **Una cosa, un solo lugar:** cada tarjeta ES una fila de `dia_tareas` (columnas nuevas `etapa`, `categoria`, `pasos`, `orden`, `movida`, SQL `supabase/tablero.sql`). Con fecha también se ve en el Día; `hecho` y "última etapa" van juntos (`etapaDe()` en `tablero/modelo.ts`). Etapas y categorías propias en `dia_tablero` (una fila).
+- Compu: columnas con arrastrar (mouse) + detalle al costado. Celu: una pestaña por etapa, deslizar la tarjeta ▶/◀ cambia de etapa, mantener apretado la lleva a otra pestaña, detalle en hoja. "+ Cargar → Pendiente o idea" abre el formulario (`pedirAnotar`).
+- Señales: quieta ≥ 4 días (alta/media) con "Revisar", y pendientes de prioridad alta sin fecha. Conector: `tablero_ver`, `tablero_anotar`, `tablero_mover`.
 
 ## Preparador y ciclos (2026-10-06)
 - `ent_rutinas` guarda cada ciclo como una fila: `inicio` (lunes) + `ciclo` jsonb {semanas, objetivo, perfil, numero}. Solo una `activa`; las viejas quedan como historial (`empezarCiclo` en `modelo.ts`). SQL: `supabase/entreno-ciclos.sql` (aplicado).
