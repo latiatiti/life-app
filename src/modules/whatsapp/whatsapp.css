@@ -1,0 +1,64 @@
+/* WhatsApp web de LIFE. Solo tokens de src/tema/tema.css. Compu: chats + conversación al costado; celu: una cosa por vez. */
+
+.wa { display: flex; flex-direction: column; gap: 12px; }
+.wa-aviso { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 12px;
+  border: 1px solid var(--atencion); border-radius: var(--radio); background: color-mix(in srgb, var(--atencion) 10%, var(--capa-1)); color: var(--atencion-texto); }
+
+.wa-dos { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 12px; height: calc(100dvh - 240px); min-height: 420px; }
+
+.wa-lista { display: flex; flex-direction: column; background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; }
+.wa-dos .wa-lista { overflow-y: auto; }
+.wa-lista-cab { display: flex; gap: 8px; padding: 10px; border-bottom: 1px solid var(--borde); position: sticky; top: 0; background: var(--capa-1); z-index: 1; }
+.wa-lista-cab input { flex: 1; min-width: 0; }
+.wa-vacia { padding: 16px; }
+.wa-chat { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: none; border: 0; border-bottom: 1px solid var(--borde);
+  color: inherit; text-align: left; cursor: pointer; font: inherit; min-height: var(--alto-toque); }
+.wa-chat:hover { background: var(--capa-2); }
+.wa-chat.activo { background: var(--acento-suave); }
+.wa-avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-family: var(--letra-titulo);
+  background: var(--capa-3); color: var(--acento-texto); border: 1px solid var(--acento-borde); }
+.wa-chat-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wa-chat-txt b, .wa-chat-txt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wa-chat-txt small { color: var(--texto-2); }
+.wa-chat-der { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.wa-chat-der small { color: var(--texto-3); font-family: var(--letra-dato); font-size: 0.75rem; }
+.wa-sinleer { min-width: 22px; padding: 1px 6px; border-radius: 11px; background: var(--acento); color: var(--sobre-acento); font: 700 0.75rem var(--letra-dato); text-align: center; }
+
+.wa-conv { display: flex; flex-direction: column; min-height: 0; background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; }
+.wa-conv-vacia { display: grid; place-items: center; }
+.wa-conv-cab { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--borde); }
+.wa-conv-cab div { display: flex; flex-direction: column; }
+.wa-conv-cab small { color: var(--texto-3); font-family: var(--letra-dato); }
+.wa-mensajes { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.wa-fila { display: flex; flex-direction: column; }
+.wa-dia { align-self: center; margin: 8px 0; padding: 2px 10px; border-radius: var(--radio-chico); background: var(--capa-2); color: var(--texto-3);
+  font: 600 0.72rem var(--letra-dato); text-transform: var(--etiqueta-mayus); letter-spacing: var(--etiqueta-espacio); }
+.wa-burbuja { max-width: min(78%, 560px); padding: 7px 10px 5px; border-radius: var(--radio); display: flex; flex-direction: column; gap: 2px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.wa-burbuja small { align-self: flex-end; color: var(--texto-3); font: 0.7rem var(--letra-dato); }
+.wa-burbuja.suya { align-self: flex-start; background: var(--capa-2); border-top-left-radius: 2px; }
+.wa-burbuja.mia { align-self: flex-end; background: color-mix(in srgb, var(--acento) 16%, var(--capa-2)); border: 1px solid var(--acento-borde); border-top-right-radius: 2px; }
+.wa-burbuja.pendiente { border-style: dashed; opacity: 0.9; }
+.wa-burbuja.fallo { border-color: var(--urgente); }
+.wa-burbuja.fallo small { color: var(--urgente-texto); }
+.wa-acciones { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
+
+.wa-escribir { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--borde); background: var(--capa-1); }
+.wa-escribir textarea { flex: 1; resize: none; min-height: var(--alto-toque); max-height: 140px; field-sizing: content; }
+
+.wa-conexion { display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+.wa-qr { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.wa-qr img { border-radius: var(--radio); image-rendering: pixelated; }
+/* Mientras se ve el QR, sin las líneas de pantalla del modo juego: que el celu lo lea limpio. */
+body.wa-sin-lineas::after { display: none; }
+.wa-qr ol { flex: 1; min-width: 220px; margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.wa-qr .nota { flex-basis: 100%; }
+.wa-espera { color: var(--acento-texto); animation: wa-latido 1.4s var(--curva) infinite; }
+@keyframes wa-latido { 50% { opacity: 0.45; } }
+.wa-reglas { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--texto-2); }
+
+/* Celu: la conversación ocupa la pantalla, la cajita de escribir queda arriba de la barra flotante. */
+@media (max-width: 760px) {
+  .wa-conv { height: calc(100dvh - 300px - env(safe-area-inset-bottom)); min-height: 340px; }
+  .wa-burbuja { max-width: 86%; }
+}
+@media (prefers-reduced-motion: reduce) { .wa-espera { animation: none; } }

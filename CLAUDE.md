@@ -82,6 +82,14 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 - Seguimiento y recordatorios (2026-11-08, SQL `supabase/avisos-whatsapp.sql`): cada tarjeta suma `novedades` [{fecha,texto}] (cada cambio de etapa anota "Pasó a …"), paso actual = primer paso sin tildar ("Ahora:" en la tarjeta, ▲ para reordenar), `recordar_en` (hora de Mendoza) + `recordatorio_enviado`, y `contacto` {nombre,telefono} → link wa.me con el mensaje listo (lo manda ella).
 - WhatsApp a su propio número con CallMeBot (gratis, solo a uno mismo): Ajustes → "Recordatorios por WhatsApp" (`ajustes/Whatsapp.tsx`) guarda número + apikey en `avi_whatsapp` (fuera de `TABLAS` y en `PRIVADAS` del conector: no va al respaldo ni a Claude). En la nube, pg_cron cada 5 min corre `life_mandar_recordatorios()` (pg_net → CallMeBot); botón de prueba = `life_whatsapp_probar()`. Conector 1.3.0: `recordar` en `tablero_anotar`/`tablero_mover`, más `novedad` y `pasos` en `tablero_mover`.
 
+## WhatsApp web de LIFE (2026-11-11)
+- Su propio WhatsApp vinculado por QR (como WhatsApp Web) a un **puente** (`whatsapp-puente/`: Node + Baileys, Docker) que corre prendido siempre en un servidor. Ver `whatsapp-puente/LEEME.md`.
+- El puente NO tiene la service_role: habla solo con la función `whatsapp-puente` (sin JWT) con `WA_PUENTE_CLAVE`; todo queda a nombre de `WA_DUENO`. La sesión de WhatsApp va cifrada (AES-GCM) con `WA_CIFRADO`, que vive solo en el servidor del puente (`wa_credenciales`, sin reglas para usuarios).
+- SQL `supabase/whatsapp-web.sql`: `wa_sesion` (estado, QR, `pedido` conectar/desconectar que pide la app, `visto` = latido cada 30 s), `wa_chats` (solo chats de a dos), `wa_mensajes` (texto, 30 días), `wa_salida` (cola: sale a los 10 s para que DESHACER la frene; tope 40/día por trigger). Fuera de `TABLAS` (no va al respaldo).
+- App: sección WhatsApp (`src/modules/whatsapp/`, `#/whatsapp` + `/conexion`): chats con conversación al costado en la compu, una cosa por vez en el celu; señal si se cae la conexión o hay sin leer.
+- Conector 1.4.0: `whatsapp_chats`, `whatsapp_leer`, `whatsapp_enviar` (exige `ok_de_la_usuaria`, sale a los 20 s, `deshacer` la frena, tope 20/día de Claude). Las tablas `wa_*` no se escriben con `crear`/`modificar`/`borrar`.
+- No confundir con los recordatorios a su propio número por CallMeBot (Ajustes, `avi_whatsapp`).
+
 ## Preparador y ciclos (2026-10-06)
 - `ent_rutinas` guarda cada ciclo como una fila: `inicio` (lunes) + `ciclo` jsonb {semanas, objetivo, perfil, numero}. Solo una `activa`; las viejas quedan como historial (`empezarCiclo` en `modelo.ts`). SQL: `supabase/entreno-ciclos.sql` (aplicado).
 - `ciclo.ts`: semanas del ciclo (s+1, s50%, rpe-1, rpe6, c85), `ajustarDia`, peso inicial por perfil (`pesoInicial`), propuesta automática del próximo ciclo (`proponerCiclo`: cambia ejercicios estancados, ajusta series por rango de volumen, no sube volumen si la adherencia < 70 %).
