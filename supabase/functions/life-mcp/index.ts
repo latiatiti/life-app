@@ -17,7 +17,9 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
-const PRIVADAS = new Set(['perfiles', 'api_claves', 'api_registro', 'avi_whatsapp']);
+const PRIVADAS = new Set(['perfiles', 'api_claves', 'api_registro', 'avi_whatsapp', 'wa_sesion', 'wa_credenciales', 'wa_puente']);
+/** Tablas del WhatsApp: se leen con leer, pero solo se escriben con sus herramientas (whatsapp_enviar pide el OK de ella). */
+const SOLO_HERRAMIENTAS = (t: string) => t.startsWith('wa_');
 const MAX_FILAS = 500;
 
 /** Para qué sirve cada tabla (las nuevas aparecen igual, sin descripción). */
@@ -47,6 +49,9 @@ const DESCRIPCION: Record<string, string> = {
   dia_tablero: 'Etapas [{id,nombre}] (la última = hecho) y categorías del Tablero (una fila). Vacía = Por hacer (hacer), En proceso (proceso), Hecho (hecho) y Reparto, Pagos, Casa, Compras, Ideas de desarrollo.',
   dia_rutinas: 'Cosas de todos los días que ocupan tiempo (bañarse, lavar platos, ordenar): minutos cada vez, veces por día, dias (lista 0=domingo…6=sábado; null = todos), momento manana/tarde/noche/cualquiera. Se descuentan del tiempo libre.',
   dia_tiempo: 'En qué usó un rato (sobre todo del tiempo libre): fecha, que, minutos, clase productivo/rutina/ocio/descanso. Mejor usar anotar_tiempo.',
+  wa_chats: 'Sus chats de WhatsApp de a dos (nombre agendado, teléfono, último mensaje, sin leer). Mejor usar whatsapp_chats.',
+  wa_mensajes: 'Mensajes de texto de WhatsApp de los últimos 30 días (de_mi = los mandó ella). Mejor usar whatsapp_leer.',
+  wa_salida: 'Cola de WhatsApp para mandar (pendiente/enviando/enviado/error/cancelado). Se carga solo con whatsapp_enviar.',
   com_frecuencias: 'Cada cuánto va a comprar a cada lugar (aproximado): nombre, lugar super/verduleria/carniceria/otro, cada_dias, dia_habitual (0=domingo, opcional), ultima (última vez que fue, YYYY-MM-DD).',
 };
 if (DESCRIPCION.eco_ingresos) DESCRIPCION.eco_ingresos += ' frecuencia semanal/quincenal/mensual; proximo_cobro = fecha del próximo cobro; cuenta_id = dónde cobra (efectivo, Mercado Pago… sacalo de eco_cuentas); puede_adeudarse = suele pagar atrasado; adeudado = lo que le deben.';
@@ -274,6 +279,50 @@ const HERRAMIENTAS = [
       additionalProperties: false,
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'whatsapp_chats',
+    description: 'Sus chats de WhatsApp (su propio número, conectado a LIFE por QR): con quién, último mensaje, cuándo y cuántos sin leer, del más nuevo al más viejo. También dice si el WhatsApp está conectado. Usalo para "¿quién me escribió?" o para encontrar a alguien antes de leer o mandar.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        buscar: { type: 'string', description: 'Parte del nombre o del número (ej. "Ulises").' },
+        solo_sin_leer: { type: 'boolean' },
+        limite: { type: 'number', description: '1 a 100, por defecto 30.' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'whatsapp_leer',
+    description: 'Lee la conversación de WhatsApp con alguien (solo texto; fotos y audios figuran como [imagen]/[audio]), de lo más viejo a lo más nuevo, de los últimos días. "yo" = ella. Ej. "¿qué me dijo Ulises?" → {"chat":"Ulises"}. Leer no la marca como leída.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        chat: { type: 'string', description: 'Nombre como lo tiene agendado, parte del nombre, o número.' },
+        dias: { type: 'number', description: 'Cuántos días para atrás (1 a 30, por defecto 7).' },
+        limite: { type: 'number', description: 'Máximo de mensajes (1 a 200, por defecto 60): trae los más nuevos.' },
+      },
+      required: ['chat'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'whatsapp_enviar',
+    description: 'Manda un WhatsApp DE VERDAD desde su propio número a un chat suyo o a un número. ANTES de llamarla mostrale a quién va (nombre y número) y el texto exacto, y esperá que diga que sí: solo entonces mandá ok_de_la_usuaria: true. Escribí como escribe ella (rioplatense, corto, sin firmar como Claude salvo que lo pida). Sale en unos 20 segundos; mientras tanto se puede frenar con deshacer (registro_id). Hasta 20 por día desde Claude.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        para: { type: 'string', description: 'Nombre de un chat suyo (ej. "Ulises") o un número (ej. "261 555 1234").' },
+        texto: { type: 'string', minLength: 1, maxLength: 1000, description: 'El mensaje tal cual le va a llegar.' },
+        ok_de_la_usuaria: { type: 'boolean', description: 'true solo si ella aprobó con sus palabras, en esta conversación, este destinatario y este texto.' },
+      },
+      required: ['para', 'texto', 'ok_de_la_usuaria'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
   },
 ];
 
@@ -618,6 +667,97 @@ async function anotarTiempo(db: SupabaseClient, q: Quien, args: Json) {
   return { ok: true, registro_id: registro, fecha, que, minutos, clase };
 }
 
+/* ---------- WhatsApp web (su número vinculado por QR al puente; ver supabase/whatsapp-web.sql) ---------- */
+
+/** Número argentino a formato de WhatsApp: 261 555 1234 → 5492615551234 (igual que el puente). */
+function numeroWa(tel: string) {
+  let d = tel.replace(/\D/g, '').replace(/^00/, '');
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.length === 10) d = `549${d}`;
+  else if (d.startsWith('54') && !d.startsWith('549') && d.length === 12) d = `549${d.slice(2)}`;
+  return d;
+}
+
+async function estadoWa(db: SupabaseClient, q: Quien) {
+  const { data } = await db.from('wa_sesion').select('estado, numero, visto').eq('user_id', q.userId).maybeSingle();
+  const s = data as Json | null;
+  if (!s) return { conectado: false, aviso: 'Todavía no conectó su WhatsApp a LIFE (WhatsApp → Conexión en la app).' };
+  const vivo = !!s.visto && Date.now() - Date.parse(String(s.visto)) < 120_000;
+  if (!vivo) return { conectado: false, aviso: 'El puente de WhatsApp está apagado: los mensajes nuevos no entran y lo que mandes sale cuando vuelva.' };
+  if (s.estado !== 'conectado') return { conectado: false, aviso: 'Su WhatsApp no está conectado a LIFE: tiene que tocar Conectar en WhatsApp → Conexión y escanear el QR.' };
+  return { conectado: true, numero: s.numero };
+}
+
+/** Busca un chat por nombre, parte del nombre o número. Si hay varios, pide elegir. */
+async function chatWa(db: SupabaseClient, q: Quien, valor: string): Promise<Json | null> {
+  const chats = await filas(db, 'wa_chats', q.userId);
+  const d = valor.replace(/\D/g, '');
+  if (d.length >= 8) {
+    const n = numeroWa(valor);
+    return chats.find((c) => String(c.telefono ?? '') === n || String(c.jid).startsWith(`${n}@`) || String(c.telefono ?? '').endsWith(d)) ?? null;
+  }
+  const v = sinTildes(valor);
+  const exactos = chats.filter((c) => sinTildes(String(c.nombre ?? '')) === v);
+  const parecidos = exactos.length ? exactos : chats.filter((c) => sinTildes(String(c.nombre ?? '')).includes(v));
+  if (parecidos.length > 1) throw new ErrorUso(`Hay varios chats que coinciden con "${valor}": ${parecidos.slice(0, 8).map((c) => `${c.nombre} (+${c.telefono ?? '?'})`).join(', ')}. Preguntale cuál.`);
+  return parecidos[0] ?? null;
+}
+
+const chatPublico = (c: Json) => ({ nombre: c.nombre ?? null, telefono: c.telefono ? `+${c.telefono}` : null, ultimo: c.ultimo_texto ?? null, cuando: c.ultimo_at ?? null, sin_leer: c.sin_leer ?? 0 });
+
+async function whatsappChats(db: SupabaseClient, q: Quien, args: Json) {
+  const estado = await estadoWa(db, q);
+  let chats = await filas(db, 'wa_chats', q.userId);
+  if (args.buscar) {
+    const v = sinTildes(String(args.buscar)); const d = String(args.buscar).replace(/\D/g, '');
+    chats = chats.filter((c) => sinTildes(String(c.nombre ?? '')).includes(v) || (d.length >= 4 && String(c.telefono ?? '').includes(d)));
+  }
+  if (args.solo_sin_leer) chats = chats.filter((c) => Number(c.sin_leer) > 0);
+  chats.sort((a, b) => String(b.ultimo_at ?? '').localeCompare(String(a.ultimo_at ?? '')));
+  const limite = Math.min(Math.max(Number(args.limite) || 30, 1), 100);
+  return { ...estado, total: chats.length, chats: chats.slice(0, limite).map(chatPublico) };
+}
+
+async function whatsappLeer(db: SupabaseClient, q: Quien, args: Json) {
+  const c = await chatWa(db, q, String(args.chat ?? ''));
+  if (!c) throw new ErrorUso(`No encontré un chat con "${args.chat}". Probá con whatsapp_chats y buscar.`);
+  const dias = Math.min(Math.max(Number(args.dias) || 7, 1), 30);
+  const limite = Math.min(Math.max(Number(args.limite) || 60, 1), 200);
+  const { data, error } = await db.from('wa_mensajes').select('de_mi, texto, tipo, fecha').eq('user_id', q.userId).eq('jid', c.jid)
+    .gte('fecha', new Date(Date.now() - dias * 86400_000).toISOString()).order('fecha', { ascending: false }).limit(limite);
+  if (error) throw new ErrorUso(error.message);
+  const hora = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Mendoza', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const mensajes = ((data ?? []) as Json[]).reverse().map((m) => `${hora.format(new Date(String(m.fecha)))} ${m.de_mi ? 'yo' : (c.nombre ?? 'él/ella')}: ${m.tipo === 'texto' ? m.texto : `[${m.tipo}]${m.texto ? ` ${m.texto}` : ''}`}`);
+  const { data: cola } = await db.from('wa_salida').select('texto, estado, origen, error, created_at').eq('user_id', q.userId).eq('jid', c.jid).in('estado', ['pendiente', 'enviando', 'error']);
+  return { ...(await estadoWa(db, q)), chat: chatPublico(c), dias, mensajes, sin_salir: (cola ?? []).length ? cola : undefined };
+}
+
+async function whatsappEnviar(db: SupabaseClient, q: Quien, args: Json) {
+  if (args.ok_de_la_usuaria !== true) throw new ErrorUso('Primero mostrale a quién va y el texto exacto, y mandá ok_de_la_usuaria: true solo cuando ella diga que sí.');
+  const texto = String(args.texto ?? '').trim();
+  if (!texto) throw new ErrorUso('Falta el texto.');
+  if (texto.length > 1000) throw new ErrorUso('El texto puede tener hasta 1000 letras.');
+  const para = String(args.para ?? '').trim();
+  const c = await chatWa(db, q, para);
+  const digitos = para.replace(/\D/g, '');
+  if (!c && digitos.length < 10) throw new ErrorUso(`No tiene un chat con "${para}". Pedile el número (con característica) y mandalo en para.`);
+  const { count } = await db.from('wa_salida').select('id', { count: 'exact', head: true }).eq('user_id', q.userId).eq('origen', 'claude')
+    .gte('created_at', new Date(Date.now() - 86400_000).toISOString()).neq('estado', 'cancelado');
+  if ((count ?? 0) >= 20) throw new ErrorUso('Ya salieron 20 mensajes de Claude en las últimas 24 horas (tope para cuidar su número).');
+  const destino = c ? { jid: c.jid, telefono: c.telefono ?? null, nombre: c.nombre ?? null } : { jid: null, telefono: numeroWa(para), nombre: null };
+  const { data, error } = await db.from('wa_salida').insert({
+    user_id: q.userId, ...destino, texto, origen: 'claude', estado: 'pendiente',
+    no_antes: new Date(Date.now() + 20_000).toISOString(),
+  }).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'crear', 'wa_salida', (data as Json).id as string, null, data);
+  const estado = await estadoWa(db, q);
+  return {
+    ok: true, registro_id: registro, para: destino.nombre ?? `+${destino.telefono}`, telefono: destino.telefono ? `+${destino.telefono}` : undefined,
+    texto, sale: 'en unos 20 segundos (con deshacer y este registro_id se frena antes)', aviso: estado.conectado ? undefined : estado.aviso,
+  };
+}
+
 async function tablasPermitidas(db: SupabaseClient) {
   const { data, error } = await db.rpc('life_columnas');
   if (error) throw new Error(`No se pudieron leer las tablas: ${error.message}`);
@@ -645,7 +785,7 @@ async function anotar(db: SupabaseClient, q: Quien, accion: string, tabla: strin
 }
 
 async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json): Promise<unknown> {
-  const escribe = ['crear', 'modificar', 'borrar', 'deshacer', 'cargar_semana_tipo', 'cambiar_dia', 'anotar_tiempo', 'tablero_anotar', 'tablero_mover'].includes(nombre);
+  const escribe = ['crear', 'modificar', 'borrar', 'deshacer', 'cargar_semana_tipo', 'cambiar_dia', 'anotar_tiempo', 'tablero_anotar', 'tablero_mover', 'whatsapp_enviar'].includes(nombre);
   if (escribe && q.permiso !== 'escribir') throw new ErrorUso('Esta clave es solo de lectura.');
 
   if (nombre === 'historial') {
@@ -663,6 +803,9 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
   if (nombre === 'tablero_ver') return tableroVer(db, q, args);
   if (nombre === 'tablero_anotar') return tableroAnotar(db, q, args);
   if (nombre === 'tablero_mover') return tableroMover(db, q, args);
+  if (nombre === 'whatsapp_chats') return whatsappChats(db, q, args);
+  if (nombre === 'whatsapp_leer') return whatsappLeer(db, q, args);
+  if (nombre === 'whatsapp_enviar') return whatsappEnviar(db, q, args);
 
   const tablas = await tablasPermitidas(db);
 
@@ -686,6 +829,14 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
     if (!r) throw new ErrorUso('No encontré ese cambio en el historial.');
     if (r.deshecho) throw new ErrorUso('Ese cambio ya estaba deshecho.');
     if (!tablas.has(r.tabla)) throw new ErrorUso(`La tabla ${r.tabla} ya no existe.`);
+    if (r.tabla === 'wa_salida') {
+      const { data: m } = await db.from('wa_salida').select('estado').eq('id', r.fila_id).eq('user_id', q.userId).maybeSingle();
+      if (!m || (m as Json).estado !== 'pendiente') throw new ErrorUso(m ? `Ese WhatsApp ya ${(m as Json).estado === 'enviado' ? 'salió' : 'no está en cola'}: no se puede frenar.` : 'Ese WhatsApp ya no está.');
+      await db.from('wa_salida').update({ estado: 'cancelado' }).eq('id', r.fila_id).eq('user_id', q.userId);
+      await db.from('api_registro').update({ deshecho: true }).eq('id', r.id);
+      await anotar(db, q, 'deshacer', r.tabla, r.fila_id, null, { registro: r.id });
+      return { ok: true, deshecho: 'whatsapp frenado', id: r.fila_id };
+    }
     if (r.accion === 'crear') {
       const { error: e } = await db.from(r.tabla).delete().eq('id', r.fila_id).eq('user_id', q.userId);
       if (e) throw new Error(e.message);
@@ -719,6 +870,7 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
   const cols = tablas.get(tabla);
   if (!cols) throw new ErrorUso(`No existe la tabla "${tabla}". Tablas: ${[...tablas.keys()].join(', ')}.`);
   const existe = (c: string) => cols.some((x) => x.columna === c);
+  if (nombre !== 'leer' && SOLO_HERRAMIENTAS(tabla)) throw new ErrorUso('Las tablas de WhatsApp no se tocan a mano: para mandar usá whatsapp_enviar (con el OK de ella).');
 
   if (nombre === 'leer') {
     let consulta = db.from(tabla).select('*').eq('user_id', q.userId);
@@ -809,7 +961,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
       return ok({
         protocolVersion: typeof params.protocolVersion === 'string' ? params.protocolVersion : '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'LIFE', version: '1.3.0' },
+        serverInfo: { name: 'LIFE', version: '1.4.0' },
         instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras, día). ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
           'Para su semana y su tiempo: ver_semana muestra cada día con sueño, fijo, cosas de todos los días y tiempo libre; ' +
@@ -818,6 +970,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
           'cada cuánto va a comprar va en com_frecuencias. ' +
           'Pendientes, tareas e ideas van al Tablero: tablero_anotar ("dejá pendiente X con prioridad alta"), tablero_mover ("pasá X a hecho") y tablero_ver ("¿qué tengo pendiente?"). ' +
           'Si dice "mañana tengo que ir a la feria" o "recordame…", anotalo con recordar (hora de Mendoza) y le llega un WhatsApp a su número. ' +
+          'WhatsApp: su propio número está conectado a LIFE. whatsapp_chats ("¿quién me escribió?"), whatsapp_leer ("¿qué me dijo Ulises?") y whatsapp_enviar ("mandale a Ulises que…"): antes de mandar mostrale a quién va y el texto exacto y esperá su sí. ' +
           'Antes de cargar algo que ella te contó, confirmá los datos clave (monto, fecha, cuenta) si no están claros. ' +
           'Fechas en YYYY-MM-DD, montos en pesos argentinos sin separadores. Todo cambio queda en historial y se puede deshacer.',
       });

@@ -22,6 +22,12 @@ que todo hilo respeta y el estado de la última auditoría. El informe completo 
    ella. Nada que pueda perder datos sin avisar y sin respaldo.
 7. **Dependencias**: `npm audit` sin altas ni críticas antes de cerrar una entrega.
 
+## WhatsApp web (2026-11-11)
+La sesión de WhatsApp da acceso a todos sus chats: va cifrada con `WA_CIFRADO` (solo en el servidor del puente), el puente
+no tiene la service_role (usa `WA_PUENTE_CLAVE` contra la función `whatsapp-puente`), no escribe textos ni números en los
+logs y nada de eso va al repo. Claude manda solo con `ok_de_la_usuaria` y hay topes por día. Si se filtra alguna de las dos
+claves: cambiarlas, desconectar desde la app y volver a escanear el QR.
+
 ## Encabezados (Netlify, `public/_headers`)
 HSTS, nosniff, sin marcos (`X-Frame-Options: DENY`), sin referer, permisos del navegador limitados
 (cámara y ubicación solo la propia app) y una regla de contenido (CSP) en modo **solo avisar**.

@@ -1,0 +1,15 @@
+{
+  "name": "life-whatsapp-puente",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Mantiene el WhatsApp de la dueña conectado (como WhatsApp Web) y lo comunica con LIFE.",
+  "type": "module",
+  "main": "puente.mjs",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node puente.mjs" },
+  "dependencies": {
+    "baileys": "7.0.0-rc14",
+    "pino": "^9.7.0",
+    "qrcode": "^1.5.4"
+  }
+}
