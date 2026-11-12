@@ -40,7 +40,11 @@ cerrar la sesión o, en casos de mucho volumen o spam, bloquear el número. Por 
    - `WA_PUENTE_CLAVE` = la misma del paso 1
    - `WA_CIFRADO` = la del paso 1
    Con Docker: `docker build -t life-wa . && docker run -d --restart=always --env-file .env life-wa`.
-   Sin Docker: `npm ci && npm start` (en Windows, dejarlo como tarea que arranca con la compu).
+   Sin Docker: `npm ci && npm start`.
+   **En una compu con Windows** (lo que eligió ella, 2026-11-12): doble clic en `windows/Instalar WhatsApp de LIFE.bat`.
+   Instala Node si falta, copia el puente a `LIFE\whatsapp`, guarda las claves cifradas con su usuario de Windows
+   (la del puente sale de `clave-puente.txt` al lado del instalador, que se borra al terminar; la de cifrado se crea ahí
+   y no sale de la compu) y deja la tarea "LIFE WhatsApp" arrancando al entrar a Windows. Anda solo con la compu prendida.
 4. En LIFE: **WhatsApp → Conexión → Conectar mi WhatsApp** y escanear el QR desde
    WhatsApp → Dispositivos vinculados → Vincular un dispositivo.
 
