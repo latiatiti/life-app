@@ -8,7 +8,7 @@
 //
 // Variables de entorno (ver LEEME.md):
 //   LIFE_FUNCION      https://<proyecto>.supabase.co/functions/v1/whatsapp-puente
-//   WA_PUENTE_CLAVE   la misma clave larga que el secreto de la función
+//   WA_PUENTE_CLAVE   la clave larga del puente (en la base está solo su huella, tabla wa_puente)
 //   WA_CIFRADO        64 letras hex (32 bytes): cifra la sesión de WhatsApp. Vive SOLO acá.
 //   DATOS             carpeta para la copia local de la sesión (por defecto ./datos)
 //

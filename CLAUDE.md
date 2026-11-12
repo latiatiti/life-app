@@ -84,7 +84,7 @@ Forma de trabajo: hub central + módulos de a uno, profundizando los anteriores 
 
 ## WhatsApp web de LIFE (2026-11-11)
 - Su propio WhatsApp vinculado por QR (como WhatsApp Web) a un **puente** (`whatsapp-puente/`: Node + Baileys, Docker) que corre prendido siempre en un servidor. Ver `whatsapp-puente/LEEME.md`.
-- El puente NO tiene la service_role: habla solo con la función `whatsapp-puente` (sin JWT) con `WA_PUENTE_CLAVE`; todo queda a nombre de `WA_DUENO`. La sesión de WhatsApp va cifrada (AES-GCM) con `WA_CIFRADO`, que vive solo en el servidor del puente (`wa_credenciales`, sin reglas para usuarios).
+- El puente NO tiene la service_role: habla solo con la función `whatsapp-puente` (sin JWT) con una clave propia cuya huella está en `wa_puente` (de ahí sale la dueña). La sesión de WhatsApp va cifrada (AES-GCM) con `WA_CIFRADO`, que vive solo en el servidor del puente (`wa_credenciales`, sin reglas para usuarios).
 - SQL `supabase/whatsapp-web.sql`: `wa_sesion` (estado, QR, `pedido` conectar/desconectar que pide la app, `visto` = latido cada 30 s), `wa_chats` (solo chats de a dos), `wa_mensajes` (texto, 30 días), `wa_salida` (cola: sale a los 10 s para que DESHACER la frene; tope 40/día por trigger). Fuera de `TABLAS` (no va al respaldo).
 - App: sección WhatsApp (`src/modules/whatsapp/`, `#/whatsapp` + `/conexion`): chats con conversación al costado en la compu, una cosa por vez en el celu; señal si se cae la conexión o hay sin leer.
 - Conector 1.4.0: `whatsapp_chats`, `whatsapp_leer`, `whatsapp_enviar` (exige `ok_de_la_usuaria`, sale a los 20 s, `deshacer` la frena, tope 20/día de Claude). Las tablas `wa_*` no se escriben con `crear`/`modificar`/`borrar`.

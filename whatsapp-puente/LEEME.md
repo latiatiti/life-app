@@ -33,7 +33,7 @@ cerrar la sesión o, en casos de mucho volumen o spam, bloquear el número. Por 
 2. **Supabase** (proyecto Life):
    - Aplicar `supabase/whatsapp-web.sql`.
    - Desplegar la función `whatsapp-puente` **sin** verificación de JWT.
-   - Secretos de la función: `WA_PUENTE_CLAVE` (la del paso 1) y `WA_DUENO` (tu user_id).
+   - Guardar la huella de la clave: `insert into wa_puente (user_id, hash) values ('<tu user_id>', encode(sha256('<clave>'::bytea), 'hex'))` (la clave en sí no va a la base).
    - Redesplegar `life-mcp` (suma whatsapp_chats, whatsapp_leer y whatsapp_enviar).
 3. **Servidor del puente** (cualquiera que corra Docker o Node 20+ prendido siempre), con estas variables:
    - `LIFE_FUNCION` = `https://<proyecto>.supabase.co/functions/v1/whatsapp-puente`

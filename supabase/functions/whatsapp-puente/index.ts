@@ -1,10 +1,9 @@
 // Función "whatsapp-puente": la única puerta entre el puente de WhatsApp (whatsapp-puente/ en el repo,
 // corriendo en un servidor chico) y la base de LIFE.
 //
-// El puente NO tiene la clave service_role. Manda su clave propia en "Authorization: Bearer <WA_PUENTE_CLAVE>"
-// y todo lo que escribe queda a nombre de la dueña (WA_DUENO = su user_id). Se despliega SIN verificación de JWT.
-//
-// Secretos de la función: WA_PUENTE_CLAVE (larga y al azar, la misma que tiene el puente) y WA_DUENO.
+// El puente NO tiene la clave service_role. Manda su clave propia en "Authorization: Bearer <clave>";
+// en la base está solo su huella sha-256 (tabla wa_puente), que dice de quién es: todo lo que escribe queda a
+// nombre de esa persona. Se despliega SIN verificación de JWT.
 //
 // Entrada (POST JSON): { accion, ... }
 //   estado              { estado, qr?, numero?, nombre?, error? }   → { pedido }  (latido + lo que pidió la app)
@@ -24,12 +23,9 @@ type Json = Record<string, unknown>;
 const responder = (d: unknown, status = 200) =>
   new Response(JSON.stringify(d), { status, headers: { 'Content-Type': 'application/json' } });
 
-/** Compara sin cortar antes (para no dar pistas por el tiempo de respuesta). */
-function iguales(a: string, b: string) {
-  if (a.length !== b.length) return false;
-  let d = 0;
-  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return d === 0;
+async function sha256(texto: string) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 const ESTADOS = ['apagado', 'esperando_qr', 'conectando', 'conectado', 'desconectado', 'error'];
@@ -174,16 +170,17 @@ async function atender(db: SupabaseClient, dueno: string, b: Json): Promise<unkn
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return responder({ error: 'Usá POST.' }, 405);
-  const clave = Deno.env.get('WA_PUENTE_CLAVE') ?? '';
-  const dueno = Deno.env.get('WA_DUENO') ?? '';
-  if (clave.length < 32 || !dueno) return responder({ error: 'Falta configurar WA_PUENTE_CLAVE (32+ letras) y WA_DUENO.' }, 500);
   const auth = req.headers.get('authorization') ?? '';
-  if (!auth.startsWith('Bearer ') || !iguales(auth.slice(7), clave)) return responder({ error: 'Clave del puente inválida.' }, 401);
+  const clave = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (clave.length < 32) return responder({ error: 'Clave del puente inválida.' }, 401);
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+  const { data: p } = await db.from('wa_puente').select('user_id').eq('hash', await sha256(clave)).maybeSingle();
+  if (!p) return responder({ error: 'Clave del puente inválida.' }, 401);
+  const dueno = (p as Json).user_id as string;
 
   let cuerpo: Json;
   try { cuerpo = await req.json(); } catch { return responder({ error: 'JSON inválido.' }, 400); }
 
-  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
   try {
     return responder(await atender(db, dueno, cuerpo));
   } catch (e) {

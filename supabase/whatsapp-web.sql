@@ -1,8 +1,8 @@
 -- WhatsApp web de LIFE (2026-11-11). Aplicar después de cuentas.sql y seguridad.sql.
 --
 -- Su propio WhatsApp conectado por QR (como WhatsApp Web) a un "puente" (carpeta whatsapp-puente/ del repo)
--- que corre prendido siempre en un servidor chico. El puente NO tiene la clave service_role: habla solo con la
--- función whatsapp-puente con una clave propia (secreto WA_PUENTE_CLAVE) y todo queda a nombre de la dueña (WA_DUENO).
+-- que corre prendido siempre (en su compu). El puente NO tiene la clave service_role: habla solo con la
+-- función whatsapp-puente con una clave propia; acá se guarda solo su huella (wa_puente) y de ahí sale la dueña.
 --
 -- wa_sesion        una fila: estado de la conexión, QR para escanear, pedido de conectar/desconectar desde la app.
 -- wa_chats         una fila por conversación (solo chats de a dos, sin grupos).
@@ -70,6 +70,13 @@ create table if not exists public.wa_salida (
 );
 create index if not exists wa_salida_pendiente on public.wa_salida (user_id, no_antes) where estado = 'pendiente';
 
+-- Clave del puente: solo su huella sha-256 (como api_claves). La clave en sí vive en la compu del puente.
+create table if not exists public.wa_puente (
+  user_id     uuid primary key references auth.users(id) on delete cascade,
+  hash        text not null unique,
+  creada      timestamptz not null default now()
+);
+
 create table if not exists public.wa_credenciales (
   user_id     uuid primary key references auth.users(id) on delete cascade,
   datos       text not null,         -- JSON cifrado AES-256-GCM (la clave está solo en el servidor del puente)
@@ -82,6 +89,7 @@ alter table public.wa_chats        enable row level security;
 alter table public.wa_mensajes     enable row level security;
 alter table public.wa_salida       enable row level security;
 alter table public.wa_credenciales enable row level security; -- sin reglas: nadie con sesión la ve
+alter table public.wa_puente       enable row level security; -- ídem
 
 create policy "propio_select" on public.wa_sesion for select to authenticated using (user_id = auth.uid());
 create policy "propio_insert" on public.wa_sesion for insert to authenticated with check (user_id = auth.uid() and public.life_puede_escribir());
@@ -103,6 +111,7 @@ create policy "propio_delete" on public.wa_salida for delete to authenticated
   using (user_id = auth.uid() and public.life_puede_escribir() and estado in ('pendiente', 'cancelado'));
 
 revoke all on public.wa_credenciales from anon, authenticated;
+revoke all on public.wa_puente from anon, authenticated;
 
 -- Tope de envíos: 40 por día entre la app y Claude (cuida que WhatsApp no marque el número).
 create or replace function public.life_wa_cupo() returns trigger

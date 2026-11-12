@@ -17,7 +17,7 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
-const PRIVADAS = new Set(['perfiles', 'api_claves', 'api_registro', 'avi_whatsapp', 'wa_sesion', 'wa_credenciales']);
+const PRIVADAS = new Set(['perfiles', 'api_claves', 'api_registro', 'avi_whatsapp', 'wa_sesion', 'wa_credenciales', 'wa_puente']);
 /** Tablas del WhatsApp: se leen con leer, pero solo se escriben con sus herramientas (whatsapp_enviar pide el OK de ella). */
 const SOLO_HERRAMIENTAS = (t: string) => t.startsWith('wa_');
 const MAX_FILAS = 500;
