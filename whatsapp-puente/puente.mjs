@@ -286,8 +286,8 @@ async function conectar() {
         await estado({ estado: 'desconectado', error: 'Se cerró la sesión desde el celular. Para volver, tocá Conectar y escaneá el QR.' });
         return;
       }
-      if (!sesion?.creds?.registered && !pidioQr) { await estado({ estado: 'apagado' }); return; }
-      if (codigo === DisconnectReason.timedOut && pidioQr && !sesion?.creds?.registered) {
+      if (!sesion?.creds?.me && !pidioQr) { await estado({ estado: 'apagado' }); return; }
+      if (codigo === DisconnectReason.timedOut && pidioQr && !sesion?.creds?.me) {
         pidioQr = false;
         await estado({ estado: 'desconectado', error: 'El QR venció sin escanear. Tocá Conectar para pedir otro.' });
         await life('pedido_cumplido').catch(() => {});
@@ -339,7 +339,7 @@ function cerrar(sock) {
 /* ---------- Latido: cada 30 s avisa que está vivo y mira qué pidió la app ---------- */
 
 async function latido() {
-  const e = conectado ? 'conectado' : actual ? 'conectando' : (sesion?.creds?.registered ? 'desconectado' : 'apagado');
+  const e = conectado ? 'conectado' : actual ? 'conectando' : (sesion?.creds?.me ? 'desconectado' : 'apagado');
   const pedido = await estado(conectado ? { estado: e } : { estado: e === 'conectando' && pidioQr ? 'esperando_qr' : e, qr: undefined });
   if (pedido === 'conectar' && !conectado && !actual) {
     pidioQr = true;
@@ -368,7 +368,7 @@ async function limpiarViejos() {
 async function arrancar() {
   log('Puente de WhatsApp de LIFE arrancando.');
   sesion = await cargarSesion();
-  if (sesion?.creds?.registered) await conectar().catch((e) => log('Error al conectar:', e.message));
+  if (sesion?.creds?.me) await conectar().catch((e) => log('Error al conectar:', e.message));
   else { sesion = null; await estado({ estado: 'apagado' }); }
   setInterval(() => void latido().catch((e) => log('Latido:', e.message)), 30_000);
   setInterval(() => void limpiarViejos(), 6 * 3600_000);
