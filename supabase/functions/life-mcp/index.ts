@@ -938,10 +938,13 @@ async function quien(db: SupabaseClient, req: Request): Promise<Quien | null> {
   const auth = req.headers.get('authorization') ?? '';
   const clave = url.searchParams.get('k') ?? req.headers.get('x-life-clave') ?? (auth.startsWith('Bearer life_') ? auth.slice(7) : '');
   if (!clave.startsWith('life_')) return null;
-  const { data } = await db.from('api_claves').select('id, user_id, permiso, revocada').eq('hash', await sha256(clave)).maybeSingle();
+  const { data } = await db.from('api_claves').select('*').eq('hash', await sha256(clave)).maybeSingle();
   if (!data || data.revocada) return null;
+  // Seguridad (Gonzalito, 2026-11-13): los links vencen a los 90 días (supabase/seguridad-claves.sql).
+  if (data.vence && new Date(data.vence).getTime() < Date.now()) return null;
   const { data: perfil } = await db.from('perfiles').select('activo, rol').eq('user_id', data.user_id).maybeSingle();
-  if (perfil && !perfil.activo) return null;
+  // Sin perfil o con la cuenta pausada, el link no abre nada.
+  if (!perfil || !perfil.activo) return null;
   await db.from('api_claves').update({ ultimo_uso: new Date().toISOString() }).eq('id', data.id);
   const permiso = perfil?.rol === 'lector' ? 'leer' : data.permiso;
   return { userId: data.user_id, claveId: data.id, permiso };
@@ -1000,7 +1003,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
   const q = await quien(db, req);
-  if (!q) return respuesta({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Clave de LIFE inválida o revocada.' } }, 401);
+  if (!q) return respuesta({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Link de LIFE inválido, cortado o vencido (duran 90 días). Creá uno nuevo en LIFE → Ajustes → Conexión con Claude.' } }, 401);
 
   let cuerpo: unknown;
   try {
