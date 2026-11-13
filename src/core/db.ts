@@ -211,6 +211,11 @@ function anotar(tipo: Paso['tipo'], inversa: Inversa | null) {
   }, VENTANA);
 }
 
+/** Para escrituras que a propósito no se vuelven atrás (ej. cortar un link de Claude: por seguridad no revive). */
+export function sinDeshacer() {
+  if (abierto) abierto.deshacible = false;
+}
+
 /** Vuelve atrás un paso entero, de la última escritura a la primera. */
 export async function deshacer(p: Paso) {
   deshaciendo = true;

@@ -27,6 +27,19 @@ La sesión de WhatsApp da acceso a todos sus chats: va cifrada con `WA_CIFRADO` 
 no tiene la service_role (usa `WA_PUENTE_CLAVE` contra la función `whatsapp-puente`), no escribe textos ni números en los
 logs y nada de eso va al repo. Claude manda solo con `ok_de_la_usuaria` y hay topes por día. Si se filtra alguna de las dos
 claves: cambiarlas, desconectar desde la app y volver a escanear el QR.
+Desde 2026-11-13 la clave del puente se cambia desde la app (Ajustes → Seguridad → "Cambiar clave del puente", función
+`life_wa_puente_nueva`, guarda solo la huella) y en la compu con `Cambiar clave del puente.bat` (DPAPI, reinicia la tarea).
+
+## Claves y acceso (2026-11-13, `supabase/seguridad-claves.sql`)
+- **Links de Claude vencen a los 90 días** (`api_claves.vence`, lo pone la base); `life-mcp` rechaza vencidos, cortados y
+  cuentas sin perfil o pausadas. La app avisa 14 días antes (señal "Renovar") y "Renovar" crea uno nuevo con el mismo
+  nombre y permiso.
+- **Guardia** (trigger `life_claves_guardia`): un link cortado no revive, "solo leer" no pasa a "cargar", la huella y el
+  vencimiento no se tocan. Así una sesión robada no puede revivir links viejos. Tope: 5 links activos por cuenta.
+- Ajustes → **Seguridad**: cerrar sesión en los otros dispositivos, clave del puente, y checklist de verificación en dos
+  pasos para Google, GitHub, Supabase, Netlify y Claude (si alguien entra a una de esas, entra a LIFE).
+- Regla: toda clave nueva (de cualquier función) se guarda como huella sha-256, se muestra una sola vez, tiene forma de
+  cortarse y fecha para cambiarse.
 
 ## Encabezados (Netlify, `public/_headers`)
 HSTS, nosniff, sin marcos (`X-Frame-Options: DENY`), sin referer, permisos del navegador limitados
@@ -43,7 +56,9 @@ puertos/usuarios raros en el link, links de Claude con nombre, fecha y aviso a l
 pública por diseño).
 
 Pendiente (ver el informe para los pasos):
-- Pasar el repo de GitHub a **privado** (hoy es público).
+- Pasar el repo de GitHub a **privado** (hoy es público). Ojo: `life-mcp` se desplegó leyendo el código desde
+  raw.githubusercontent; con el repo privado, el próximo despliegue se hace pegando el código (o con la CLI).
+- Aplicar `supabase/seguridad-claves.sql` y **después** redesplegar `life-mcp` (si va antes, igual anda: lee `vence` solo si existe).
 - Redesplegar la función `ticket` **después** de publicar la app nueva (si no, la app vieja falla).
 - Cuenta `mauro2@life.com` (sin datos, con una sesión abierta desde el 15/10): pausarla o borrarla.
 - Supabase → Authentication: apagar "Allow new users to sign up"; protección de contraseñas

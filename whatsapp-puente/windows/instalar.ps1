@@ -31,7 +31,7 @@ $disco = Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | Sort-Object F
 $carpeta = Join-Path "$($disco.DeviceID)\" 'LIFE\whatsapp'
 New-Item -ItemType Directory -Force -Path $carpeta | Out-Null
 foreach ($f in 'puente.mjs', 'package.json', 'package-lock.json') { Copy-Item (Join-Path $origen $f) $carpeta -Force }
-Copy-Item (Join-Path $aca 'arrancar.ps1') $carpeta -Force
+foreach ($f in 'arrancar.ps1', 'cambiar-clave.ps1', 'Cambiar clave del puente.bat') { Copy-Item (Join-Path $aca $f) $carpeta -Force }
 Write-Host "  Carpeta: $carpeta"
 Write-Host '  Bajando lo que necesita (un minuto)...'
 Push-Location $carpeta

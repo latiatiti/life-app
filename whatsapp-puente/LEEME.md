@@ -51,3 +51,8 @@ cerrar la sesión o, en casos de mucho volumen o spam, bloquear el número. Por 
 ## Desconectar
 LIFE → WhatsApp → Conexión → Desconectar, o desde el celular: WhatsApp → Dispositivos vinculados → LIFE → Cerrar sesión.
 En los dos casos el puente borra la sesión guardada.
+
+## Cambiar la clave del puente (si se filtró o cada 6 meses)
+1. En LIFE: Ajustes → Seguridad → **Cambiar clave del puente**. La vieja deja de andar en el acto; copiá la nueva.
+2. En la compu del puente: carpeta `LIFE\whatsapp` → doble clic en **Cambiar clave del puente** y pegala.
+   La guarda cifrada con tu usuario de Windows y reinicia el puente. No hace falta volver a escanear el QR.
