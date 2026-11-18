@@ -5,6 +5,8 @@
 //   { accion: 'listar' }
 //   { accion: 'crear', usuario, clave, nombre?, rol?, modulos? }   usuario = "nombre" o un correo
 //   { accion: 'clave', user_id, clave }                            cambia la contraseña
+//   { accion: 'rechazar', user_id }                                borra un pedido de cuenta en espera
+// Aprobar un pedido = poner activo en true en perfiles (desde la app, como pausar).
 // Roles, módulos y pausar se cambian directo en la tabla perfiles (las reglas lo permiten
 // solo al superadmin).
 
@@ -66,7 +68,11 @@ Deno.serve(async (req) => {
     const rol = ROLES.includes(String(p.rol)) ? String(p.rol) : 'usuario';
     if (!/^[\w.@+-]{3,}$/.test(usuario)) return responder({ error: 'El usuario tiene que tener al menos 3 letras, sin espacios.' }, 400);
     if (clave.length < 8) return responder({ error: 'La contraseña tiene que tener al menos 8 caracteres.' }, 400);
-    const { data, error } = await admin.auth.admin.createUser({ email: correoDe(usuario), password: clave, email_confirm: true });
+    const { data, error } = await admin.auth.admin.createUser({
+      email: correoDe(usuario), password: clave, email_confirm: true,
+      // Solo el servidor puede poner app_metadata: así la base sabe que no es un pedido (nace activa, sin mail).
+      app_metadata: { creada_por: 'superadmin' },
+    });
     if (error) return responder({ error: /already/i.test(error.message) ? 'Ese usuario ya existe.' : error.message }, 400);
     const { error: e2 } = await admin.from('perfiles').upsert({
       user_id: data.user.id,
@@ -84,6 +90,16 @@ Deno.serve(async (req) => {
     const clave = String(p.clave ?? '');
     if (clave.length < 8) return responder({ error: 'La contraseña tiene que tener al menos 8 caracteres.' }, 400);
     const { error } = await admin.auth.admin.updateUserById(String(p.user_id), { password: clave });
+    if (error) return responder({ error: error.message }, 400);
+    return responder({ ok: true });
+  }
+
+  if (p.accion === 'rechazar') {
+    // Solo pedidos que siguen en espera: nunca borra una cuenta que ya se usó.
+    const id = String(p.user_id ?? '');
+    const { data: pend } = await admin.from('perfiles').select('activo, pedido_at').eq('user_id', id).maybeSingle();
+    if (!pend || pend.activo || !pend.pedido_at) return responder({ error: 'Esa cuenta no es un pedido en espera.' }, 400);
+    const { error } = await admin.auth.admin.deleteUser(id);
     if (error) return responder({ error: error.message }, 400);
     return responder({ ok: true });
   }

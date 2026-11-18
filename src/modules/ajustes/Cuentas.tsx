@@ -4,6 +4,7 @@ import { supabase } from '../../core/db';
 import { fechaCorta } from '../../core/format';
 import { MODULOS } from '../../core/registry';
 import { Campo, Modal, Tarjeta } from '../../ui/ui';
+import { confirmar } from '../../ui/Deshacer';
 
 interface Cuenta extends Perfil {
   email: string;
@@ -45,12 +46,52 @@ export function PanelCuentas() {
 
   if (yo.rol !== 'superadmin') return null;
 
+  const pendientes = cuentas?.filter((c) => !c.activo && c.pedido_at) ?? [];
+  const resto = cuentas?.filter((c) => !pendientes.includes(c));
+
+  async function aprobar(c: Cuenta) {
+    if (!supabase) return;
+    const { error } = await supabase.from('perfiles').update({ activo: true }).eq('user_id', c.user_id);
+    setMsg(error ? `No pude aprobarla: ${error.message}` : `Listo: ${c.nombre || c.email} ya puede entrar. Tocá Editar para elegir qué módulos ve.`);
+    void cargar();
+  }
+
+  async function rechazar(c: Cuenta) {
+    if (!(await confirmar(`¿Rechazar el pedido de ${c.nombre || c.email}? Se borra y no puede entrar.`, 'Rechazar'))) return;
+    try {
+      await llamar({ accion: 'rechazar', user_id: c.user_id });
+      setMsg('Pedido rechazado.');
+    } catch (e) {
+      setMsg(`No pude rechazarlo: ${(e as Error).message}`);
+    }
+    void cargar();
+  }
+
   return (
+    <>
+    {pendientes.length > 0 && (
+      <Tarjeta titulo={`Esperando tu OK (${pendientes.length})`}>
+        <ul className="lista-simple">
+          {pendientes.map((c) => (
+            <li key={c.user_id}>
+              <span>
+                <strong>{c.nombre || c.email}</strong>
+                <small className="nota"> · {c.email} · con {c.via === 'google' ? 'Google' : 'correo'} · pidió {fechaCorta(String(c.pedido_at).slice(0, 10))}</small>
+              </span>
+              <span className="cuenta-botones">
+                <button className="btn btn-confirmar" onClick={() => void aprobar(c)}>Aprobar</button>
+                <button className="btn" onClick={() => void rechazar(c)}>Rechazar</button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Tarjeta>
+    )}
     <Tarjeta titulo="Cuentas y roles" accion={<button className="btn btn-primario" onClick={() => setEditando('nueva')}>Nueva cuenta</button>}>
       {msg && <p className="nota" role="status">{msg}</p>}
       {!cuentas && !msg && <p className="nota">Cargando…</p>}
       <ul className="lista-simple">
-        {cuentas?.map((c) => (
+        {resto?.map((c) => (
           <li key={c.user_id}>
             <span>
               <strong>{c.nombre || c.usuario || c.email}</strong>
@@ -69,6 +110,7 @@ export function PanelCuentas() {
         )}
       </Modal>
     </Tarjeta>
+    </>
   );
 }
 

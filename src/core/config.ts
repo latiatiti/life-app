@@ -62,3 +62,6 @@ export function configNube(): ConfigNube | null {
 export function guardarConfigNube(c: ConfigNube | null): void {
   escribirStorage(CLAVE, c ? JSON.stringify(c) : null);
 }
+
+/** "Entrar con Google": prenderlo recién cuando Google esté activado en Supabase (Authentication → Providers). */
+export const GOOGLE_ACTIVO = false;
