@@ -188,8 +188,8 @@ function Cerrar({ carrito, onCambio, onListo }: { carrito: Carrito; onCambio: (c
             <button key={p} type="button" className={pago === p ? 'activo' : ''} onClick={() => setPago(p)}>{PERSONAS[p]}</button>
           ))}
         </div>
-        {pago === 'yo' && t.ulises > 0 && <p className="texto-bien">Ulises te debe {dinero(t.ulises)}</p>}
-        {pago === 'ulises' && t.yo > 0 && <p className="texto-aviso">Le debés a Ulises {dinero(t.yo)}</p>}
+        {pago === 'yo' && t.ulises > 0 && <p className="texto-bien">{PERSONAS.ulises} te debe {dinero(t.ulises)}</p>}
+        {pago === 'ulises' && t.yo > 0 && <p className="texto-aviso">Le debés a {PERSONAS.ulises} {dinero(t.yo)}</p>}
         {pago === 'yo' && activas.length > 0 && (
           <Campo etiqueta="Pagado con" ayuda="Se anota el gasto en Economía">
             <select value={cuenta} onChange={(e) => setCuenta(e.target.value)}>
@@ -329,7 +329,7 @@ export function PantallaEscanear() {
         );
       })}
       {c.lineas.length > 0 && (t.ulises > 0 || t.compartido > 0) && (
-        <p className="nota">Tuyo {dinero(t.yo)} · Ulises {dinero(t.ulises)}{t.compartido ? ` (lo de los dos va a medias: ${dinero(t.compartido)})` : ''}</p>
+        <p className="nota">Tuyo {dinero(t.yo)} · {PERSONAS.ulises} {dinero(t.ulises)}{t.compartido ? ` (lo de los dos va a medias: ${dinero(t.compartido)})` : ''}</p>
       )}
 
       <div className="barra-acciones">

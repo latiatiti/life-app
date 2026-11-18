@@ -214,7 +214,7 @@ export function PantallaPlatos() {
         <p className="nota">Tus platos con ingredientes y macros por porción (aproximados).</p>
         <button className="btn btn-primario" onClick={() => setEditando('nuevo')}>{Icono.mas} Plato</button>
       </div>
-      {cargado && platos.length === 0 && <Vacio titulo="Sin platos"><p>Cargá tus platos desde Ajustes → Cargar mi configuración, o agregalos a mano.</p></Vacio>}
+      {cargado && platos.length === 0 && <Vacio titulo="Sin platos"><p>Agregá los platos que hacés seguido, o elegilos en Ajustes → Configuración inicial.</p></Vacio>}
       {platos.length > 0 && (
         <Tarjeta>
           <ul className="lista">

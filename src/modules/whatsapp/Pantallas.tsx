@@ -120,7 +120,7 @@ export function PantallaConexion() {
         <header className="tarjeta-cab"><h2>Qué hace LIFE con tu WhatsApp</h2></header>
         <ul className="wa-reglas">
           <li>Guarda los mensajes de <b>texto</b> de tus chats de a dos (sin grupos) de los <b>últimos 30 días</b>, solo en tu cuenta. Fotos y audios figuran como “📷 Foto” o “🎤 Audio”, sin bajarlos.</li>
-          <li>Claude los lee solo cuando se lo pedís (“¿qué me dijo Ulises?”).</li>
+          <li>Claude los lee solo cuando se lo pedís (“¿qué me dijo mi hermana?”).</li>
           <li>Claude <b>no manda nada sin que le digas que sí</b> a quién va y el texto exacto. Lo que sale de Claude queda marcado 🤖.</li>
           <li>Tope de <b>40 mensajes por día</b> desde LIFE, de a uno y sin ráfagas, para que WhatsApp no marque tu número.</li>
           <li>Tu celular sigue igual: te siguen llegando las notificaciones. Lo podés desvincular cuando quieras desde acá o desde WhatsApp → Dispositivos vinculados.</li>

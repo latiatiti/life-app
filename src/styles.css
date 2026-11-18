@@ -857,3 +857,27 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .trofeo { display: inline-block; animation: trofeo 900ms var(--resorte) both; }
 @keyframes trofeo { 0% { transform: scale(0) rotate(-30deg); } 60% { transform: scale(1.35) rotate(8deg); } }
 .btn, .medidor, .segmentado button, .ent-vivo button { position: relative; overflow: hidden; }
+
+/* ---------- Configuración inicial (ajustes/Bienvenida.tsx) ---------- */
+.bv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bv-chip { min-height: 40px; padding: 6px 12px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); background: var(--capa-2); color: var(--texto); font-size: 0.9rem; }
+.bv-chip[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); font-weight: 700; }
+.bv-chip.bv-dia { min-width: 40px; padding: 6px; }
+.bv-areas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bv-area { position: relative; display: flex; flex-direction: column; gap: 4px; min-height: 96px; padding: 10px; text-align: left; border: 1px solid var(--borde-fuerte); border-radius: var(--radio); background: var(--capa-1); color: var(--texto); }
+.bv-area b { font-family: var(--letra-titulo); font-size: 1rem; }
+.bv-area small { color: var(--texto-2); font-size: 0.78rem; line-height: 1.3; }
+.bv-area[aria-pressed="true"] { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 10%, var(--capa-1)); }
+.bv-area.bloq { opacity: 0.55; cursor: not-allowed; }
+.bv-ico { font-size: 1.4rem; }
+.bv-marca { position: absolute; top: 8px; right: 8px; font-size: 0.65rem; font-weight: 700; color: var(--acento-texto); }
+.bv-marca.aviso { color: var(--atencion-texto); }
+.bv-caja { border: 1px solid var(--borde); border-radius: var(--radio); background: var(--capa-1); padding: 12px; display: grid; gap: 8px; }
+.bv-caja h3 { margin: 0; font-family: var(--letra-titulo); font-size: 0.95rem; }
+.bv-fila { display: flex; flex-wrap: wrap; gap: 8px; }
+.bv-fila > * { flex: 1 1 120px; min-width: 0; }
+.bv-propia > .btn { flex: 0 0 auto; }
+.bv-carga { margin: 0; padding: 8px 10px; border-left: 3px solid var(--xp); background: var(--capa-2); color: var(--texto-2); font-size: 0.85rem; }
+.bv-carga b { display: block; color: var(--xp); font-size: 0.7rem; letter-spacing: var(--etiqueta-espacio); text-transform: var(--etiqueta-mayus); }
+.bv-resumen { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+@media (max-width: 480px) { .bv-areas { grid-template-columns: 1fr 1fr; } }
