@@ -857,3 +857,25 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .trofeo { display: inline-block; animation: trofeo 900ms var(--resorte) both; }
 @keyframes trofeo { 0% { transform: scale(0) rotate(-30deg); } 60% { transform: scale(1.35) rotate(8deg); } }
 .btn, .medidor, .segmentado button, .ent-vivo button { position: relative; overflow: hidden; }
+
+/* ---------- Portada (sin sesión) y pedidos de cuenta ---------- */
+.portada { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: var(--fondo); }
+.portada-caja { width: min(880px, 100%); display: grid; gap: 18px; animation: vista-entra 0.35s var(--curva); }
+.portada-cabeza { display: flex; align-items: center; gap: 14px; }
+.portada-titulo { margin: 0; font-size: 2.6rem; letter-spacing: 0.12em; color: var(--acento); line-height: 1; }
+.portada-lema { margin: 4px 0 0; color: var(--texto-2); font-weight: 600; }
+.portada-texto { margin: 0; color: var(--texto); line-height: 1.55; max-width: 68ch; }
+.portada-areas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.portada-areas li { display: flex; gap: 10px; align-items: flex-start; background: var(--capa-1); border: 1px solid var(--borde); border-radius: var(--radio); padding: 12px; }
+.portada-areas strong { display: block; }
+.portada-areas small { color: var(--texto-2); }
+.portada-icono { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: var(--radio-chico); background: var(--acento-suave); color: var(--acento-texto); font-weight: 800; }
+.portada-pasos { margin: 0; padding: 12px 12px 12px 34px; background: var(--capa-1); border: 1px dashed var(--borde); border-radius: var(--radio); display: grid; gap: 4px; color: var(--texto-2); }
+.portada-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 520px; }
+.portada-pie { margin: 0; }
+@media (max-width: 720px) {
+  .portada { place-items: start center; padding-bottom: 150px; }
+  .portada-areas { grid-template-columns: 1fr 1fr; }
+  .portada-botones { position: fixed; left: 0; right: 0; bottom: 0; max-width: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--fondo); border-top: 1px solid var(--borde); grid-template-columns: 1fr; z-index: 5; }
+}
+.cuenta-botones { display: flex; gap: 8px; flex-wrap: wrap; }
