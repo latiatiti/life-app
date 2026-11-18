@@ -6,11 +6,18 @@
 alter table public.perfiles add column if not exists bienvenida jsonb;
 alter table public.perfiles add column if not exists bienvenida_at timestamptz;
 
--- Cuentas que ya existían: no se les muestra sola (si quieren, la repiten desde Ajustes).
+-- Cuentas que ya usan LIFE (tienen datos cargados): no se les muestra sola (si quieren, la repiten desde Ajustes).
+-- Las que todavía no cargaron nada (recién aprobadas) la ven al entrar.
 -- Ojo: si ya repartían compras con otra persona, al aplicar hay que guardar ese nombre aparte
 -- (update ... set bienvenida = jsonb_build_object('comparte', '<nombre>')), así Compras lo sigue mostrando.
 -- No va acá porque el repo es público.
-update public.perfiles set bienvenida_at = now() where bienvenida_at is null;
+update public.perfiles p set bienvenida_at = now()
+ where p.bienvenida_at is null
+   and (exists (select 1 from public.eco_cuentas x where x.user_id = p.user_id)
+     or exists (select 1 from public.dia_plantilla x where x.user_id = p.user_id)
+     or exists (select 1 from public.dia_tareas x where x.user_id = p.user_id)
+     or exists (select 1 from public.ent_sesiones x where x.user_id = p.user_id)
+     or exists (select 1 from public.stk_productos x where x.user_id = p.user_id));
 
 -- Cada persona guarda SOLO su configuración inicial (y su nombre). Rol, plan y estado no se tocan desde acá.
 create or replace function public.life_guardar_bienvenida(respuestas jsonb, nombre_nuevo text default null)
