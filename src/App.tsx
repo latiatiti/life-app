@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { usePerfil, puedeEscribir, veModulo } from './core/auth';
+import { debeHacerBienvenida, usePerfil, puedeEscribir, veModulo } from './core/auth';
+import { Bienvenida } from './modules/ajustes/Bienvenida';
 import { almacen, contarLocales, noSubirDatosLocales, subirDatosLocales } from './core/db';
 import { MODULOS } from './core/registry';
 import type { Modulo } from './core/types';
@@ -68,6 +69,8 @@ export function App() {
   const Componente = pantalla?.componente;
   const [verMas, setVerMas] = useState(false);
   const [verPestanas, setVerPestanas] = useState(false);
+  // Cuenta nueva: la configuración inicial aparece sola (si la cierra, vuelve a aparecer la próxima vez que entre).
+  const [bienvenidaCerrada, setBienvenidaCerrada] = useState(false);
 
   const secciones = armarSecciones(visibles);
   const seccion = secciones.find((x) => x.pestanas.some((p) => p.modulo === modulo?.id));
@@ -129,6 +132,8 @@ export function App() {
           <span>Más</span>
         </button>
       </nav>
+
+      {debeHacerBienvenida(perfil) && !bienvenidaCerrada && <Bienvenida onListo={() => setBienvenidaCerrada(true)} />}
 
       <MenuLife abierto={menu.abierto} onCerrar={menu.cerrar} secciones={secciones} actual={actual} ruta={ruta} />
 

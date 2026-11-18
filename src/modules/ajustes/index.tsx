@@ -5,11 +5,12 @@ import { almacen, borrarPrueba, contarPrueba, exportarTodo, importarTodo, supaba
 import { hoy } from '../../core/format';
 import type { Modulo } from '../../core/types';
 import { Campo, Icono, Tarjeta } from '../../ui/ui';
-import { usePerfil } from '../../core/auth';
+import { usePerfil, veModulo } from '../../core/auth';
 import { ConexionClaude } from './Claude';
 import { ConexionWhatsapp } from './Whatsapp';
 import { PanelCuentas } from './Cuentas';
-import { cargarConfiguracionInicial } from './semilla';
+import { Bienvenida } from './Bienvenida';
+import { AREAS } from './inicio';
 
 function PantallaAjustes() {
   const fija = configDesdeEntorno();
@@ -108,19 +109,7 @@ function PantallaAjustes() {
       <ConexionClaude />
       <ConexionWhatsapp />
 
-      <Tarjeta titulo="Tu configuración inicial">
-        <p className="nota">Carga tus cuentas (Mercado Pago, efectivo, Cocos), tus categorías, tus dos trabajos de los sábados tus gastos fijos (alquiler, internet, gimnasio, celular), los básicos de la casa, tus platos y metas de comida. Si ya existen, no los duplica.</p>
-        <div className="acciones">
-          <button className="btn btn-primario" onClick={async () => {
-            try {
-              const n = await cargarConfiguracionInicial();
-              setMsg(n ? `Listo: se agregaron ${n} cosas. Revisalas en Economía y Pagos.` : 'Ya estaba todo cargado.');
-            } catch (err) {
-              setMsg(`No se pudo cargar: ${(err as Error).message}`);
-            }
-          }}>Cargar mi configuración</button>
-        </div>
-      </Tarjeta>
+      <ConfigInicial />
 
       <Tarjeta titulo="Datos de prueba">
         <p className="nota" style={{ marginTop: 0 }}>Un historial simulado de entrenamiento para probar la app: 4 ciclos con progresión, descargas, un resfrío, un viaje, días salteados, cambios de ejercicio y notas en cada entreno. Se identifica aparte y se borra sin tocar tus datos.</p>
@@ -144,6 +133,26 @@ function PantallaAjustes() {
         <p className="nota">Con la app publicada (ver LEEME), abrila en el navegador del celular y elegí “Agregar a pantalla principal”.</p>
       </Tarjeta>
     </div>
+  );
+}
+
+/** Configuración inicial: qué áreas usa y lo básico de cada una. La primera vez aparece sola; acá se repite para sumar un área. */
+function ConfigInicial() {
+  const perfil = usePerfil();
+  const [abierta, setAbierta] = useState(false);
+  const areas = AREAS.filter((a) => veModulo(perfil, a.id));
+  const hecha = !!perfil.bienvenida;
+  return (
+    <Tarjeta titulo="Configuración inicial">
+      <p className="nota" style={{ marginTop: 0 }}>
+        {hecha ? <>Usás: {areas.map((a) => a.nombre).join(', ') || 'ninguna área'}. Repetila para sumar o sacar áreas: lo que ya cargaste no se duplica.</>
+          : 'Elegí qué áreas vas a usar y LIFE te carga lo básico de cada una (tu semana, tus gastos fijos, una rutina de inicio…). Son unos minutos.'}
+      </p>
+      <div className="acciones">
+        <button className="btn btn-primario" onClick={() => setAbierta(true)}>{hecha ? 'Cambiar mis áreas' : 'Empezar'}</button>
+      </div>
+      {abierta && <Bienvenida onListo={() => setAbierta(false)} />}
+    </Tarjeta>
   );
 }
 

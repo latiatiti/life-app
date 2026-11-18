@@ -2,6 +2,7 @@ import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { crear, eliminar, modificar } from '../../core/db';
 import { hoy } from '../../core/format';
+import { AConfigurar } from '../../ui/AConfigurar';
 import { Campo, Cifra, Icono, Medidor, Modal, Tarjeta, Vacio } from '../../ui/ui';
 import { entrenoHoy, useSesiones } from '../entrenamiento/modelo';
 import { useProductos } from '../stock/modelo';
@@ -79,7 +80,7 @@ export function FormComida({ onListo }: { onListo: () => void }) {
 export function PantallaHoyComida() {
   const { filas: comidas } = useComidas();
   const { filas: extras } = useExtras();
-  const { filas: metas } = useMetas();
+  const { filas: metas, cargado: metasCargadas } = useMetas();
   const { filas: sesiones } = useSesiones();
   const { filas: platos } = usePlatos();
   const { filas: productos } = useProductos();
@@ -99,6 +100,10 @@ export function PantallaHoyComida() {
         <p className="nota">{entreno ? 'Hoy entrenaste: la meta sube.' : 'Día de descanso: meta normal.'}</p>
         <button className="btn btn-primario" onClick={() => setNueva(true)}>{Icono.mas} Comida</button>
       </div>
+      {metasCargadas && !metas.length && (
+        <AConfigurar titulo="Tus metas están sin configurar" texto="Poné cuánta proteína, calorías y agua querés por día. Mientras tanto las cuentas usan valores generales."
+          boton="Configurar mis metas" ruta="#/alimentacion/metas" />
+      )}
       <div className="grilla-cifras">
         <Cifra etiqueta="Proteína" valor={`${Math.round(t.proteina)} / ${meta.proteina} g`} tono={t.proteina >= meta.proteina ? 'bien' : undefined} />
         <Cifra etiqueta="Calorías" valor={`${Math.round(t.kcal)} / ${meta.kcal}`} />
@@ -214,7 +219,7 @@ export function PantallaPlatos() {
         <p className="nota">Tus platos con ingredientes y macros por porción (aproximados).</p>
         <button className="btn btn-primario" onClick={() => setEditando('nuevo')}>{Icono.mas} Plato</button>
       </div>
-      {cargado && platos.length === 0 && <Vacio titulo="Sin platos"><p>Cargá tus platos desde Ajustes → Cargar mi configuración, o agregalos a mano.</p></Vacio>}
+      {cargado && platos.length === 0 && <Vacio titulo="Sin platos"><p>Agregá los platos que hacés seguido, o elegilos en Ajustes → Configuración inicial.</p></Vacio>}
       {platos.length > 0 && (
         <Tarjeta>
           <ul className="lista">

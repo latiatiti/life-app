@@ -2,7 +2,7 @@ import { escribirStorage, leerStorage, NUBE_LIFE } from '../../core/config';
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { diasEntre, hoy } from '../../core/format';
 import { T as TE, type Movimiento } from '../economia/modelo';
-import { ajustar, LUGARES, type Lugar, nuevoProducto, type Persona, personaDe, type Producto } from '../stock/modelo';
+import { ajustar, LUGARES, type Lugar, nuevoProducto, PERSONAS, type Persona, personaDe, type Producto } from '../stock/modelo';
 
 /* ---------- Tipos ---------- */
 
@@ -289,7 +289,7 @@ export function frecuentes(compras: Compra[]): Map<string, number> {
 
 /* ---------- Carrito con escáner (compra compartida) ---------- */
 
-export { PERSONAS } from '../stock/modelo';
+export { PERSONAS };
 export type { Persona };
 
 /** Una cosa cargada en el súper: escaneada o escrita. Precio opcional (por unidad). */
@@ -434,7 +434,7 @@ const LUGAR_DE_BLOQUE: Record<string, Lugar> = {
 
 /**
  * Cerrar la compra compartida: guarda la compra con quién lleva qué, los precios que anotaste,
- * suma cada cosa al stock de su dueño (Yo, Ulises o Los dos) y, si pagaste vos, anota el gasto.
+ * suma cada cosa al stock de su dueño (Yo, con quien compartís o Los dos) y, si pagaste vos, anota el gasto.
  */
 export async function cerrarCarrito(d: {
   carrito: Carrito; super: Super | null; items: Item[]; productos: Producto[]; total: number; pago: Persona;
@@ -468,7 +468,7 @@ export async function cerrarCarrito(d: {
     if (Object.keys(cambios).length) await modificar<Item>(TC.items, it.id, cambios);
   }
   const debe = d.pago === 'yo' ? t.ulises : t.yo;
-  const nota = debe > 0 ? (d.pago === 'yo' ? ` · Ulises te debe ${Math.round(debe)}` : ` · le debés a Ulises ${Math.round(debe)}`) : '';
+  const nota = debe > 0 ? (d.pago === 'yo' ? ` · ${PERSONAS.ulises} te debe ${Math.round(debe)}` : ` · le debés a ${PERSONAS.ulises} ${Math.round(debe)}`) : '';
   let movimiento_id: string | null = null;
   if (d.pago === 'yo' && d.gasto && d.total > 0) {
     const m = await crear<Movimiento>(TE.movimientos, {

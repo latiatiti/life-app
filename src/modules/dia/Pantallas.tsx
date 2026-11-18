@@ -9,6 +9,7 @@ import {
   guardarDiaPlantilla, guardarSemanaBase, horaCorta, semanaDe, semanaTipo, TD, TIPOS, useDias, usePlantilla, useTareas,
   type Bloque, type EstadoDia, type NivelPrioridad, type Prioridad, type Tarea, type TipoBloque, type VistaDia,
 } from './modelo';
+import { AConfigurar } from '../../ui/AConfigurar';
 import './dia.css';
 
 const PX_HORA = 72;
@@ -470,6 +471,11 @@ export function PantallaDia() {
           <button className="btn btn-primario" onClick={() => setEditar(true)}>{Icono.editar} Editar día</button>
         </div>
       </div>
+
+      {cargado && !plantilla.length && (
+        <AConfigurar titulo="Tu semana está sin configurar" texto="Contá a qué hora te levantás, te acostás y tus actividades fijas. Con eso LIFE arma tu día y calcula tu tiempo libre."
+          boton="Configurar mi semana" ruta="#/dia/semana" />
+      )}
 
       <div className="semana-tira capa" role="tablist" aria-label="Semana">
         <button className="btn-icono" onClick={() => setFecha(sumarDias(fecha, -7))} aria-label="Semana anterior">{Icono.flechaIzq}</button>

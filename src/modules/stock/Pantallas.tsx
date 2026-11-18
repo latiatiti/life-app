@@ -126,7 +126,7 @@ export function PantallaStock() {
       )}
       {cargado && productos.length === 0 && (
         <Vacio titulo="Tu casa está vacía (en la app)">
-          <p>Cargá tus básicos desde Ajustes → Cargar mi configuración, o agregá productos a mano.</p>
+          <p>Agregá lo que querés tener siempre, o elegí tus básicos en Ajustes → Configuración inicial.</p>
         </Vacio>
       )}
       {grupos.filter((g) => g.lista.length).map((g) => (

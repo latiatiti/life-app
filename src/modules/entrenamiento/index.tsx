@@ -14,9 +14,12 @@ function useSenalesEntreno(): Senal[] {
   useBiblioteca();
   const { filas: sesiones, cargado } = useSesiones();
   const { filas: series } = useSeries();
-  const { dias, estado, ciclo, fila } = useRutina();
-  if (!cargado) return [];
+  const { dias, estado, ciclo, fila, cargado: rutCargada } = useRutina();
+  if (!cargado || !rutCargada) return [];
   const senales: Senal[] = [];
+  if (!fila) {
+    return [{ id: 'ent-config', modulo: 'entrenamiento', nivel: 'info', titulo: 'Tu entreno está sin configurar', detalle: 'Elegí una rutina (o pedile una a Claude) para empezar.', ruta: '#/entrenamiento/entrenador', accion: { texto: 'Elegir rutina', ruta: '#/entrenamiento/entrenador' } }];
+  }
   if (estado?.terminado) {
     senales.push({ id: 'ent-ciclo', modulo: 'entrenamiento', nivel: 'info', titulo: `Terminó tu ciclo${ciclo?.numero ? ` ${ciclo.numero}` : ''} de entrenamiento`, detalle: 'Revisá la propuesta para el próximo ciclo (o pedile una a Claude).', ruta: '#/entrenamiento/entrenador' });
   } else if (estado && estado.indice === estado.total - 1 && estado.semana.seriesPct) {
@@ -66,7 +69,8 @@ function ResumenEntreno() {
 
 function useVitalEntreno(): Vital {
   const { filas: sesiones } = useSesiones();
-  const { dias, fila } = useRutina();
+  const { dias, fila, cargado } = useRutina();
+  if (cargado && !fila) return { cifra: 'A configurar', sub: 'Elegí tu rutina para empezar', accion: { texto: 'Elegir rutina', ruta: '#/entrenamiento/entrenador' } };
   const semana = sesiones.filter((s) => diasEntre(s.fecha, hoy()) < 7).length;
   const p = proximoDia(sesiones, dias, fila?.inicio);
   return {
