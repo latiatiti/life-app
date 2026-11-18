@@ -903,3 +903,8 @@ button:active:not(:disabled) { transform: scale(0.97); }
   .portada-botones { position: fixed; left: 0; right: 0; bottom: 0; max-width: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--fondo); border-top: 1px solid var(--borde); grid-template-columns: 1fr; z-index: 5; }
 }
 .cuenta-botones { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- A configurar (ui/AConfigurar.tsx) ---------- */
+.a-configurar { display: grid; gap: 6px; justify-items: start; padding: 14px; border: 1px dashed var(--atencion); border-radius: var(--radio); background: color-mix(in srgb, var(--atencion) 8%, var(--capa-1)); }
+.a-configurar-etq { font-size: 0.7rem; font-weight: 700; letter-spacing: var(--etiqueta-espacio); text-transform: var(--etiqueta-mayus); color: var(--atencion-texto); }
+.a-configurar p { margin: 0; color: var(--texto-2); }

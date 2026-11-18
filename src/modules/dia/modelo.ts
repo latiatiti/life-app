@@ -85,15 +85,10 @@ export const DIAS_CORTOS = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 /** Horario del gimnasio: el domingo no abre, el sábado abre a las 7. Entrenos de ~1 h 30 (express). */
 export const GIMNASIO = { cerrado: [0], abreSabado: '07:00', duracionMin: 90 };
 
-/* ---------- Semana tipo de fábrica: genérica (cada cuenta arma la suya en la configuración inicial o en Semana tipo) ---------- */
+/* ---------- Semana tipo de fábrica: ninguna (cada cuenta arma la suya en la configuración inicial o en Semana tipo) ---------- */
 
-const b = (dia_semana: number, inicio: string, fin: string, titulo: string, tipo: TipoBloque, extra: Partial<Bloque> = {}) =>
-  ({ dia_semana, inicio, fin, titulo, tipo, ...extra });
-
-export const SEMANA_BASE: Array<Omit<BloquePlantilla, 'id'>> = [0, 1, 2, 3, 4, 5, 6].flatMap((d) => [
-  b(d, '00:00', '08:00', 'Dormir', 'descanso'),
-  b(d, '08:00', '24:00', 'En casa', 'casa'),
-]);
+/** Vacía: una cuenta nueva arranca "a configurar" (no hereda la semana de nadie). */
+export const SEMANA_BASE: Array<Omit<BloquePlantilla, 'id'>> = [];
 
 /* ---------- Feriados de Argentina (+ Mendoza) ---------- */
 

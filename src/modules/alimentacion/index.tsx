@@ -8,9 +8,12 @@ import { PantallaHoyComida, PantallaMetas, PantallaPlatos } from './Pantallas';
 function useSenalesComida(): Senal[] {
   const { filas: comidas } = useComidas();
   const { filas: extras } = useExtras();
-  const { filas: metas } = useMetas();
+  const { filas: metas, cargado } = useMetas();
   const { filas: sesiones } = useSesiones();
   const senales: Senal[] = [];
+  if (cargado && !metas.length) {
+    return [{ id: 'ali-config', modulo: 'alimentacion', nivel: 'info', titulo: 'Tus metas de comida están sin configurar', detalle: 'Poné tu proteína, calorías y agua (o tu peso en la configuración inicial).', ruta: '#/alimentacion/metas', accion: { texto: 'Configurar', ruta: '#/alimentacion/metas' } }];
+  }
   const h = new Date().getHours();
   const entreno = entrenoHoy(sesiones);
   const meta = metasDelDia(metas, entreno);
@@ -52,10 +55,11 @@ function ResumenComida() {
 
 function useVitalComida(): Vital {
   const { filas: comidas } = useComidas();
-  const { filas: metas } = useMetas();
+  const { filas: metas, cargado } = useMetas();
   const { filas: sesiones } = useSesiones();
   const meta = metasDelDia(metas, entrenoHoy(sesiones));
   const t = totalesDia(comidas, hoy());
+  if (cargado && !metas.length) return { cifra: 'A configurar', sub: 'Poné tus metas de proteína y calorías', accion: { texto: 'Configurar', ruta: '#/alimentacion/metas' } };
   return {
     cifra: `${Math.round(t.proteina)} / ${meta.proteina} g`,
     sub: `Proteína de hoy · ${Math.round(t.kcal)} de ${meta.kcal} kcal`,
