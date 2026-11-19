@@ -27,27 +27,47 @@ La sesión de WhatsApp da acceso a todos sus chats: va cifrada con `WA_CIFRADO` 
 no tiene la service_role (usa `WA_PUENTE_CLAVE` contra la función `whatsapp-puente`), no escribe textos ni números en los
 logs y nada de eso va al repo. Claude manda solo con `ok_de_la_usuaria` y hay topes por día. Si se filtra alguna de las dos
 claves: cambiarlas, desconectar desde la app y volver a escanear el QR.
+Desde 2026-11-13 la clave del puente se cambia desde la app (Ajustes → Seguridad → "Cambiar clave del puente", función
+`life_wa_puente_nueva`, guarda solo la huella) y en la compu con `Cambiar clave del puente.bat` (DPAPI, reinicia la tarea).
+
+## Claves y acceso (2026-11-13, `supabase/seguridad-claves.sql`)
+- **Links de Claude vencen a los 90 días** (`api_claves.vence`, lo pone la base); `life-mcp` rechaza vencidos, cortados y
+  cuentas sin perfil o pausadas. La app avisa 14 días antes (señal "Renovar") y "Renovar" crea uno nuevo con el mismo
+  nombre y permiso.
+- **Guardia** (trigger `life_claves_guardia`): un link cortado no revive, "solo leer" no pasa a "cargar", la huella y el
+  vencimiento no se tocan. Así una sesión robada no puede revivir links viejos. Tope: 5 links activos por cuenta.
+- Ajustes → **Seguridad**: cerrar sesión en los otros dispositivos, clave del puente, y checklist de verificación en dos
+  pasos para Google, GitHub, Supabase, Netlify y Claude (si alguien entra a una de esas, entra a LIFE).
+- Regla: toda clave nueva (de cualquier función) se guarda como huella sha-256, se muestra una sola vez, tiene forma de
+  cortarse y fecha para cambiarse.
 
 ## Encabezados (Netlify, `public/_headers`)
 HSTS, nosniff, sin marcos (`X-Frame-Options: DENY`), sin referer, permisos del navegador limitados
-(cámara y ubicación solo la propia app) y una regla de contenido (CSP) en modo **solo avisar**.
-Para activarla: abrir la app publicada, recorrer todo (incluido Ticket con foto y el escáner), mirar la
-consola; si no hay avisos "Content-Security-Policy-Report-Only", cambiar el nombre del encabezado a
-`Content-Security-Policy`. Si se suma un dominio externo nuevo, agregarlo ahí.
+(cámara y ubicación solo la propia app) y una regla de contenido (CSP) que **bloquea** (activa desde el
+2026-10-31, después de recorrer todas las pantallas sin avisos). Si se suma un dominio externo nuevo
+(script, conexión, fuente), agregarlo en `public/_headers` o el navegador lo bloquea. Si algo deja de
+andar en la app publicada, mirar la consola: "Refused to …" dice qué dominio falta.
 
-## Estado (auditoría 2026-10-29)
-Aplicado (PR #17): encabezados, service worker que no guarda errores, Vite 8.3.5 (fallas del servidor
-de desarrollo). `supabase/seguridad.sql` **aplicado en la nube el 2026-10-30** (migración
-`seguridad_gonzalito_1`, con su OK): los asesores bajaron de 10 a 5 avisos (quedan los esperables).
+## Estado (2026-10-31, ver `docs/informe-seguridad.md`)
+Aplicado: encabezados con CSP que bloquea, service worker que no guarda errores, Vite 8.3.5,
+`supabase/seguridad.sql` en la nube (2026-10-30), función `ticket` solo con sesión de LIFE y sin
+puertos/usuarios raros en el link, links de Claude con nombre, fecha y aviso a los 90 días.
+`npm audit`: 0 fallas. Historial del repo revisado: no hay claves secretas (solo la anon key, que es
+pública por diseño).
 
-Pendiente:
-- Pasar el repo de GitHub a **privado** (hoy es público).
+Pendiente (ver el informe para los pasos):
+- Pasar el repo de GitHub a **privado** (hoy es público). Ojo: `life-mcp` se desplegó leyendo el código desde
+  raw.githubusercontent; con el repo privado, el próximo despliegue se hace pegando el código (o con la CLI).
+- Aplicar `supabase/seguridad-claves.sql` y **después** redesplegar `life-mcp` (si va antes, igual anda: lee `vence` solo si existe).
+- Redesplegar la función `ticket` **después** de publicar la app nueva (si no, la app vieja falla).
 - Cuenta `mauro2@life.com` (sin datos, con una sesión abierta desde el 15/10): pausarla o borrarla.
-- Supabase → Authentication: confirmar que "Allow new users to sign up" esté apagado y activar la
-  protección de contraseñas filtradas.
-- Conector `life-mcp`: la clave viaja en el link (`?k=`). Una clave por uso (Claude = escribir, copia de
-  la PC = solo leer), cambiarlas cada 90 días y revocar la que se haya pegado en un lugar compartido.
-- Funciones `ticket` y `precios`: cualquiera con la anon key (pública) puede usarlas; limitar a usuarios
-  con sesión cuando el modo local deje de necesitarlas.
+- Supabase → Authentication: apagar "Allow new users to sign up"; protección de contraseñas
+  filtradas (solo en plan Pro).
+- Conector `life-mcp`: la clave viaja en el link (`?k=`, Claude no deja otra forma). Una por uso,
+  cambiarlas cada 90 días (la app avisa) y cortar la que se haya pegado en un lugar compartido.
+- Función `precios`: sigue abierta con la anon key (solo consulta 3 catálogos públicos fijos: riesgo bajo).
 - Copia en la PC: los respaldos `.json` quedan sin cifrar en `LIFE\respaldos`; activar BitLocker (o
   cifrado de dispositivo) en esa compu y contraseña/PIN de Windows.
+- Aceptado: 4 avisos de Supabase por funciones `security definer` que usan las reglas de la base
+  (`life_puede_escribir`, `life_rol`, `life_es_superadmin`, `life_uso`). Las necesitan los usuarios con
+  sesión y solo dicen cosas de uno mismo.

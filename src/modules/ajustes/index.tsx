@@ -9,6 +9,7 @@ import { usePerfil } from '../../core/auth';
 import { ConexionClaude } from './Claude';
 import { ConexionWhatsapp } from './Whatsapp';
 import { PanelCuentas } from './Cuentas';
+import { PanelSeguridad, useSenalesSeguridad } from './Seguridad';
 import { cargarConfiguracionInicial } from './semilla';
 
 function PantallaAjustes() {
@@ -105,6 +106,7 @@ function PantallaAjustes() {
       </Tarjeta>
 
       <PanelCuentas />
+      <PanelSeguridad />
       <ConexionClaude />
       <ConexionWhatsapp />
 
@@ -150,8 +152,9 @@ function PantallaAjustes() {
 export const moduloAjustes: Modulo = {
   id: 'ajustes',
   nombre: 'Ajustes',
-  descripcion: 'Cuenta, conexión con Claude, respaldo e instalación',
+  descripcion: 'Cuenta, seguridad, conexión con Claude, respaldo e instalación',
   icono: Icono.ajustes,
   pantallas: [{ ruta: '', titulo: 'Ajustes', componente: PantallaAjustes }],
+  useSenales: useSenalesSeguridad,
   enHub: false,
 };
