@@ -5,8 +5,10 @@ import { ConSesion } from './core/auth';
 import './tema/tema.css';
 import './styles.css';
 import { activarOndas } from './ui/onda';
+import { capturarErrores } from './core/informes';
 
 activarOndas();
+capturarErrores();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
