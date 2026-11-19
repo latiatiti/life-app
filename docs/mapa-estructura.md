@@ -80,6 +80,7 @@ Reglas que se siguen: primero Inicio, después lo diario, al final lo que se ana
 | **Plata** (Economía + Pagos) | menú | barra | Resumen · Pagos · Ingresos · Movimientos · ⋯ Proyección | `eco_*`, `pag_pagos` |
 | **Entreno** | menú | Más (o barra, ver pregunta) | Hoy · Progreso · Rutina · ⋯ Historial, Preparador | `ent_*` |
 | **Casa** (Stock + Compras + Comida) | menú | Más | En casa · Lista · Comprar · ⋯ Comida, Precios, Tickets, Historial | `stk_*`, `com_*`, `ali_*` |
+| **Panel** (2026-11-19, solo superadmin) | menú | Más | Cuentas · Informes · LIFE | `perfiles` + función `cuentas`, `life_informes` (lo que manda el botón "! Informar" de la barra de arriba y los errores automáticos), `life_panel_cuentas()`, `life_panel_base()`; línea de tiempo en `panel/novedades.ts`. Cuentas y roles salen de Ajustes y viven acá. |
 | **Ajustes** | ⚙ al final | Más | Mi cuenta · Plata (cuentas y categorías) · Claude · Respaldo · Datos de prueba | `perfiles`, `api_claves`, `eco_cuentas`, `eco_categorias` |
 
 Cambios que implica (cada uno sería una tanda chica):
