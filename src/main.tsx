@@ -5,13 +5,16 @@ import { ConSesion } from './core/auth';
 import './tema/tema.css';
 import './styles.css';
 import { activarOndas } from './ui/onda';
+import { Protegido } from './ui/Protegido';
 
 activarOndas();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ConSesion>
-      <App />
+      <Protegido nombre="LIFE" pantallaCompleta>
+        <App />
+      </Protegido>
     </ConSesion>
   </StrictMode>
 );

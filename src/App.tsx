@@ -8,6 +8,7 @@ import { BotonCargar } from './hub/Cargar';
 import { Hub } from './hub/Hub';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
+import { Protegido } from './ui/Protegido';
 import { AvisoDeshacer, VentanaConfirmar } from './ui/Deshacer';
 import { Icono, Modal } from './ui/ui';
 
@@ -164,16 +165,16 @@ export function App() {
                   </nav>
                 )}
               </header>
-              <Componente />
+              <Protegido nombre={seccion?.nombre ?? modulo.nombre} clave={ruta}><Componente /></Protegido>
             </>
           ) : (
-            <Hub abrirMenu={menu.abrir} />
+            <Protegido nombre="el Inicio" clave={ruta}><Hub abrirMenu={menu.abrir} /></Protegido>
           )}
         </div>
       </main>
 
-      <Avisos />
-      <BarraActividad />
+      <Protegido nombre="los avisos" silencioso><Avisos /></Protegido>
+      <Protegido nombre="la barra de actividad" silencioso><BarraActividad /></Protegido>
       <AvisoDeshacer />
       <VentanaConfirmar />
     </div>
