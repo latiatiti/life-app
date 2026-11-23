@@ -10,6 +10,7 @@ import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
 import { Protegido } from './ui/Protegido';
 import { AvisoDeshacer, VentanaConfirmar } from './ui/Deshacer';
+import { BotonInformar, Tropiezo, VentanaInformar } from './ui/Informar';
 import { Icono, Modal } from './ui/ui';
 
 /**
@@ -103,6 +104,7 @@ export function App() {
           </button>
         )}
         <div className="barra-sup-der">
+          <BotonInformar />
           {puedeEscribir(perfil) && <span className="solo-compu-flex"><BotonCargar ve={(id) => visibles.some((m) => m.id === id)} /></span>}
           {visibles.some((m) => m.id === 'ajustes') && (
             <a href="#/ajustes" className={`btn-icono barra-sup-ajustes ${idModulo === 'ajustes' ? 'activo' : ''}`} aria-label="Ajustes" title="Ajustes">{Icono.ajustes}</a>
@@ -165,7 +167,7 @@ export function App() {
                   </nav>
                 )}
               </header>
-              <Protegido nombre={seccion?.nombre ?? modulo.nombre} clave={ruta}><Componente /></Protegido>
+              <Tropiezo key={ruta}><Componente /></Tropiezo>
             </>
           ) : (
             <Protegido nombre="el Inicio" clave={ruta}><Hub abrirMenu={menu.abrir} /></Protegido>
@@ -177,6 +179,7 @@ export function App() {
       <Protegido nombre="la barra de actividad" silencioso><BarraActividad /></Protegido>
       <AvisoDeshacer />
       <VentanaConfirmar />
+      <VentanaInformar />
     </div>
   );
 }

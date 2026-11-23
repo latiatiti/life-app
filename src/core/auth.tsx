@@ -36,7 +36,9 @@ export function usePerfil(): Perfil {
 }
 
 export const puedeEscribir = (p: Perfil) => p.activo && p.rol !== 'lector';
-export const veModulo = (p: Perfil, id: string) => !p.modulos || p.modulos.includes(id) || id === 'ajustes';
+/** Ajustes lo ve todo el mundo; el Panel, solo la superadmin; el resto, según los módulos de la cuenta. */
+export const veModulo = (p: Perfil, id: string) =>
+  id === 'panel' ? p.rol === 'superadmin' && p.activo : !p.modulos || p.modulos.includes(id) || id === 'ajustes';
 
 async function cargarPerfil(s: Session) {
   if (!supabase) return;
