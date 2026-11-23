@@ -1,0 +1,50 @@
+/* Panel de la superadmin (2026-11-19): cuentas, informes y LIFE. Solo tokens de tema.css. */
+.cuentas-lista { display: flex; flex-direction: column; }
+.cuenta-fila {
+  display: grid; grid-template-columns: minmax(160px, 1.2fr) minmax(0, 2fr) minmax(0, 1.4fr) auto; gap: 8px 16px; align-items: center;
+  padding: 12px 0 12px 12px; border-top: 1px solid var(--borde); border-left: 2px solid transparent;
+}
+.cuenta-fila:first-child { border-top: 0; }
+.cuenta-critico { border-left-color: var(--urgente); }
+.cuenta-aviso { border-left-color: var(--atencion); }
+.cuenta-ok { border-left-color: var(--bien); }
+.cuenta-quien { display: flex; flex-direction: column; min-width: 0; }
+.cuenta-quien small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cuenta-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cuenta-datos { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; }
+.cuenta-botones { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 760px) {
+  .cuenta-fila { grid-template-columns: minmax(0, 1fr); padding-left: 10px; }
+  .cuenta-datos { flex-direction: row; flex-wrap: wrap; gap: 4px 12px; }
+  .cuenta-botones { justify-content: flex-start; }
+  .cuenta-botones .btn { flex: 1; min-height: var(--alto-toque); }
+}
+.tabla-permisos { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.tabla-permisos th, .tabla-permisos td { padding: 8px 6px; border-top: 1px solid var(--borde); text-align: center; }
+.tabla-permisos th[scope='row'] { text-align: left; font-weight: 500; color: var(--texto); }
+.tabla-permisos thead th { border-top: 0; font: 600 0.7rem var(--letra-dato); text-transform: uppercase; color: var(--texto-2); }
+.tabla-permisos .si { color: var(--bien-texto); }
+.tabla-permisos .no { color: var(--texto-3); }
+
+.informes-filtros { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.informes-filtros .pestanas { flex: 1; min-width: 0; }
+.informes-filtros select { width: auto; min-width: 180px; }
+@media (max-width: 760px) { .informes-filtros select { width: 100%; } }
+
+.base-tablas li { min-height: 40px; }
+.base-tablas code { font: 0.82rem var(--letra-dato); }
+
+.linea-tiempo { list-style: none; margin: 8px 0 0; padding: 0 0 0 22px; position: relative; display: flex; flex-direction: column; gap: 18px; }
+.linea-tiempo::before { content: ''; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px; background: var(--borde-fuerte); }
+.linea-tiempo > li { position: relative; display: flex; flex-direction: column; gap: 4px; }
+.lt-punto { position: absolute; left: -21px; top: 5px; width: 12px; height: 12px; background: var(--capa-1); border: 2px solid var(--acento); border-radius: 50%; }
+.ultima .lt-punto { background: var(--acento); box-shadow: var(--brillo); }
+.lt-cab { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lt-cab time { font: 600 0.78rem var(--letra-dato); color: var(--texto-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.lt-titulo { font-size: 1rem; }
+.lt-que { margin: 0; padding-left: 18px; color: var(--texto-2); font-size: 0.9rem; display: flex; flex-direction: column; gap: 2px; }
+.lt-area { width: auto; min-width: 160px; }
+@media (max-width: 760px) {
+  .panel-espera .lista-simple li { flex-direction: column; align-items: stretch; }
+  .panel-espera .cuenta-botones .btn { flex: 1; }
+}
