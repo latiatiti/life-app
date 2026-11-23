@@ -1,4 +1,4 @@
-import { crear, type Fila, modificar, useTabla } from '../../core/db';
+import { crear, type Fila, modificar, recargar, supabase, useTabla } from '../../core/db';
 import { descontar, type Producto } from '../stock/modelo';
 
 export const MOMENTOS = { desayuno: 'Desayuno', almuerzo: 'Almuerzo', merienda: 'Merienda', cena: 'Cena', colacion: 'Colación' } as const;
@@ -20,22 +20,36 @@ export interface Plato extends Fila {
   minutos: number;
   /** Descripción detallada para generar la foto con IA (en inglés, que la entienden mejor). */
   prompt?: string;
-  /** Link de la foto. Vacío = se arma con el prompt. */
+  /** Link de la foto guardada. Vacío = pendiente de generar. */
   imagen?: string;
+  /** Por qué quedó pendiente la foto la última vez. */
+  imagen_error?: string;
 }
 
-/** Semilla fija por nombre: el mismo plato da siempre la misma foto. */
-function semilla(t: string) {
-  let h = 0;
-  for (const c of t) h = (h * 31 + c.charCodeAt(0)) & 0x7fffffff;
-  return h % 100000;
+/** Foto guardada del plato (la genera una sola vez la función "platos-foto"). Vacío = pendiente. */
+export function fotoDePlato(p: Pick<Plato, 'imagen'>): string {
+  return p.imagen ?? '';
 }
 
-/** Foto del plato: la guardada o una generada con IA (Pollinations, gratis) a partir del prompt. */
-export function fotoDePlato(p: Pick<Plato, 'nombre' | 'prompt' | 'imagen'>): string {
-  if (p.imagen) return p.imagen;
-  if (!p.prompt) return '';
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(p.prompt)}?width=768&height=768&seed=${semilla(p.nombre)}&nologo=true&model=flux`;
+let generando = false;
+/**
+ * "Máquina" de fotos: mientras haya platos con descripción y sin foto, le pide a la nube que genere
+ * la siguiente (de a una, para no pasarse del uso gratis). Si falla, el plato queda pendiente y se
+ * vuelve a probar la próxima vez que se abra Comida. Con id rehace la foto de ese plato.
+ */
+export async function generarFotos(id?: string) {
+  if (!supabase || generando) return;
+  generando = true;
+  try {
+    for (let vuelta = 0; vuelta < 30; vuelta++) {
+      const { data, error } = await supabase.functions.invoke('platos-foto', { body: id ? { id } : {} });
+      await recargar(TA.platos);
+      if (error || data?.error || id || !data?.pendientes) break;
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  } finally {
+    generando = false;
+  }
 }
 
 export interface Comida extends Fila {

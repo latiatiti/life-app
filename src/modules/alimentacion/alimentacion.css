@@ -10,3 +10,9 @@
 .plato-foto.vacia { color: var(--acento-texto); font-family: var(--letra-titulo); font-size: 1.6rem; }
 .plato-mini { width: 52px; flex: none; }
 .plato-vista { max-width: 220px; }
+.plato-foto.vacia { flex-direction: column; gap: 2px; }
+.plato-foto.vacia small { font-family: var(--letra); font-size: .62rem; color: var(--texto-3); text-transform: uppercase; letter-spacing: .04em; }
+.plato-foto.en-camino { animation: plato-espera 1.6s ease-in-out infinite; }
+@keyframes plato-espera { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .plato-foto.en-camino { animation: none; } }
+.plato-vista { display: flex; flex-direction: column; gap: 6px; }
