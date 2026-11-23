@@ -41,11 +41,13 @@ export async function generarFotos(id?: string) {
   if (!supabase || generando) return;
   generando = true;
   try {
-    for (let vuelta = 0; vuelta < 30; vuelta++) {
+    for (let vuelta = 0; vuelta < 20; vuelta++) {
       const { data, error } = await supabase.functions.invoke('platos-foto', { body: id ? { id } : {} });
       await recargar(TA.platos);
-      if (error || data?.error || id || !data?.pendientes) break;
-      await new Promise((r) => setTimeout(r, 2000));
+      if (error || id || !data?.pendientes) break;
+      // El generador gratis deja hacer una foto cada ~45 s: esperamos y seguimos con la próxima
+      // (si falló por límite, se reintenta en la vuelta siguiente).
+      await new Promise((r) => setTimeout(r, data?.error ? 60000 : 47000));
     }
   } finally {
     generando = false;
