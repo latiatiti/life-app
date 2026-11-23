@@ -6,7 +6,7 @@ import { Campo, Cifra, Icono, Medidor, Modal, Tarjeta, Vacio } from '../../ui/ui
 import { entrenoHoy, useSesiones } from '../entrenamiento/modelo';
 import { useProductos } from '../stock/modelo';
 import {
-  faltaPara, guardarMetas, METAS_BASE, metasDelDia, MOMENTOS, registrarComida, TA, totalesDia,
+  faltaPara, fotoDePlato, guardarMetas, METAS_BASE, metasDelDia, MOMENTOS, registrarComida, TA, totalesDia,
   useComidas, useExtras, useMetas, usePlatos,
   type Extra, type Ingrediente, type Momento, type Plato,
 } from './modelo';
@@ -16,6 +16,14 @@ const n = (t: string) => Number(t.replace(',', '.')) || 0;
 function momentoSugerido(): Momento {
   const h = new Date().getHours();
   return h < 11 ? 'desayuno' : h < 15 ? 'almuerzo' : h < 19 ? 'merienda' : 'cena';
+}
+
+/** Foto del plato (si no carga, queda el cuadro con la inicial). */
+function FotoPlato({ plato }: { plato: Plato }) {
+  const [mal, setMal] = useState(false);
+  const url = fotoDePlato(plato);
+  if (!url || mal) return <span className="plato-foto vacia">{plato.nombre.charAt(0)}</span>;
+  return <img className="plato-foto" src={url} alt="" loading="lazy" onError={() => setMal(true)} />;
 }
 
 export function FormComida({ onListo }: { onListo: () => void }) {
@@ -50,12 +58,22 @@ export function FormComida({ onListo }: { onListo: () => void }) {
           {Object.entries(MOMENTOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </Campo>
-      <Campo etiqueta="Plato">
-        <select value={platoId} onChange={(e) => setPlatoId(e.target.value)}>
-          <option value="">Otra cosa (escribir)</option>
-          {platos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-        </select>
-      </Campo>
+      <p className="subtitulo">Plato</p>
+      <div className="platos-grilla" role="radiogroup" aria-label="Plato">
+        {platos.map((p) => (
+          <button type="button" key={p.id} role="radio" aria-checked={platoId === p.id}
+            className={`plato-ficha ${platoId === p.id ? 'elegido' : ''}`} onClick={() => setPlatoId(platoId === p.id ? '' : p.id)}>
+            <FotoPlato plato={p} />
+            <strong>{p.nombre}</strong>
+            <small>{Math.round(p.proteina)} g prot · {Math.round(p.kcal)} kcal</small>
+          </button>
+        ))}
+        <button type="button" role="radio" aria-checked={!platoId} className={`plato-ficha otra ${!platoId ? 'elegido' : ''}`} onClick={() => setPlatoId('')}>
+          <span className="plato-foto vacia">{Icono.mas}</span>
+          <strong>Otra cosa</strong>
+          <small>Escribirla</small>
+        </button>
+      </div>
       {plato ? (
         <>
           <Campo etiqueta="Porciones"><input inputMode="decimal" value={porciones} onChange={(e) => setPorciones(e.target.value)} /></Campo>
@@ -158,11 +176,15 @@ function FormPlato({ inicial, onListo }: { inicial?: Plato; onListo: () => void 
   const [gras, setGras] = useState(String(inicial?.grasas ?? ''));
   const [kcal, setKcal] = useState(String(inicial?.kcal ?? ''));
   const [min, setMin] = useState(String(inicial?.minutos ?? ''));
+  const [prompt, setPrompt] = useState(inicial?.prompt ?? '');
+  const [imagen, setImagen] = useState(inicial?.imagen ?? '');
 
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
     if (!nombre.trim()) return;
-    const datos = { nombre: nombre.trim(), ingredientes: ings.filter((i) => i.producto_id && i.cantidad > 0), proteina: n(prot), carbos: n(carb), grasas: n(gras), kcal: n(kcal), minutos: n(min) };
+    const datos = { nombre: nombre.trim(), ingredientes: ings.filter((i) => i.producto_id && i.cantidad > 0), proteina: n(prot), carbos: n(carb), grasas: n(gras), kcal: n(kcal), minutos: n(min),
+      // Solo si hay algo: así anda aunque la nube todavía no tenga las columnas nuevas.
+      ...(prompt.trim() || inicial?.prompt ? { prompt: prompt.trim() } : {}), ...(imagen.trim() || inicial?.imagen ? { imagen: imagen.trim() } : {}) };
     if (inicial) await modificar<Plato>(TA.platos, inicial.id, datos);
     else await crear<Plato>(TA.platos, datos);
     onListo();
@@ -198,6 +220,13 @@ function FormPlato({ inicial, onListo }: { inicial?: Plato; onListo: () => void 
         <Campo etiqueta="Grasas (g)"><input inputMode="decimal" value={gras} onChange={(e) => setGras(e.target.value)} /></Campo>
       </div>
       <Campo etiqueta="Minutos de preparación"><input inputMode="numeric" value={min} onChange={(e) => setMin(e.target.value)} /></Campo>
+      <Campo etiqueta="Foto: descripción para la IA" ayuda="Con esto se genera la foto sola. Cambiala si no se parece a tu plato.">
+        <textarea rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Two homemade burgers on potato buns with avocado…" />
+      </Campo>
+      <Campo etiqueta="Link de una foto propia (opcional)" ayuda="Si lo dejás vacío se usa la foto generada.">
+        <input value={imagen} onChange={(e) => setImagen(e.target.value)} placeholder="https://…" />
+      </Campo>
+      {(prompt || imagen) && <div className="plato-vista"><FotoPlato key={prompt + imagen} plato={{ ...(inicial ?? {} as Plato), nombre: nombre || 'plato', prompt, imagen }} /></div>}
       <button className="btn btn-primario">Guardar</button>
       {inicial && <button type="button" className="btn btn-peligro ancho" onClick={async () => { if (await confirmar('¿Borrar este plato?')) { await eliminar(TA.platos, inicial.id); onListo(); } }}>{Icono.borrar} Borrar</button>}
     </form>
@@ -223,6 +252,7 @@ export function PantallaPlatos() {
               return (
                 <li key={p.id} className="lista-item">
                   <button className="boton-fila crece" onClick={() => setEditando(p)}>
+                    <span className="plato-mini"><FotoPlato plato={p} /></span>
                     <div className="crece">
                       <strong>{p.nombre}</strong>
                       <small className="nota">{p.proteina} g prot · {p.carbos} g carb · {p.grasas} g grasa · {p.kcal} kcal{falta.length ? ` · falta ${falta.map((f) => f.nombre).join(', ')}` : ' · ✓ hay todo'}</small>

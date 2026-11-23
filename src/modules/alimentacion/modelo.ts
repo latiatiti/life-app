@@ -18,6 +18,24 @@ export interface Plato extends Fila {
   grasas: number;
   kcal: number;
   minutos: number;
+  /** Descripción detallada para generar la foto con IA (en inglés, que la entienden mejor). */
+  prompt?: string;
+  /** Link de la foto. Vacío = se arma con el prompt. */
+  imagen?: string;
+}
+
+/** Semilla fija por nombre: el mismo plato da siempre la misma foto. */
+function semilla(t: string) {
+  let h = 0;
+  for (const c of t) h = (h * 31 + c.charCodeAt(0)) & 0x7fffffff;
+  return h % 100000;
+}
+
+/** Foto del plato: la guardada o una generada con IA (Pollinations, gratis) a partir del prompt. */
+export function fotoDePlato(p: Pick<Plato, 'nombre' | 'prompt' | 'imagen'>): string {
+  if (p.imagen) return p.imagen;
+  if (!p.prompt) return '';
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(p.prompt)}?width=768&height=768&seed=${semilla(p.nombre)}&nologo=true&model=flux`;
 }
 
 export interface Comida extends Fila {

@@ -1,3 +1,4 @@
+import './alimentacion.css';
 import { hoy } from '../../core/format';
 import type { Modulo, Senal, Vital } from '../../core/types';
 import { Icono } from '../../ui/ui';
