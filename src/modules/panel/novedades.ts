@@ -18,6 +18,14 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-23', area: 'Casa', titulo: 'Coto se suma a los precios online', nube: true,
+    que: [
+      'Buscar un producto o escanear un código ahora trae también el precio de Coto (con foto), además de Carrefour, Vea y Jumbo.',
+      'Toma los descuentos directos de Coto (ej. "20 % Dto"); los 2x1 y "2do al 70 %" no, porque dependen de llevar más de uno.',
+      'Es el precio de la web de Coto, uno para todo el país: el del hiper de Mendoza puede variar un poco.',
+    ],
+  },
+  {
     fecha: '2026-11-19', area: 'Cuentas', titulo: 'Panel de la superadmin, botón Informar y esta línea de tiempo', nube: true,
     que: [
       'Sección Panel (solo superadmin): cómo viene cada cuenta, quién espera tu OK, roles, módulos y qué puede cada rol.',

@@ -6,8 +6,11 @@ import { ajustar, LUGARES, type Lugar, nuevoProducto, type Persona, personaDe, t
 
 /* ---------- Tipos ---------- */
 
-/** Cadenas con precios online (las tres con sucursales en Mendoza y catálogo público). */
-export const CADENAS = { carrefour: 'Carrefour', vea: 'Vea', jumbo: 'Jumbo' } as const;
+/**
+ * Cadenas con precios online (con sucursal en Mendoza y catálogo leíble). Coto (2026-11-23): precio de
+ * Coto Digital, uno para todo el país; su hiper de Mendoza es Av. Perú y Pellegrini.
+ */
+export const CADENAS = { carrefour: 'Carrefour', vea: 'Vea', jumbo: 'Jumbo', coto: 'Coto' } as const;
 export type Cadena = keyof typeof CADENAS;
 export type CadenaSuper = Cadena | 'otro';
 export const NOMBRE_CADENA: Record<CadenaSuper, string> = { ...CADENAS, otro: 'Otro súper' };
@@ -222,7 +225,7 @@ export async function buscarPrecios(datos: { q?: string; eans?: string[]; limite
   const r = await fetch(`${url}/functions/v1/precios`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: anonKey, Authorization: `Bearer ${anonKey}` },
-    body: JSON.stringify(datos),
+    body: JSON.stringify({ cadenas: Object.keys(CADENAS), ...datos }),
   });
   if (!r.ok) throw new Error(`No pude consultar precios (${r.status})`);
   return ((await r.json()).resultados ?? []) as ResultadoPrecio[];
