@@ -2,12 +2,13 @@ import { confirmar } from '../../ui/Deshacer';
 import { eliminar } from '../../core/db';
 import { dinero, fechaLarga } from '../../core/format';
 import { Icono, Tarjeta, Vacio } from '../../ui/ui';
-import { CADENAS, type Compra, masBarato, NOMBRE_CADENA, PERSONAS, TC, useCompras, useItems, useSupers } from './modelo';
+import { CADENAS, type Compra, masBarato, NOMBRE_CADENA, TC, useCompras, useItems, usePersonas, useSupers } from './modelo';
 
 export function PantallaHistorial() {
   const { filas: compras, cargado } = useCompras();
   const { filas: supers } = useSupers();
   const { filas: items } = useItems();
+  const ps = usePersonas();
   const orden = [...compras].sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.created_at ?? '').localeCompare(a.created_at ?? ''));
   const mes = orden.filter((c) => c.fecha.slice(0, 7) === orden[0]?.fecha.slice(0, 7));
   const totalMes = mes.reduce((t, c) => t + Number(c.total), 0);
@@ -42,8 +43,11 @@ export function PantallaHistorial() {
             </div>
             {c.reparto && (
               <p className={c.reparto.debe > 0 ? 'texto-aviso' : 'nota'} style={{ marginTop: 8 }}>
-                Yo {dinero(c.reparto.yo)} · Ulises {dinero(c.reparto.ulises)}
-                {c.reparto.debe > 0 ? (c.reparto.pago === 'yo' ? ` · Ulises te debe ${dinero(c.reparto.debe)}` : ` · le debés a Ulises ${dinero(c.reparto.debe)}`) : ''}
+                {Object.entries(c.reparto.partes ?? { yo: c.reparto.yo, ulises: c.reparto.ulises }).filter(([k, v]) => k === 'yo' || v > 0)
+                  .map(([k, v]) => `${ps.nombre(k)} ${dinero(v)}`).join(' · ')}
+                {c.reparto.debe > 0 ? (c.reparto.pago === 'yo'
+                  ? (Object.keys(c.reparto.partes ?? { ulises: 1 }).filter((k) => k !== 'yo').length > 1 ? ` · te deben ${dinero(c.reparto.debe)}` : ` · ${ps.nombre(Object.keys(c.reparto.partes ?? { ulises: 1 }).find((k) => k !== 'yo'))} te debe ${dinero(c.reparto.debe)}`)
+                  : ` · le debés a ${ps.nombre(c.reparto.pago)} ${dinero(c.reparto.debe)}`) : ''}
               </p>
             )}
             <ul className="lista" style={{ marginTop: 8 }}>
@@ -51,7 +55,7 @@ export function PantallaHistorial() {
                 const d = l.real != null && l.estimado > 0 ? l.real - l.estimado : null;
                 return (
                   <li key={l.item_id} className="lista-item">
-                    <span className="crece"><strong>{l.nombre}{l.para && l.para !== 'yo' ? ` · ${PERSONAS[l.para]}` : ''}</strong><small className="nota">{l.cantidad} × {l.real != null ? dinero(l.real) : 'sin precio anotado'} · {l.estimado > 0 ? `estimado ${dinero(l.estimado)}` : 'primera vez'}</small></span>
+                    <span className="crece"><strong>{l.nombre}{l.para && l.para !== 'yo' ? ` · ${ps.nombre(l.para)}` : ''}</strong><small className="nota">{l.cantidad} × {l.real != null ? dinero(l.real) : 'sin precio anotado'} · {l.estimado > 0 ? `estimado ${dinero(l.estimado)}` : 'primera vez'}</small></span>
                     {d != null && Math.abs(d) >= 1 && <span className={`num ${d > 0 ? 'texto-critico' : 'texto-bien'}`}>{d > 0 ? '+' : ''}{dinero(d)}</span>}
                   </li>
                 );

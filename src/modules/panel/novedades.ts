@@ -18,6 +18,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-23', area: 'Casa', titulo: 'Personas propias en compras y en casa', nube: true,
+    que: [
+      '"¿Para quién?" ya no es fijo (Yo / Ulises / Los dos): sumás a quien quieras con el + del escáner o en Ajustes → Con quién compartís compras.',
+      'Cada persona puede llevar su usuario de LIFE, para cruzar compras entre cuentas más adelante.',
+      'Con dos o más personas aparece "Entre todos": se divide en partes iguales entre vos y quienes tienen cosas en esa compra.',
+      'Quién pagó puede ser cualquiera de la lista, y la cuenta dice quién le debe a quién.',
+    ],
+  },
+  {
     fecha: '2026-11-23', area: 'Casa', titulo: 'Coto se suma a los precios online', nube: true,
     que: [
       'Buscar un producto o escanear un código ahora trae también el precio de Coto (con foto), además de Carrefour, Vea y Jumbo.',

@@ -2,7 +2,7 @@ import { escribirStorage, leerStorage, NUBE_LIFE } from '../../core/config';
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { diasEntre, hoy } from '../../core/format';
 import { T as TE, type Movimiento } from '../economia/modelo';
-import { ajustar, LUGARES, type Lugar, nuevoProducto, type Persona, personaDe, type Producto } from '../stock/modelo';
+import { ajustar, esMio, LUGARES, type Lugar, nuevoProducto, type Persona, personaDe, type Producto, repartir } from '../stock/modelo';
 
 /* ---------- Tipos ---------- */
 
@@ -57,7 +57,11 @@ export interface Compra extends Fila {
   items: LineaCompra[];
   movimiento_id: string | null;
   /** Compra compartida: quién pagó, cuánto le toca a cada uno y cuánto queda debiendo el otro. */
-  reparto?: { pago: Persona; yo: number; ulises: number; debe: number } | null;
+  reparto?: {
+    pago: Persona; yo: number; ulises: number; debe: number;
+    /** Desde 2026-11-23: cuánto le toca a cada persona (clave → monto). `debe`: si pagaste vos, lo que te deben entre todos; si no, lo que le debés a quien pagó. */
+    partes?: Record<string, number>;
+  } | null;
   /** Datos del QR fiscal del ticket, si se escaneó. */
   ticket?: TicketQR | null;
 }
@@ -292,7 +296,7 @@ export function frecuentes(compras: Compra[]): Map<string, number> {
 
 /* ---------- Carrito con escáner (compra compartida) ---------- */
 
-export { PERSONAS } from '../stock/modelo';
+export { armarPersonas, usePersonas } from '../stock/modelo';
 export type { Persona };
 
 /** Una cosa cargada en el súper: escaneada o escrita. Precio opcional (por unidad). */
@@ -316,18 +320,24 @@ export const leerCarrito = (): Carrito | null => {
 };
 export const guardarCarrito = (c: Carrito | null) => escribirStorage(CLAVE_CARRITO, c ? JSON.stringify(c) : null);
 
-/** Lo de "los dos" se divide a medias. */
-export function totalesCarrito(lineas: LineaCarrito[]) {
-  const t = { total: 0, yo: 0, ulises: 0, compartido: 0, sinPrecio: 0 };
+/** Totales del carro por persona: lo compartido se divide en partes iguales (ver `repartir`). */
+export function totalesCarrito(lineas: LineaCarrito[], otras: string[] = []) {
+  let total = 0, sinPrecio = 0;
+  const montos: Array<{ para: Persona; monto: number }> = [];
   for (const l of lineas) {
-    if (l.precio == null) { t.sinPrecio++; continue; }
+    if (l.precio == null) { sinPrecio++; continue; }
     const m = l.precio * l.cantidad;
-    t.total += m;
-    if (l.para === 'yo') t.yo += m;
-    else if (l.para === 'ulises') t.ulises += m;
-    else { t.compartido += m; t.yo += m / 2; t.ulises += m / 2; }
+    total += m;
+    montos.push({ para: l.para, monto: m });
   }
-  return t;
+  const { partes, compartido } = repartir(montos, otras);
+  return { total, sinPrecio, compartido, partes, yo: partes.yo ?? 0 };
+}
+
+/** Quién le debe a quién según quién pagó: si pagaste vos, cada uno su parte; si pagó otro, vos le debés la tuya. */
+export function deudas(partes: Record<string, number>, pago: Persona): Array<{ quien: string; monto: number; aMi: boolean }> {
+  if (pago === 'yo') return Object.entries(partes).filter(([k, v]) => k !== 'yo' && v > 0.5).map(([k, v]) => ({ quien: k, monto: v, aMi: true }));
+  return (partes.yo ?? 0) > 0.5 ? [{ quien: pago, monto: partes.yo, aMi: false }] : [];
 }
 
 /** Busca qué producto es un código: primero en tu catálogo, después en los súper online y por último en Open Food Facts. */
@@ -441,12 +451,14 @@ const LUGAR_DE_BLOQUE: Record<string, Lugar> = {
  */
 export async function cerrarCarrito(d: {
   carrito: Carrito; super: Super | null; items: Item[]; productos: Producto[]; total: number; pago: Persona;
+  /** Claves de las otras personas activas (para repartir lo compartido) y sus nombres para la nota del gasto. */
+  otras?: string[]; nombre?: (k: Persona) => string;
   gasto: { cuenta_id: string; categoria_id: string | null } | null; ticket?: TicketQR | null;
   /** false = no vaciar el carro del modo compra (cuando se cierra desde un ticket guardado). */
   vaciarCarro?: boolean; fecha?: string;
 }) {
   const fecha = d.fecha ?? (d.ticket?.fecha && /^\d{4}-\d{2}-\d{2}$/.test(d.ticket.fecha) ? d.ticket.fecha : hoy());
-  const t = totalesCarrito(d.carrito.lineas);
+  const t = totalesCarrito(d.carrito.lineas, d.otras ?? []);
   const lineas: LineaCompra[] = [];
   const catalogo = [...d.items];
   const stock = [...d.productos];
@@ -466,12 +478,14 @@ export async function cerrarCarrito(d: {
       stock.push(p);
     }
     const cambios: Partial<Item> = {};
-    if (l.para !== 'ulises' && !it.producto_id) cambios.producto_id = p.id;
-    if (l.para !== 'ulises' && it.en_lista) cambios.en_lista = false;
+    if (esMio(l.para) && !it.producto_id) cambios.producto_id = p.id;
+    if (esMio(l.para) && it.en_lista) cambios.en_lista = false;
     if (Object.keys(cambios).length) await modificar<Item>(TC.items, it.id, cambios);
   }
-  const debe = d.pago === 'yo' ? t.ulises : t.yo;
-  const nota = debe > 0 ? (d.pago === 'yo' ? ` · Ulises te debe ${Math.round(debe)}` : ` · le debés a Ulises ${Math.round(debe)}`) : '';
+  const nom = d.nombre ?? ((k: Persona) => k);
+  const ds = deudas(t.partes, d.pago);
+  const debe = ds.reduce((s, x) => s + x.monto, 0);
+  const nota = ds.map((x) => (x.aMi ? ` · ${nom(x.quien)} te debe ${Math.round(x.monto)}` : ` · le debés a ${nom(x.quien)} ${Math.round(x.monto)}`)).join('');
   let movimiento_id: string | null = null;
   if (d.pago === 'yo' && d.gasto && d.total > 0) {
     const m = await crear<Movimiento>(TE.movimientos, {
@@ -482,7 +496,11 @@ export async function cerrarCarrito(d: {
   }
   const compra = await crear<Compra>(TC.compras, {
     fecha, super_id: d.super?.id ?? null, estimado: lineas.reduce((s, l) => s + l.estimado * l.cantidad, 0), total: d.total, items: lineas,
-    movimiento_id, reparto: { pago: d.pago, yo: Math.round(t.yo), ulises: Math.round(t.ulises), debe: Math.round(debe) },
+    movimiento_id,
+    reparto: {
+      pago: d.pago, yo: Math.round(t.yo), ulises: Math.round(t.partes.ulises ?? 0), debe: Math.round(debe),
+      partes: Object.fromEntries(Object.entries(t.partes).map(([k, v]) => [k, Math.round(v)])),
+    },
     ...(d.ticket ? { ticket: d.ticket } : {}),
   });
   for (const l of lineas) {
