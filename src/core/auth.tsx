@@ -67,9 +67,11 @@ export function usePerfil(): Perfil {
 }
 
 export const puedeEscribir = (p: Perfil) => p.activo && p.rol !== 'lector';
-/** El plan (modulos, lo pone quien administra) y las áreas que eligió la persona en la configuración inicial. */
-export const veModulo = (p: Perfil, id: string) => id === 'ajustes'
-  || ((!p.modulos || p.modulos.includes(id)) && (!p.bienvenida?.areas?.length || p.bienvenida.areas.includes(id)));
+/** Ajustes lo ve todo el mundo; el Panel, solo la superadmin; el resto, según el plan (modulos) y las áreas que eligió en la configuración inicial. */
+export const veModulo = (p: Perfil, id: string) =>
+  id === 'ajustes' ? true
+  : id === 'panel' ? p.rol === 'superadmin' && p.activo
+  : (!p.modulos || p.modulos.includes(id)) && (!p.bienvenida?.areas?.length || p.bienvenida.areas.includes(id));
 
 async function cargarPerfil(s: Session) {
   if (!supabase) return;

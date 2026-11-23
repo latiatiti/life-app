@@ -8,9 +8,9 @@ import { Campo, Icono, Tarjeta } from '../../ui/ui';
 import { usePerfil, veModulo } from '../../core/auth';
 import { ConexionClaude } from './Claude';
 import { ConexionWhatsapp } from './Whatsapp';
-import { PanelCuentas } from './Cuentas';
 import { Bienvenida } from './Bienvenida';
 import { AREAS } from './inicio';
+import { MisInformes } from '../../ui/Informar';
 
 function PantallaAjustes() {
   const fija = configDesdeEntorno();
@@ -105,7 +105,12 @@ function PantallaAjustes() {
         )}
       </Tarjeta>
 
-      <PanelCuentas />
+      {perfil.rol === 'superadmin' && (
+        <Tarjeta titulo="Panel de superadmin">
+          <p className="nota" style={{ marginTop: 0 }}>Las cuentas, los roles, lo que informa cada uno y cómo viene LIFE se manejan desde el Panel.</p>
+          <div className="acciones"><a className="btn btn-primario" href="#/panel">Abrir el Panel</a></div>
+        </Tarjeta>
+      )}
       <ConexionClaude />
       <ConexionWhatsapp />
 
@@ -161,6 +166,9 @@ export const moduloAjustes: Modulo = {
   nombre: 'Ajustes',
   descripcion: 'Cuenta, conexión con Claude, respaldo e instalación',
   icono: Icono.ajustes,
-  pantallas: [{ ruta: '', titulo: 'Ajustes', componente: PantallaAjustes }],
+  pantallas: [
+    { ruta: '', titulo: 'Ajustes', componente: PantallaAjustes },
+    { ruta: 'informes', titulo: 'Mis informes', componente: MisInformes },
+  ],
   enHub: false,
 };
