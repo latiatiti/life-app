@@ -1,6 +1,7 @@
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { hoy } from '../../core/format';
 import { fijarPropios, infoEjercicio, type EjercicioBase } from './biblioteca';
+import { calibracion, conCuerpo, pesoPorFuerza } from './fuerza';
 import { CICLO_BASE, estadoCiclo, lunesDe, pesoInicial, redondearCarga, type Ciclo, type EstadoCiclo, type Perfil, type SemanaCiclo } from './ciclo';
 
 /* ---------- Rutina: días con ejercicios. La base viene en código; la usuaria (o Claude) la puede editar ---------- */
@@ -125,6 +126,8 @@ export interface Serie extends Fila {
   rpe: number | null;
   /** "efectiva" (cuenta para progreso y volumen) o "calentamiento". */
   tipo?: 'efectiva' | 'calentamiento';
+  /** Descanso real antes de esta serie, en segundos (lo mide el modo entrenando). null en entrenos viejos. */
+  descanso_seg?: number | null;
 }
 
 export const TE = { sesiones: 'ent_sesiones', series: 'ent_series', rutinas: 'ent_rutinas', ejercicios: 'ent_ejercicios' } as const;
@@ -255,6 +258,11 @@ function pesoSugeridoBase(series: Serie[], ej: EjercicioPlan, perfil?: Perfil | 
       return { peso: p, motivo: `Primera vez: parto del ${parecido.ejercicio.toLowerCase()} (${Number(parecido.peso)} kg) con 10 % menos.` };
     }
     const ini = pesoInicial(perfil, ej.nombre);
+    const cal = ini != null && ini > 0 ? calibracion(series, perfil) : null;
+    if (ini != null && ini > 0 && cal && Math.abs(cal.factor - 1) >= 0.05) {
+      const p = redondearCarga(ini * cal.factor, ej.nombre);
+      return { peso: p, motivo: `Primera vez: estimado por tu peso y ajustado con tu fuerza real (en ${cal.ejercicios} ejercicios rendís ${Math.round(cal.factor * 100)} % de lo que calculaba). Si sale muy fácil, subí; si no llegás a ${ej.repsMin}, bajá.` };
+    }
     if (ini != null && ini > 0) return { peso: ini, motivo: `Primera vez: estimado por tu peso (${perfil!.peso_kg} kg) y nivel. Si sale muy fácil, subí; si no llegás a ${ej.repsMin}, bajá.` };
     if (ini === 0) return { peso: 0, motivo: 'Con tu peso corporal.' };
     return { peso: null, motivo: 'Primera vez: elegí un peso que te deje cerca del esfuerzo objetivo. Cargá tu peso en Preparador y te lo calculo.' };
@@ -266,6 +274,11 @@ function pesoSugeridoBase(series: Serie[], ej: EjercicioPlan, perfil?: Perfil | 
   if (muyDuro && peso > 0) {
     const bajo = Math.round((peso * 0.95) / 1.25) * 1.25;
     return { peso: bajo, motivo: `La última vez no llegaste a ${ej.repsMin} reps y fue al límite: bajá a ${bajo} kg y volvé a construir.` };
+  }
+  // Con lo que ya hiciste se estima tu fuerza (1RM) y de ahí el peso para las reps y el RPE del plan.
+  const f = pesoPorFuerza(series, ej, perfil?.peso_kg ?? 0);
+  if (f && f.peso !== peso) {
+    return { peso: f.peso, motivo: `Según tu fuerza (1RM estimado ${Math.round(f.rm)} kg${perfil?.peso_kg && conCuerpo(ej.nombre) ? ' contando tu cuerpo' : ''}): para ${f.reps} reps a RPE ${ej.rpe}, ${f.peso} kg. La última vez arrancaste con ${peso}.` };
   }
   return { peso, motivo: `Mismo peso que la última vez; buscá llegar a ${ej.repsMax} reps.` };
 }
