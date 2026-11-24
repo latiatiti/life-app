@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { crear, modificar } from '../../core/db';
+import { crear, modificar, useTabla } from '../../core/db';
+import { usePerfil, veModulo } from '../../core/auth';
+import { MODULOS } from '../../core/registry';
+import { useTodasLasSenales } from '../../core/senales';
+import type { Vital } from '../../core/types';
+import { metasDelDia, TA, type Extra, type Metas } from '../alimentacion/modelo';
 import { fechaCorta, hoy, sumarDias, uid } from '../../core/format';
 import { Icono, Modal } from '../../ui/ui';
 import { TD, type NivelPrioridad } from '../dia/modelo';
@@ -268,6 +273,8 @@ function Contenido({ escribe, abierta, onCerrar }: { escribe: boolean; abierta: 
           <button type="button" className="btn-icono" onClick={onCerrar} aria-label="Cerrar">{Icono.cerrar}</button>
         </header>
 
+        <Hoy />
+
         {foco && (
           <Foco t={foco} etapas={etapas} escribe={escribe} onAbrir={() => abrir(foco)} onPaso={() => pasoHecho(foco)} onMover={moverA} />
         )}
@@ -316,6 +323,54 @@ function Contenido({ escribe, abierta, onCerrar }: { escribe: boolean; abierta: 
       {!compu && (
         <Modal titulo={borrador?.id ? 'Detalle' : 'Anotar'} abierto={!!borrador} onCerrar={() => setBorrador(null)}>{detalle}</Modal>
       )}
+    </div>
+  );
+}
+
+/**
+ * "Hoy": lo diario a mano, sin salir (pilar 5). Usa los mismos vitales del Inicio (una cifra, un solo lugar)
+ * más el agua del día. Tocar una lleva a su pantalla y la cortina se sube sola.
+ */
+const HOY: Array<{ id: string; nombre: string }> = [
+  { id: 'dia', nombre: 'Día' }, { id: 'alimentacion', nombre: 'Comida' }, { id: 'entrenamiento', nombre: 'Entreno' }, { id: 'economia', nombre: 'Plata' },
+];
+function Hoy() {
+  const perfil = usePerfil();
+  const senales = useTodasLasSenales();
+  // Un hook por módulo, siempre en el mismo orden (la lista es fija).
+  const vitales = new Map<string, Vital>();
+  for (const m of MODULOS) if (m.useVital) vitales.set(m.id, m.useVital());
+  const { filas: extras } = useTabla<Extra>(TA.extras);
+  const { filas: metas } = useTabla<Metas>(TA.metas);
+  const h = hoy();
+  const agua = extras.filter((x) => x.fecha === h && x.tipo === 'agua').reduce((t, x) => t + (Number(x.cantidad) || 0), 0);
+  const metaAgua = metasDelDia(metas, false).agua || 3000;
+  const tono = (ids: string[]) => {
+    const p = senales.filter((x) => ids.includes(x.modulo));
+    return p.some((x) => x.nivel === 'critico') ? 'urgente' : p.some((x) => x.nivel === 'aviso') ? 'atencion' : 'bien';
+  };
+  const items = HOY.filter((a) => veModulo(perfil, a.id) && vitales.has(a.id)).map((a) => {
+    const v = vitales.get(a.id)!;
+    return { ...a, v, tono: tono(a.id === 'economia' ? ['economia', 'pagos'] : [a.id]), ruta: v.accion?.ruta ?? `#/${a.id}` };
+  });
+  if (veModulo(perfil, 'alimentacion')) {
+    const l = (ml: number) => (ml / 1000).toLocaleString('es-AR', { maximumFractionDigits: 1 });
+    items.splice(Math.min(2, items.length), 0, {
+      id: 'agua', nombre: 'Agua', ruta: '#/alimentacion', tono: agua >= metaAgua ? 'bien' : agua >= metaAgua * 0.5 ? 'atencion' : 'nada',
+      v: { cifra: `${l(agua)} / ${l(metaAgua)} L`, sub: agua >= metaAgua ? 'Meta cumplida ✓' : `Faltan ${l(metaAgua - agua)} L`, barra: Math.min(1, agua / metaAgua) },
+    });
+  }
+  if (!items.length) return null;
+  return (
+    <div className="cortina-hoy" aria-label="Hoy">
+      {items.map((x) => (
+        <a key={x.id} href={x.ruta} className={`cortina-hoy-item t-${x.tono}`}>
+          <small>{x.nombre}</small>
+          <b>{x.v.cifra}</b>
+          {x.v.sub && <span>{x.v.sub}</span>}
+          {typeof x.v.barra === 'number' && <i className="cortina-hoy-barra"><i style={{ width: `${Math.round(Math.max(0, Math.min(1, x.v.barra)) * 100)}%` }} /></i>}
+        </a>
+      ))}
     </div>
   );
 }

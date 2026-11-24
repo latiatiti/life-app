@@ -22,6 +22,7 @@ export const NOVEDADES: Novedad[] = [
     que: [
       'En la compu, pasá el cursor por la pestaña ancha "Pendientes" de arriba y baja al toque, casi hasta abajo; al sacar el cursor por debajo se guarda sola.',
       'En el celu, arrastrá desde arriba (como las notificaciones) o tocá la pestañita "Pendientes" de arriba.',
+      'Arriba de todo, "Hoy": cómo va tu día, comida, agua, entreno y plata, cada uno con su barra.',
       'Adentro: lo que estás haciendo ahora con su paso, tus pendientes por etapa con ◀ ▶ para moverlos, y anotar al toque.',
       'No cambia la pantalla en la que estás: cerrás la cortina y seguís donde estabas.',
     ],
