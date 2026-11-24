@@ -18,7 +18,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
-    fecha: '2026-11-23', area: 'Casa', titulo: 'Personas propias en compras y en casa', nube: true,
+    fecha: '2026-11-24', area: 'Tablero', titulo: 'Pendientes a mano desde cualquier pantalla', pr: 40,
+    que: [
+      'En la compu, pasá el cursor por la pestaña ancha "Pendientes" de arriba y baja al toque, casi hasta abajo; al sacar el cursor por debajo se guarda sola.',
+      'En el celu, arrastrá desde arriba (como las notificaciones) o tocá la pestañita "Pendientes" de arriba.',
+      'Arriba de todo, "Hoy": cómo va tu día, comida, agua, entreno y plata, cada uno con su barra.',
+      'Adentro: lo que estás haciendo ahora con su paso, tus pendientes por etapa con ◀ ▶ para moverlos, y anotar al toque.',
+      'No cambia la pantalla en la que estás: cerrás la cortina y seguís donde estabas.',
+    ],
+  },
+  {
+    fecha: '2026-11-23', area: 'Casa', titulo: 'Personas propias en compras y en casa', pr: 39, nube: true,
     que: [
       '"¿Para quién?" ya no es fijo (Yo / Ulises / Los dos): sumás a quien quieras con el + del escáner o en Ajustes → Con quién compartís compras.',
       'Cada persona puede llevar su usuario de LIFE, para cruzar compras entre cuentas más adelante.',
@@ -27,7 +37,7 @@ export const NOVEDADES: Novedad[] = [
     ],
   },
   {
-    fecha: '2026-11-23', area: 'Casa', titulo: 'Coto se suma a los precios online', nube: true,
+    fecha: '2026-11-23', area: 'Casa', titulo: 'Coto se suma a los precios online', pr: 39, nube: true,
     que: [
       'Buscar un producto o escanear un código ahora trae también el precio de Coto (con foto), además de Carrefour, Vea y Jumbo.',
       'Toma los descuentos directos de Coto (ej. "20 % Dto"); los 2x1 y "2do al 70 %" no, porque dependen de llevar más de uno.',
