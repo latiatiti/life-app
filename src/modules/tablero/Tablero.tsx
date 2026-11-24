@@ -12,7 +12,7 @@ import {
 import './tablero.css';
 
 /** Compu = columnas + detalle al costado; celu = una pestaña por etapa + hoja que sube (pilar 2: mismo sistema). */
-function useEsCompu() {
+export function useEsCompu() {
   const consulta = '(min-width: 761px)';
   const [si, setSi] = useState(() => window.matchMedia?.(consulta).matches ?? true);
   useEffect(() => {
@@ -26,7 +26,7 @@ function useEsCompu() {
 }
 
 /** "+10 XP" que sube al terminar una tarjeta. */
-function festejar(x: number, y: number) {
+export function festejar(x: number, y: number) {
   const p = document.createElement('div');
   p.className = 'tb-xp';
   p.textContent = '+10 XP ★';
@@ -36,11 +36,23 @@ function festejar(x: number, y: number) {
   setTimeout(() => p.remove(), 1200);
 }
 
-type Borrador = {
+export type Borrador = {
   id: string | null; titulo: string; nota: string; prioridad: NivelPrioridad; categoria: string; etapa: string;
   pasos: PasoTarjeta[]; fecha: string; hora: string;
   novedades: Novedad[]; recordar: string; contactoNombre: string; contactoTel: string;
 };
+
+/** Borrador del formulario a partir de una tarjeta (o uno vacío para anotar). */
+export function borradorDe(t: Tarjeta | null, etapas: Etapa[], etapa?: string, categoria = ''): Borrador {
+  return t ? {
+    id: t.id, titulo: t.titulo, nota: t.nota ?? '', prioridad: t.prioridad, categoria: t.categoria ?? '',
+    etapa: etapaDe(t, etapas), pasos: (t.pasos ?? []).map((p) => ({ ...p })), fecha: t.fecha ?? '', hora: t.hora ?? '',
+    novedades: t.novedades ?? [], recordar: aLocal(t.recordar_en), contactoNombre: t.contacto?.nombre ?? '', contactoTel: t.contacto?.telefono ?? '',
+  } : {
+    id: null, titulo: '', nota: '', prioridad: 'media', categoria, etapa: etapa ?? etapas[0].id, pasos: [], fecha: '', hora: '',
+    novedades: [], recordar: '', contactoNombre: '', contactoTel: '',
+  };
+}
 
 let pideAnotar = false;
 const EVENTO_ANOTAR = 'life-tablero-anotar';
@@ -82,15 +94,7 @@ export function PantallaTablero() {
 
   function abrir(t: Tarjeta | null, etapa?: string) {
     setEditandoEtapas(false);
-    setBorrador(t ? {
-      id: t.id, titulo: t.titulo, nota: t.nota ?? '', prioridad: t.prioridad, categoria: t.categoria ?? '',
-      etapa: etapaDe(t, etapas), pasos: (t.pasos ?? []).map((p) => ({ ...p })), fecha: t.fecha ?? '', hora: t.hora ?? '',
-      novedades: t.novedades ?? [], recordar: aLocal(t.recordar_en), contactoNombre: t.contacto?.nombre ?? '', contactoTel: t.contacto?.telefono ?? '',
-    } : {
-      id: null, titulo: '', nota: '', prioridad: 'media', categoria: filtro !== 'todas' ? filtro : '',
-      etapa: etapa ?? (compu ? etapas[0].id : etapaActual), pasos: [], fecha: '', hora: '',
-      novedades: [], recordar: '', contactoNombre: '', contactoTel: '',
-    });
+    setBorrador(borradorDe(t, etapas, etapa ?? (compu ? etapas[0].id : etapaActual), filtro !== 'todas' ? filtro : ''));
   }
 
   async function moverA(t: Tarjeta, etapa: string, antesDe: string | null, x?: number, y?: number) {
@@ -384,7 +388,7 @@ function useGestos({ compu, filas, etapas, onAbrir, onMover }: {
 
 /* ---------- Formulario único (panel en la compu, hoja en el celu) ---------- */
 
-function FormTarjeta({ inicial, etapas, categorias, config, onListo }: {
+export function FormTarjeta({ inicial, etapas, categorias, config, onListo }: {
   inicial: Borrador; etapas: Etapa[]; categorias: string[]; config: ReturnType<typeof useConfigTablero>['fila'];
   onListo: (etapa?: string) => void;
 }) {

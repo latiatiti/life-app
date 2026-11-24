@@ -1,0 +1,130 @@
+/* Cortina de pendientes (2026-11-24): baja desde arriba en cualquier pantalla. Solo tokens de src/tema/tema.css. */
+
+/* Pestañita flotante arriba al medio: siempre a mano para abrirla con un toque (o arrastrarla hacia abajo en el celu). */
+.cortina-pestana {
+  position: fixed; z-index: 26; top: env(safe-area-inset-top); left: 50%; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 2px 14px 4px;
+  border: 1px solid var(--acento-borde); border-top: 0; border-radius: 0 0 var(--radio) var(--radio);
+  background: color-mix(in srgb, var(--capa-2) 92%, transparent); color: var(--texto-2); cursor: pointer;
+  font: 600 0.7rem var(--letra-dato); text-transform: uppercase; letter-spacing: 0.08em;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); touch-action: none;
+  transition: color var(--dur), border-color var(--dur), padding var(--dur) var(--curva);
+}
+.cortina-pestana:hover, .cortina-pestana:focus-visible { color: var(--acento-texto); padding-top: 6px; }
+.cortina-pestana b { font: 700 0.78rem var(--letra-dato); color: var(--acento-texto); text-shadow: var(--brillo); }
+.cortina-pestana.con-alta b { color: var(--urgente-texto); text-shadow: none; }
+/* Zona del pulgar más grande sin que se vea más grande */
+.cortina-pestana::after { content: ''; position: absolute; inset: -8px -10px -12px; }
+
+.cortina-fondo {
+  position: fixed; inset: 0; z-index: 44; background: rgb(0 0 0 / 0.45); opacity: 0; pointer-events: none;
+  transition: opacity 220ms var(--curva);
+}
+.cortina-fondo.ver { opacity: 1; pointer-events: auto; }
+
+.cortina {
+  position: fixed; z-index: 45; top: 0; left: 0; right: 0; max-height: min(86dvh, 760px);
+  display: flex; flex-direction: column; transform: translateY(-100%);
+  background: var(--capa-1); border-bottom: 1px solid var(--acento-borde);
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.55), 0 1px 0 var(--acento-borde);
+  transition: transform 300ms var(--resorte, var(--curva));
+  padding-top: env(safe-area-inset-top);
+}
+.cortina.abierta { transform: translateY(0); }
+
+.cortina-cuerpo { display: flex; gap: 16px; min-height: 0; flex: 1; overflow: hidden; width: 100%; max-width: 1280px; margin: 0 auto; padding: 14px 32px 4px; }
+.cortina-principal { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.cortina-lado { width: 380px; flex: none; overflow-y: auto; min-height: 0; border-left: 1px solid var(--borde); padding-left: 16px; }
+
+/* Cabecera: título HUD + cifras + ir al tablero */
+.cortina-cab { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cortina-cab h2 { margin: 0; font: 700 1rem var(--letra-titulo); text-transform: uppercase; letter-spacing: 0.16em; color: var(--acento-texto); text-shadow: var(--brillo); }
+.cortina-cifras { display: flex; gap: 12px; flex-wrap: wrap; font: 500 0.75rem var(--letra-dato); color: var(--texto-2); }
+.cortina-cifras b { font: 700 1rem var(--letra-dato); font-variant-numeric: tabular-nums; color: var(--texto); margin-right: 2px; }
+.cortina-cifras .alta b { color: var(--urgente-texto); }
+.cortina-cifras .xp b { color: var(--xp); }
+.cortina-ir { margin-left: auto; }
+
+/* Ahora: la tarjeta en la que estás */
+.cortina-foco { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radio);
+  background: color-mix(in srgb, var(--acento) 7%, var(--capa-2)); border: 1px solid var(--acento-borde); border-left: 3px solid var(--acento); }
+.cortina-foco.p-alta { border-left-color: var(--urgente); }
+.cortina-foco-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; font: inherit; }
+.cortina-foco-txt small { font: 600 0.66rem var(--letra-dato); text-transform: uppercase; letter-spacing: 0.08em; color: var(--acento-texto); }
+.cortina-foco-txt b { font-size: 1rem; line-height: 1.3; }
+.cortina-foco-txt span { font-size: 0.84rem; color: var(--texto-2); }
+.cortina-foco-txt em { font-style: normal; font-family: var(--letra-dato); color: var(--texto-3); }
+.cortina-foco .btn { flex: none; }
+
+/* Pestañas por etapa */
+.cortina-tabs { display: flex; gap: 6px; align-items: center; overflow-x: auto; scrollbar-width: none; flex: none; }
+.cortina-tab { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; cursor: pointer;
+  background: var(--capa-2); border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); color: var(--texto-2);
+  font: 600 0.74rem var(--letra-dato); text-transform: uppercase; letter-spacing: 0.06em; }
+.cortina-tab b { color: var(--texto-3); }
+.cortina-tab[aria-selected='true'] { color: var(--acento-texto); border-color: var(--acento); background: var(--acento-suave); }
+.cortina-tab[aria-selected='true'] b { color: var(--acento-texto); }
+.cortina-tabs .chip { flex: none; min-height: 36px; padding: 0 10px; border: 1px solid var(--borde-fuerte); cursor: pointer; font-family: var(--letra-dato); margin-left: auto; }
+.cortina-tabs .chip-on { border-color: var(--acento); }
+
+/* Lista */
+.cortina-lista { list-style: none; margin: 0; padding: 0 2px 2px 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 60px; flex: 0 1 auto; overscroll-behavior: contain; }
+.cortina-item { display: flex; align-items: center; gap: 2px; background: var(--capa-2); border: 1px solid var(--borde-fuerte); border-left: 3px solid var(--texto-3); border-radius: var(--radio); }
+.cortina-item.p-alta { border-left-color: var(--urgente); }
+.cortina-item.p-media { border-left-color: var(--atencion); }
+.cortina-item.elegida { background: var(--capa-3); box-shadow: inset 0 0 0 1px var(--acento); }
+.cortina-item.hecha b { color: var(--texto-2); text-decoration: line-through; text-decoration-color: var(--texto-3); }
+.cortina-item-abrir { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 8px; min-height: 44px; padding: 8px 6px 8px 10px; text-align: left; background: none; border: 0; color: inherit; cursor: pointer; font: inherit; }
+.cortina-item-abrir .tb-prio { font-size: 0.8rem; line-height: 1.5; }
+.cortina-item-txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cortina-item-txt b { font-weight: 600; line-height: 1.3; }
+.cortina-item-txt small { display: flex; flex-wrap: wrap; gap: 4px 10px; font: 500 0.7rem var(--letra-dato); color: var(--texto-3); }
+.cortina-mover { flex: none; width: 44px; height: 44px; justify-content: center; align-items: center; font-size: 0.85rem; color: var(--texto-2); }
+.cortina-mover:hover { color: var(--acento-texto); }
+.cortina-mover.terminar { color: var(--bien-texto); font-weight: 800; font-size: 1.05rem; }
+.cortina-vacia { color: var(--texto-3); font-size: 0.85rem; text-align: center; padding: 16px 8px; border: 1px dashed var(--borde-fuerte); border-radius: var(--radio); }
+
+/* Anotar al toque (abajo: la acción va al final) */
+.cortina-anotar { display: flex; gap: 8px; align-items: center; flex: none; padding-top: 4px; }
+.cortina-anotar input { flex: 1; min-width: 0; min-height: 44px; }
+.cortina-anotar .btn { flex: none; min-height: 44px; gap: 6px; }
+.cortina-prio { flex: none; min-height: 44px; padding: 0 10px; background: var(--capa-2); border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); cursor: pointer;
+  font: 600 0.7rem var(--letra-dato); text-transform: uppercase; letter-spacing: 0.06em; color: var(--texto-2); }
+.cortina-prio.alta { color: var(--urgente-texto); border-color: color-mix(in srgb, var(--urgente) 60%, transparent); }
+.cortina-prio.media { color: var(--atencion-texto); }
+
+/* Al costado (compu): lo que viene o el detalle */
+.cortina-lado .tb-form { padding-bottom: 8px; }
+.cortina-proximos h3 { margin: 0 0 8px; font: 600 0.78rem var(--letra-titulo); text-transform: uppercase; letter-spacing: 0.1em; color: var(--texto-2); }
+.cortina-proximos ul { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cortina-proximos li button { width: 100%; display: flex; gap: 10px; align-items: baseline; min-height: 40px; padding: 6px 8px; text-align: left; background: none;
+  border: 1px solid transparent; border-radius: var(--radio-chico); color: inherit; cursor: pointer; font: inherit; }
+.cortina-proximos li button:hover { border-color: var(--acento-borde); background: var(--capa-2); }
+.cortina-proximos time { flex: none; font: 500 0.72rem var(--letra-dato); color: var(--acento-texto); }
+
+/* Tirador de abajo: arrastrar para arriba (o tocar) la cierra */
+.cortina-tirador { flex: none; display: grid; place-items: center; height: 26px; cursor: ns-resize; touch-action: none; }
+.cortina-tirador i { width: 56px; height: 5px; border-radius: 3px; background: var(--borde-fuerte); transition: background var(--dur), width var(--dur) var(--curva); }
+.cortina-tirador:hover i, .cortina-tirador:focus-visible i { background: var(--acento); width: 72px; box-shadow: var(--brillo); }
+
+@media (max-width: 760px) {
+  .cortina { max-height: 88dvh; border-radius: 0 0 var(--radio-grande) var(--radio-grande); }
+  .cortina-cuerpo { padding: 10px 14px 2px; }
+  .cortina-cab { gap: 8px 10px; }
+  .cortina-cab h2 { font-size: 0.9rem; }
+  .cortina-cifras { order: 3; width: 100%; gap: 10px; }
+  .cortina-ir { padding: 0 10px; }
+  .cortina-foco { flex-wrap: wrap; }
+  .cortina-tab { flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 6px; font-size: 0.66rem; letter-spacing: 0.03em; white-space: nowrap; }
+  .cortina-tabs .chip { min-width: 44px; }
+  .cortina-tabs .chip span { display: none; }
+  .cortina-foco .btn { width: 100%; min-height: 44px; }
+  .cortina-tirador { height: 30px; }
+  .cortina-anotar .btn { padding: 0 14px; }
+  .cortina-anotar .btn span, .cortina-prio span { display: none; }
+  .cortina-prio { min-width: 44px; font-size: 0.9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cortina, .cortina-fondo { transition: none; }
+}

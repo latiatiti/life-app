@@ -6,6 +6,7 @@ import type { Modulo } from './core/types';
 import { useRuta } from './core/router';
 import { BotonCargar } from './hub/Cargar';
 import { Hub } from './hub/Hub';
+import { CortinaPendientes } from './modules/tablero/Cortina';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
 import { AvisoDeshacer, VentanaConfirmar } from './ui/Deshacer';
@@ -174,6 +175,8 @@ export function App() {
         </div>
       </main>
 
+      {/* Pendientes a mano desde cualquier pantalla: cursor arriba (compu) o arrastrar desde arriba / pestañita (celu) */}
+      {visibles.some((m) => m.id === 'tablero') && <CortinaPendientes escribe={puedeEscribir(perfil)} ocultarPestana={idModulo === 'tablero'} />}
       <Avisos />
       <BarraActividad />
       <AvisoDeshacer />
