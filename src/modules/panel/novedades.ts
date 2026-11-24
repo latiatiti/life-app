@@ -18,6 +18,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-24', area: 'Tablero', titulo: 'Pendientes a mano desde cualquier pantalla', pr: 40,
+    que: [
+      'En la compu, pasá el cursor por la pestaña ancha "Pendientes" de arriba y baja al toque, casi hasta abajo; al sacar el cursor por debajo se guarda sola.',
+      'En el celu, arrastrá desde arriba (como las notificaciones) o tocá la pestañita "Pendientes" de arriba.',
+      'Arriba de todo, "Hoy": cómo va tu día, comida, agua, entreno y plata, cada uno con su barra.',
+      'Adentro: lo que estás haciendo ahora con su paso, tus pendientes por etapa con ◀ ▶ para moverlos, y anotar al toque.',
+      'No cambia la pantalla en la que estás: cerrás la cortina y seguís donde estabas.',
+    ],
+  },
+  {
     fecha: '2026-11-19', area: 'Cuentas', titulo: 'Panel de la superadmin, botón Informar y esta línea de tiempo', nube: true,
     que: [
       'Sección Panel (solo superadmin): cómo viene cada cuenta, quién espera tu OK, roles, módulos y qué puede cada rol.',

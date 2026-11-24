@@ -6,6 +6,7 @@ import type { Modulo } from './core/types';
 import { useRuta } from './core/router';
 import { BotonCargar } from './hub/Cargar';
 import { Hub } from './hub/Hub';
+import { CortinaPendientes, PestanaPendientes } from './modules/tablero/Cortina';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
 import { Protegido } from './ui/Protegido';
@@ -103,6 +104,8 @@ export function App() {
             LIF<span>E</span><i aria-hidden="true">▾</i>
           </button>
         )}
+        {/* Compu: la pestaña de pendientes es la punta de esta misma barra */}
+        {visibles.some((m) => m.id === 'tablero') && idModulo !== 'tablero' && <PestanaPendientes />}
         <div className="barra-sup-der">
           <BotonInformar />
           {puedeEscribir(perfil) && <span className="solo-compu-flex"><BotonCargar ve={(id) => visibles.some((m) => m.id === id)} /></span>}
@@ -175,6 +178,8 @@ export function App() {
         </div>
       </main>
 
+      {/* Pendientes a mano desde cualquier pantalla: cursor arriba (compu) o arrastrar desde arriba / pestañita (celu) */}
+      {visibles.some((m) => m.id === 'tablero') && <CortinaPendientes escribe={puedeEscribir(perfil)} ocultarPestana={idModulo === 'tablero'} />}
       <Protegido nombre="los avisos" silencioso><Avisos /></Protegido>
       <Protegido nombre="la barra de actividad" silencioso><BarraActividad /></Protegido>
       <AvisoDeshacer />
