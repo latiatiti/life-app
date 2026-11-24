@@ -21,14 +21,19 @@
 /* Zona del pulgar más grande sin que se vea más grande */
 .cortina-pestana::after { content: ''; position: absolute; inset: -8px -10px -12px; }
 
-/* Compu: cuelga debajo de la barra de arriba (así no tapa Informar ni Cargar) y es bien ancha,
-   para acertarle con el cursor sin apuntar: pasar por encima ya la abre. */
+/* La flotante es del celu; la de la barra, de la compu (pegada al borde de arriba, dentro de la barra). */
+.cortina-pestana-barra { display: none; }
 @media (hover: hover) and (pointer: fine) and (min-width: 761px) {
-  .cortina-pestana { top: 61px; width: clamp(320px, 44vw, 640px); min-height: 26px; padding: 0 16px 2px; }
-  .cortina-pestana:hover { min-height: 36px; }
+  .cortina-pestana-flota { display: none; }
+  .cortina-pestana-barra {
+    display: flex; position: relative; top: auto; left: auto; transform: none; z-index: 1;
+    flex: 0 1 640px; min-width: 220px; margin: 0 auto; align-self: flex-start;
+    /* Sube hasta el borde de la ventana (la barra tiene 8 px de aire arriba) */
+    margin-top: calc(-8px - env(safe-area-inset-top)); min-height: 34px; padding: 0 16px 2px;
+  }
+  .cortina-pestana-barra:hover, .cortina-pestana-barra:focus-visible { min-height: 42px; }
   .cortina-pestana-linea { display: block; }
-  .cortina-pestana::after { inset: -6px 0 -10px; }
-  .en-inicio .contenido { padding-top: 28px; }
+  .cortina-pestana-barra::after { inset: 0 0 -10px; }
 }
 
 .cortina-fondo {
@@ -66,10 +71,12 @@
 
 .cortina-cuerpo { display: flex; gap: 16px; min-height: 0; flex: 1; overflow: hidden; width: 100%; max-width: 1280px; margin: 0 auto; padding: 14px 32px 4px; }
 .cortina-principal { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-.cortina-lado { width: 380px; flex: none; overflow-y: auto; min-height: 0; border-left: 1px solid var(--borde); padding-left: 16px; }
+.cortina-lado { width: clamp(280px, 30vw, 380px); flex: none; overflow-y: auto; min-height: 0; border-left: 1px solid var(--borde); padding-left: 16px; }
 
 /* Cabecera: título HUD + cifras + ir al tablero */
-.cortina-cab { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cortina-cab { display: flex; align-items: center; gap: 14px; }
+.cortina-cab > * { flex: none; }
+.cortina-cab .cortina-cifras { flex: 1 1 auto; min-width: 0; }
 .cortina-cab h2 { margin: 0; font: 700 1rem var(--letra-titulo); text-transform: uppercase; letter-spacing: 0.16em; color: var(--acento-texto); text-shadow: var(--brillo); }
 .cortina-cifras { display: flex; gap: 12px; flex-wrap: wrap; font: 500 0.75rem var(--letra-dato); color: var(--texto-2); }
 .cortina-cifras b { font: 700 1rem var(--letra-dato); font-variant-numeric: tabular-nums; color: var(--texto); margin-right: 2px; }
@@ -142,7 +149,7 @@
 @media (max-width: 760px) {
   .cortina { max-height: 88dvh; border-radius: 0 0 var(--radio-grande) var(--radio-grande); }
   .cortina-cuerpo { padding: 10px 14px 2px; }
-  .cortina-cab { gap: 8px 10px; }
+  .cortina-cab { gap: 8px 10px; flex-wrap: wrap; }
   .cortina-cab h2 { font-size: 0.9rem; }
   .cortina-cifras { order: 3; width: 100%; gap: 10px; }
   .cortina-ir { padding: 0 10px; }

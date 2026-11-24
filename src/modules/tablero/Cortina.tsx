@@ -66,7 +66,9 @@ export function CortinaPendientes({ escribe, ocultarPestana }: { escribe: boolea
         return;
       }
       if (document.querySelector('dialog[open]') || e.buttons) return;
-      const abajo = ref.current?.getBoundingClientRect().bottom ?? 0;
+      // Dónde termina cuando está abierta del todo (offsetHeight no cambia con la animación: así no se cierra sola mientras baja).
+      const el = ref.current;
+      const abajo = el ? el.offsetTop + el.offsetHeight : 0;
       if (e.clientY > abajo + 6) setAbierta(false);
     };
     const salir = (e: MouseEvent) => { if (!e.relatedTarget) cancelar(); };
@@ -154,7 +156,7 @@ export function CortinaPendientes({ escribe, ocultarPestana }: { escribe: boolea
   return (
     <>
       {!ocultarPestana && (
-        <button type="button" className={`cortina-pestana ${altas ? 'con-alta' : ''} ${visible ? 'oculta' : ''}`} onClick={() => setAbierta(true)}
+        <button type="button" className={`cortina-pestana cortina-pestana-flota ${altas ? 'con-alta' : ''} ${visible ? 'oculta' : ''}`} onClick={() => setAbierta(true)}
           // Compu: pasar el cursor por encima ya la abre (sin esperar ni hacer clic).
           onMouseEnter={() => { if (window.matchMedia?.(CON_MOUSE).matches && !hayAlgoEncima()) setAbierta(true); }}
           tabIndex={visible ? -1 : 0}
@@ -174,6 +176,26 @@ export function CortinaPendientes({ escribe, ocultarPestana }: { escribe: boolea
         </div>
       </section>
     </>
+  );
+}
+
+/**
+ * Compu: la pestaña es la punta de la barra de arriba (va adentro de `barra-sup`, pegada al borde de la ventana).
+ * Pasar el cursor por encima la abre al instante; tocarla también.
+ */
+export function PestanaPendientes() {
+  const { filas } = useTarjetas();
+  const pendientes = filas.filter((t) => !t.hecho).length;
+  const altas = filas.filter((t) => !t.hecho && t.prioridad === 'alta').length;
+  const abrir = () => { if (!hayAlgoEncima()) abrirCortina(true); };
+  return (
+    <button type="button" className={`cortina-pestana cortina-pestana-barra ${altas ? 'con-alta' : ''}`} onClick={abrir}
+      onMouseEnter={() => { if (window.matchMedia?.(CON_MOUSE).matches) abrir(); }}
+      aria-label={`Abrir pendientes: ${pendientes} sin terminar${altas ? `, ${altas} de prioridad alta` : ''}`} title="Pendientes">
+      <i className="cortina-pestana-linea" aria-hidden="true" />
+      <span className="cortina-pestana-txt"><span aria-hidden="true">▾</span> Pendientes <b>{pendientes}</b></span>
+      <i className="cortina-pestana-linea" aria-hidden="true" />
+    </button>
   );
 }
 
