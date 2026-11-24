@@ -3,22 +3,37 @@
 /* Pestañita flotante arriba al medio: siempre a mano para abrirla con un toque (o arrastrarla hacia abajo en el celu). */
 .cortina-pestana {
   position: fixed; z-index: 26; top: env(safe-area-inset-top); left: 50%; transform: translateX(-50%);
-  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 2px 14px 4px;
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 30px; padding: 2px 14px 4px;
   border: 1px solid var(--acento-borde); border-top: 0; border-radius: 0 0 var(--radio) var(--radio);
   background: color-mix(in srgb, var(--capa-2) 92%, transparent); color: var(--texto-2); cursor: pointer;
   font: 600 0.7rem var(--letra-dato); text-transform: uppercase; letter-spacing: 0.08em;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); touch-action: none;
-  transition: color var(--dur), border-color var(--dur), padding var(--dur) var(--curva);
+  transition: color var(--dur), border-color var(--dur), min-height 260ms var(--curva), box-shadow 260ms var(--curva), opacity 200ms var(--curva);
 }
-.cortina-pestana:hover, .cortina-pestana:focus-visible { color: var(--acento-texto); padding-top: 6px; }
+.cortina-pestana.oculta { opacity: 0; pointer-events: none; }
+.cortina-pestana:hover, .cortina-pestana:focus-visible { color: var(--acento-texto); border-color: var(--acento); min-height: 38px; box-shadow: 0 6px 22px color-mix(in srgb, var(--acento) 30%, transparent); }
+.cortina-pestana-txt { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .cortina-pestana b { font: 700 0.78rem var(--letra-dato); color: var(--acento-texto); text-shadow: var(--brillo); }
 .cortina-pestana.con-alta b { color: var(--urgente-texto); text-shadow: none; }
+/* Líneas a los costados (compu): la pestaña es ancha para que sea fácil acertarle con el cursor */
+.cortina-pestana-linea { display: none; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--acento-borde), transparent); transition: background 260ms var(--curva); }
+.cortina-pestana:hover .cortina-pestana-linea { background: linear-gradient(90deg, transparent, var(--acento), transparent); }
 /* Zona del pulgar más grande sin que se vea más grande */
 .cortina-pestana::after { content: ''; position: absolute; inset: -8px -10px -12px; }
 
+/* Compu: cuelga debajo de la barra de arriba (así no tapa Informar ni Cargar) y es bien ancha,
+   para acertarle con el cursor sin apuntar: pasar por encima ya la abre. */
+@media (hover: hover) and (pointer: fine) and (min-width: 761px) {
+  .cortina-pestana { top: 61px; width: clamp(320px, 44vw, 640px); min-height: 26px; padding: 0 16px 2px; }
+  .cortina-pestana:hover { min-height: 36px; }
+  .cortina-pestana-linea { display: block; }
+  .cortina-pestana::after { inset: -6px 0 -10px; }
+  .en-inicio .contenido { padding-top: 28px; }
+}
+
 .cortina-fondo {
   position: fixed; inset: 0; z-index: 44; background: rgb(0 0 0 / 0.45); opacity: 0; pointer-events: none;
-  transition: opacity 220ms var(--curva);
+  transition: opacity 380ms var(--curva);
 }
 .cortina-fondo.ver { opacity: 1; pointer-events: auto; }
 
@@ -27,10 +42,27 @@
   display: flex; flex-direction: column; transform: translateY(-100%);
   background: var(--capa-1); border-bottom: 1px solid var(--acento-borde);
   box-shadow: 0 18px 40px rgb(0 0 0 / 0.55), 0 1px 0 var(--acento-borde);
-  transition: transform 300ms var(--resorte, var(--curva));
+  /* Al cerrarse sube un poco más rápido que lo que tarda en bajar */
+  transition: transform 340ms cubic-bezier(0.55, 0, 0.75, 0.2);
   padding-top: env(safe-area-inset-top);
 }
-.cortina.abierta { transform: translateY(0); }
+.cortina.abierta { transform: translateY(0); transition: transform 560ms cubic-bezier(0.16, 1, 0.3, 1); }
+/* Lo de adentro entra en cascada, de arriba hacia abajo */
+.cortina.abierta .cortina-principal > *, .cortina.abierta .cortina-lado {
+  animation: cortina-entra 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.cortina.abierta .cortina-principal > :nth-child(2) { animation-delay: 50ms; }
+.cortina.abierta .cortina-principal > :nth-child(3) { animation-delay: 100ms; }
+.cortina.abierta .cortina-principal > :nth-child(4) { animation-delay: 150ms; }
+.cortina.abierta .cortina-principal > :nth-child(5) { animation-delay: 200ms; }
+.cortina.abierta .cortina-lado { animation-delay: 120ms; }
+@keyframes cortina-entra { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+
+/* Compu: baja casi hasta abajo, con un margen para sacar el cursor y que se guarde */
+@media (min-width: 761px) {
+  .cortina { height: calc(100dvh - 56px); max-height: none; }
+  .cortina .cortina-lista { flex: 1 1 auto; }
+}
 
 .cortina-cuerpo { display: flex; gap: 16px; min-height: 0; flex: 1; overflow: hidden; width: 100%; max-width: 1280px; margin: 0 auto; padding: 14px 32px 4px; }
 .cortina-principal { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
@@ -126,5 +158,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cortina, .cortina-fondo { transition: none; }
+  .cortina, .cortina.abierta, .cortina-fondo { transition: none; }
+  .cortina.abierta .cortina-principal > *, .cortina.abierta .cortina-lado { animation: none; }
 }

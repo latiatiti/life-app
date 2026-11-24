@@ -67,7 +67,7 @@ export function CortinaPendientes({ escribe, ocultarPestana }: { escribe: boolea
       }
       if (document.querySelector('dialog[open]') || e.buttons) return;
       const abajo = ref.current?.getBoundingClientRect().bottom ?? 0;
-      if (e.clientY > abajo + 40) setAbierta(false);
+      if (e.clientY > abajo + 6) setAbierta(false);
     };
     const salir = (e: MouseEvent) => { if (!e.relatedTarget) cancelar(); };
     window.addEventListener('mousemove', mov, { passive: true });
@@ -145,21 +145,29 @@ export function CortinaPendientes({ escribe, ocultarPestana }: { escribe: boolea
   const altas = filas.filter((t) => !t.hecho && t.prioridad === 'alta').length;
 
   const visible = abierta || tirando !== null;
+  const [montada, setMontada] = useState(false);
+  useEffect(() => { if (visible) setMontada(true); }, [visible]);
   const estilo = tirando !== null
     ? { transform: `translateY(calc(-100% + ${Math.min(tirando, window.innerHeight)}px))`, transition: 'none' }
     : subiendo ? { transform: `translateY(${subiendo}px)`, transition: 'none' } : undefined;
 
   return (
     <>
-      {!ocultarPestana && !abierta && (
-        <button type="button" className={`cortina-pestana ${altas ? 'con-alta' : ''}`} onClick={() => setAbierta(true)}
-          aria-label={`Abrir pendientes: ${pendientes} sin terminar${altas ? `, ${altas} de prioridad alta` : ''}`} title="Pendientes (o llevá el cursor arriba de todo)">
-          <span aria-hidden="true">▾</span> Pendientes <b>{pendientes}</b>
+      {!ocultarPestana && (
+        <button type="button" className={`cortina-pestana ${altas ? 'con-alta' : ''} ${visible ? 'oculta' : ''}`} onClick={() => setAbierta(true)}
+          // Compu: pasar el cursor por encima ya la abre (sin esperar ni hacer clic).
+          onMouseEnter={() => { if (window.matchMedia?.(CON_MOUSE).matches && !hayAlgoEncima()) setAbierta(true); }}
+          tabIndex={visible ? -1 : 0}
+          aria-label={`Abrir pendientes: ${pendientes} sin terminar${altas ? `, ${altas} de prioridad alta` : ''}`} title="Pendientes">
+          <i className="cortina-pestana-linea" aria-hidden="true" />
+          <span className="cortina-pestana-txt"><span aria-hidden="true">▾</span> Pendientes <b>{pendientes}</b></span>
+          <i className="cortina-pestana-linea" aria-hidden="true" />
         </button>
       )}
       <div className={`cortina-fondo ${visible ? 'ver' : ''}`} onClick={() => setAbierta(false)} aria-hidden="true" />
       <section ref={ref} className={`cortina ${abierta ? 'abierta' : ''}`} style={estilo} aria-label="Pendientes" aria-hidden={!visible} inert={!visible}>
-        {visible && <Contenido escribe={escribe} abierta={abierta} onCerrar={() => setAbierta(false)} />}
+        {/* Una vez abierta queda armada: así al cerrarse sube con su contenido, suave */}
+        {(visible || montada) && <Contenido escribe={escribe} abierta={abierta} onCerrar={() => setAbierta(false)} />}
         <div className="cortina-tirador" onPointerDown={tirador} role="button" tabIndex={0} aria-label="Cerrar pendientes"
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setAbierta(false); }}>
           <i aria-hidden="true" />
