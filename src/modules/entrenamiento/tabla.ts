@@ -166,7 +166,7 @@ export interface Preset { id: string; nombre: string; para: string; tabla: strin
 
 export const PRESETS: Preset[] = [
   {
-    id: 'mia3', nombre: 'Mi rutina 3 días (armada con Claude)', para: 'Tu división: espalda y tríceps, pierna, pecho (foco en pecho alto) y bíceps. Ciclo de 4 semanas desde el 26/10/2026.',
+    id: 'mia3', nombre: 'Mi rutina 3 días (armada con Claude)', para: 'Tu división: espalda y tríceps, pierna, pecho (foco en pecho alto) y bíceps; C3 = pecho en casa sin material. Ciclo de 4 semanas desde el 26/10/2026.',
     tabla: `RUTINA: Mi rutina 3 días
 OBJETIVO: ganar masa con foco en pecho alto, espalda ancha y brazos, sin fundirse para el trabajo
 CICLO: Reconocimiento rpe-1 | Carga | Sobrecarga s+1 | Descarga s50% rpe6 c85
@@ -199,7 +199,15 @@ Cruce de poleas de abajo hacia arriba | 3x12-15 | 75 | 9 | 1.25 | Remata el pech
 Elevaciones laterales con mancuernas | 3x12-20 | 60 | 9 | 1 | Nuevo: el hombro lateral no tenía trabajo y da ancho | var: Elevaciones laterales en polea
 Curl con barra Z | 3x8-12 | 90 | 8 | 2 | El pesado de bíceps, sin balanceo | var: Curl en polea / Curl de bíceps con barra
 Curl inclinado con mancuernas | 3x10-12 | 75 | 9 | 1 | Bíceps estirado: es lo que más hace crecer | var: Curl concentrado con mancuerna / Curl predicador (banco Scott)
-Curl martillo con mancuernas | 2x10-14 | 60 | 9 | 2 | Braquial y antebrazo: el brazo se ve más grueso | var: Curl en polea`,
+Curl martillo con mancuernas | 2x10-14 | 60 | 9 | 2 | Braquial y antebrazo: el brazo se ve más grueso | var: Curl en polea
+C3: Pecho en casa (sin material)
+Flexiones con pies elevados | 3x8-15 | 90 | 8 | 0 | Pies en una silla: pecho alto. Bajá en 3 s, 1 s abajo sin apoyar y subí fuerte. Si pasás 15, mochila con peso en la espalda | var: Flexiones con déficit / Flexiones de brazos
+Flexiones con déficit | 3x8-12 | 90 | 8 | 0 | Manos en dos sillas o libros para bajar más que las manos. Bajada en 4 s: el pecho estirado es lo que más estimula | var: Flexiones con pausa abajo / Flexiones de brazos
+Flexiones arqueras | 2x5-8 | 90 | 8 | 0 | Repeticiones por lado. Si todavía no salen, flexiones con pausa de 2 s abajo | var: Flexiones con pausa abajo
+Flexiones inclinadas (manos en alto) | 2x12-20 | 60 | 9 | 0 | Remate, bajada en 3 s. Al final de la última serie aguantá 20 s abajo con el pecho estirado. Sin fallo: el lunes es tríceps | var: Flexiones de brazos
+Elevaciones laterales con mochila | 2x12-20 | 60 | 9 | 1 | De a un brazo, apoyado en la pared con el otro. Subí en 1 s y bajá en 3 s | var: Elevaciones laterales con mancuernas
+Curl con mochila | 3x8-15 | 75 | 8 | 1 | Mochila cargada de las manijas, codos quietos. Bajada en 3 s | var: Curl con toalla (isométrico)
+Curl con toalla (isométrico) | 2x20-30 | 60 | 9 | 0 | Segundos, no repeticiones. Pisá la toalla y tirá con codos a 90° | var: Curl con mochila`
   },
   {
     id: 'fb3', nombre: 'Principiante · cuerpo completo 3 días', para: 'Recién empezás o volvés después de mucho tiempo. Pocos ejercicios, mucha técnica.',

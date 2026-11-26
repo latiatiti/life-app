@@ -136,6 +136,7 @@ const RELACIONES: Array<[RegExp, number]> = [
   [/curl de bíceps con barra|curl con barra z|curl predicador/, 0.2],
   [/curl (alternado|martillo|inclinado)/, 0.08],
   [/curl en polea/, 0.18],
+  [/curl con mochila/, 0.07],
   [/press francés/, 0.18],
   [/extensión (de tríceps|por encima)/, 0.2],
   [/remo al mentón/, 0.25],
