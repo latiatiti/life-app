@@ -47,6 +47,23 @@ export const NOVEDADES: Novedad[] = [
     ],
   },
   {
+    fecha: '2026-11-23', area: 'Casa', titulo: 'Personas propias en compras y en casa', pr: 39, nube: true,
+    que: [
+      '"¿Para quién?" ya no es fijo (Yo / Ulises / Los dos): sumás a quien quieras con el + del escáner o en Ajustes → Con quién compartís compras.',
+      'Cada persona puede llevar su usuario de LIFE, para cruzar compras entre cuentas más adelante.',
+      'Con dos o más personas aparece "Entre todos": se divide en partes iguales entre vos y quienes tienen cosas en esa compra.',
+      'Quién pagó puede ser cualquiera de la lista, y la cuenta dice quién le debe a quién.',
+    ],
+  },
+  {
+    fecha: '2026-11-23', area: 'Casa', titulo: 'Coto se suma a los precios online', pr: 39, nube: true,
+    que: [
+      'Buscar un producto o escanear un código ahora trae también el precio de Coto (con foto), además de Carrefour, Vea y Jumbo.',
+      'Toma los descuentos directos de Coto (ej. "20 % Dto"); los 2x1 y "2do al 70 %" no, porque dependen de llevar más de uno.',
+      'Es el precio de la web de Coto, uno para todo el país: el del hiper de Mendoza puede variar un poco.',
+    ],
+  },
+  {
     fecha: '2026-11-19', area: 'Cuentas', titulo: 'Panel de la superadmin, botón Informar y esta línea de tiempo', nube: true,
     que: [
       'Sección Panel (solo superadmin): cómo viene cada cuenta, quién espera tu OK, roles, módulos y qué puede cada rol.',

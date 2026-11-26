@@ -6,13 +6,13 @@ import { Campo, Icono, Modal, Tarjeta, Vacio } from '../../ui/ui';
 import { useCategorias, useCuentas } from '../economia/modelo';
 import { useProductos } from '../stock/modelo';
 import { Escaner } from './Escaner';
-import { cerrarCarrito, type LineaCarrito, numeroTicket, PERSONAS, type Persona, useItems, useSupers } from './modelo';
+import { cerrarCarrito, deudas, type LineaCarrito, numeroTicket, type Persona, useItems, usePersonas, useSupers } from './modelo';
+import { ElegirPersona } from '../stock/Personas';
 import {
   bajarTicket, cambiarTicket, clasificarQr, imagenDe, type ItemTicket, leerFotos, leerProductos, leerTotal, nuevoTicket,
   repartoTicket, type Ticket, useTickets,
 } from './ticket';
 
-const QUIENES = Object.keys(PERSONAS) as Persona[];
 
 /** Cargar fotos del ticket (una o varias si es largo) y leerlas. */
 function BotonFoto({ texto, onTexto }: { texto: string; onTexto: (t: string) => void }) {
@@ -42,6 +42,9 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
   const it = items[i];
   const [partir, setPartir] = useState<number | null>(null);
   useEffect(() => setPartir(null), [it?.id]);
+  const ps = usePersonas();
+  const [otra, setOtra] = useState<Persona>(ps.otras[0]?.clave ?? 'compartido');
+  const nomOtra = ps.nombre(otra);
 
   useEffect(() => { // Busca la foto del producto una sola vez y la guarda.
     if (!it || it.imagen !== undefined) return;
@@ -63,12 +66,12 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
     else onListo();
   }
 
-  /** Parte un renglón en dos: `mias` para Yo y el resto para Ulises (ej. 6 latas tuyas y 2 de él). */
+  /** Parte un renglón en dos: `mias` para Yo y el resto para otra persona (ej. 6 latas tuyas y 2 de Ulises). */
   function dividir(mias: number) {
     const cant = it.cantidad;
     const totalYo = Math.round((it.total * mias / cant) * 100) / 100;
     const yo: ItemTicket = { ...it, cantidad: mias, total: totalYo, para: 'yo' };
-    const ul: ItemTicket = { ...it, id: uid(), cantidad: cant - mias, total: Math.round((it.total - totalYo) * 100) / 100, para: 'ulises' };
+    const ul: ItemTicket = { ...it, id: uid(), cantidad: cant - mias, total: Math.round((it.total - totalYo) * 100) / 100, para: otra };
     const nuevos = items.flatMap((x) => (x.id === it.id ? [yo, ul] : [x]));
     onCambio(nuevos);
     setPartir(null);
@@ -105,11 +108,11 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
           </Campo>
         </div>
         <p className="cifra-val num">{dinero(it.total)}</p>
-        {it.para && <p className="nota">Ahora: {PERSONAS[it.para]}</p>}
+        {it.para && <p className="nota">Ahora: {ps.nombre(it.para)}</p>}
       </div>
       <p className="nota" style={{ textAlign: 'center' }}>¿De quién es?</p>
       <div className="com-quien">
-        {QUIENES.map((p) => <button key={p} className={`btn ${it.para === p ? 'btn-primario' : ''}`} onClick={() => asignar(p)}>{PERSONAS[p]}</button>)}
+        {ps.quienes.map((p) => <button key={p} className={`btn ${it.para === p ? 'btn-primario' : ''}`} onClick={() => asignar(p)}>{ps.nombre(p)}</button>)}
       </div>
       {!it.peso && it.cantidad > 1 && (partir === null ? (
         <button className="btn ancho" onClick={() => setPartir(Math.ceil(it.cantidad / 2))}>✂ Repartir distinto (unos para cada uno)</button>
@@ -123,9 +126,10 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
                 <button type="button" className="btn-icono" aria-label="Más para mí" disabled={partir >= it.cantidad - 1} onClick={() => setPartir(partir + 1)}>{Icono.mas}</button>
               </div>
             </Campo>
-            <Campo etiqueta="Para Ulises"><span className="num">{it.cantidad - partir}</span></Campo>
+            <Campo etiqueta={`Para ${nomOtra}`}><span className="num">{it.cantidad - partir}</span></Campo>
           </div>
-          <p className="nota">Vos {dinero(Math.round(it.total * partir / it.cantidad))} · Ulises {dinero(it.total - Math.round(it.total * partir / it.cantidad))}</p>
+          {ps.otras.length > 1 && <ElegirPersona valor={otra} onCambio={setOtra} etiqueta="El resto para" />}
+          <p className="nota">Vos {dinero(Math.round(it.total * partir / it.cantidad))} · {nomOtra} {dinero(it.total - Math.round(it.total * partir / it.cantidad))}</p>
           <div className="barra-acciones">
             <button className="btn-link" onClick={() => setPartir(null)}>Cancelar</button>
             <button className="btn btn-primario" onClick={() => dividir(partir)}>Listo</button>
@@ -149,7 +153,9 @@ function Cuenta({ t, onCerrado }: { t: Ticket; onCerrado: () => void }) {
   const { filas: productos } = useProductos();
   const { filas: items } = useItems();
   const { filas: supers } = useSupers();
-  const r = repartoTicket(t.items);
+  const ps = usePersonas();
+  const otras = ps.otras.map((p) => p.clave);
+  const r = repartoTicket(t.items, otras);
   const [superId, setSuperId] = useState(t.super_id ?? '');
   const [pago, setPago] = useState<Persona>('yo');
   const activas = cuentas.filter((c) => !c.archivada);
@@ -157,7 +163,8 @@ function Cuenta({ t, onCerrado }: { t: Ticket; onCerrado: () => void }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const totalTicket = Number(t.total ?? t.fiscal?.importe ?? 0) || r.total;
-  const debe = pago === 'yo' ? r.ulises : r.yo;
+  const ds = deudas(r.partes, pago);
+  const grupos = [...new Set([...ps.quienes, ...t.items.map((x) => x.para ?? 'yo')])];
 
   async function cerrar() {
     setGuardando(true); setError('');
@@ -170,7 +177,7 @@ function Cuenta({ t, onCerrado }: { t: Ticket; onCerrado: () => void }) {
       const cat = categorias.find((c) => c.tipo === 'gasto' && /s[uú]per/i.test(c.nombre)) ?? null;
       const compra = await cerrarCarrito({
         carrito: { super_id: s?.id ?? null, inicio: Date.now(), lineas, ultimoPara: 'yo' }, super: s, items, productos,
-        total: totalTicket, pago: pago === 'ulises' ? 'ulises' : 'yo', gasto: cuenta ? { cuenta_id: cuenta, categoria_id: cat?.id ?? null } : null,
+        total: totalTicket, pago, otras, nombre: ps.nombre, gasto: cuenta ? { cuenta_id: cuenta, categoria_id: cat?.id ?? null } : null,
         ticket: t.fiscal, vaciarCarro: false, fecha: t.fecha,
       });
       await cambiarTicket(t.id, { estado: 'cerrado', compra_id: compra.id, super_id: s?.id ?? null });
@@ -181,18 +188,19 @@ function Cuenta({ t, onCerrado }: { t: Ticket; onCerrado: () => void }) {
   return (
     <div className="pila">
       <div className="grilla-cifras compacta">
-        <div className="cifra"><span className="cifra-etq">Tuyo</span><strong className="cifra-val">{dinero(r.yo)}</strong></div>
-        <div className="cifra"><span className="cifra-etq">Ulises</span><strong className="cifra-val">{dinero(r.ulises)}</strong></div>
+        {Object.entries(r.partes).map(([k, v]) => (
+          <div key={k} className="cifra"><span className="cifra-etq">{k === 'yo' ? 'Tuyo' : ps.nombre(k)}</span><strong className="cifra-val">{dinero(v)}</strong></div>
+        ))}
       </div>
       <p className="nota">
-        Lo de los dos ({dinero(r.compartido)}) va a medias. Suma de productos {dinero(r.total)}
+        {r.compartido ? `Lo de ${ps.nombre('compartido').toLowerCase()} (${dinero(r.compartido)}) va en partes iguales. ` : ''} Suma de productos {dinero(r.total)}
         {Math.abs(totalTicket - r.total) >= 1 ? ` · el ticket dice ${dinero(totalTicket)} (diferencia ${dinero(totalTicket - r.total)})` : ' · coincide con el ticket'}.
       </p>
       {r.sinAsignar > 0 && <p className="texto-aviso">Quedan productos sin repartir por {dinero(r.sinAsignar)}: se cuentan como tuyos.</p>}
-      {QUIENES.map((p) => {
+      {grupos.map((p) => {
         const del = t.items.filter((x) => (x.para ?? 'yo') === p);
         return del.length ? (
-          <Tarjeta key={p} titulo={`${PERSONAS[p]} (${del.length})`} accion={<span className="num">{dinero(del.reduce((s, x) => s + x.total, 0))}</span>}>
+          <Tarjeta key={p} titulo={`${ps.nombre(p)} (${del.length})`} accion={<span className="num">{dinero(del.reduce((s, x) => s + x.total, 0))}</span>}>
             <ul className="lista">{del.map((x) => <li key={x.id} className="lista-item"><span className="crece">{x.peso ? `${String(x.peso).replace('.', ',')} kg ` : x.cantidad > 1 ? `${x.cantidad} × ` : ''}{x.nombre}</span><span className="num">{dinero(x.total)}</span></li>)}</ul>
           </Tarjeta>
         ) : null;
@@ -204,11 +212,11 @@ function Cuenta({ t, onCerrado }: { t: Ticket; onCerrado: () => void }) {
         </select>
       </Campo>
       <Campo etiqueta="¿Quién pagó?">
-        <div className="segmentado">
-          {(['yo', 'ulises'] as Persona[]).map((p) => <button key={p} type="button" className={pago === p ? 'activo' : ''} onClick={() => setPago(p)}>{PERSONAS[p]}</button>)}
-        </div>
+        <ElegirPersona valor={pago} onCambio={setPago} etiqueta="Quién pagó" sinCompartido />
       </Campo>
-      {debe > 0 && <p className={pago === 'yo' ? 'texto-bien' : 'texto-aviso'}>{pago === 'yo' ? `Ulises te debe ${dinero(debe)}` : `Le debés a Ulises ${dinero(debe)}`}</p>}
+      {ds.map((d) => (
+        <p key={d.quien} className={d.aMi ? 'texto-bien' : 'texto-aviso'}>{d.aMi ? `${ps.nombre(d.quien)} te debe ${dinero(d.monto)}` : `Le debés a ${ps.nombre(d.quien)} ${dinero(d.monto)}`}</p>
+      ))}
       {pago === 'yo' && activas.length > 0 && (
         <Campo etiqueta="Pagado con" ayuda="Se anota el gasto en Economía">
           <select value={cuenta} onChange={(e) => setCuenta(e.target.value)}>
@@ -289,6 +297,7 @@ function VerTicket({ t, onVolver }: { t: Ticket; onVolver: () => void }) {
 
 export function PantallaTicket() {
   const { filas: tickets } = useTickets();
+  const ps = usePersonas();
   const [abierto, setAbierto] = useState<string | null>(null);
   const [camara, setCamara] = useState(false);
   const [estado, setEstado] = useState('');
@@ -348,7 +357,7 @@ export function PantallaTicket() {
         <Tarjeta titulo={`Para repartir (${pendientes.length})`}>
           <ul className="lista">
             {pendientes.map((x) => {
-              const r = repartoTicket(x.items);
+              const r = repartoTicket(x.items, ps.otras.map((p) => p.clave));
               const hechos = x.items.filter((i) => i.para).length;
               return (
                 <li key={x.id} className="lista-item">
@@ -367,11 +376,11 @@ export function PantallaTicket() {
         <Tarjeta titulo="Ya guardados">
           <ul className="lista">
             {cerrados.map((x) => {
-              const r = repartoTicket(x.items);
+              const r = repartoTicket(x.items, ps.otras.map((p) => p.clave));
               return (
                 <li key={x.id} className="lista-item">
                   <button className="boton-fila crece" onClick={() => setAbierto(x.id)}>
-                    <div className="crece"><strong>{fechaCorta(x.fecha)}</strong><small className="nota">Tuyo {dinero(r.yo)} · Ulises {dinero(r.ulises)}</small></div>
+                    <div className="crece"><strong>{fechaCorta(x.fecha)}</strong><small className="nota">{Object.entries(r.partes).map(([k, v]) => `${k === 'yo' ? 'Tuyo' : ps.nombre(k)} ${dinero(v)}`).join(' · ')}</small></div>
                   </button>
                   <span className="num">{dinero(Number(x.total ?? r.total))}</span>
                 </li>

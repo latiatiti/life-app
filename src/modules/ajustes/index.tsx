@@ -11,6 +11,7 @@ import { ConexionWhatsapp } from './Whatsapp';
 import { AjustesAccesos } from '../../hub/MiDia';
 import { MisInformes } from '../../ui/Informar';
 import { cargarConfiguracionInicial } from './semilla';
+import { TarjetaPersonas } from '../stock/Personas';
 
 function PantallaAjustes() {
   const fija = configDesdeEntorno();
@@ -114,6 +115,7 @@ function PantallaAjustes() {
       <AjustesAccesos />
       <ConexionClaude />
       <ConexionWhatsapp />
+      <TarjetaPersonas />
 
       <Tarjeta titulo="Tu configuración inicial">
         <p className="nota">Carga tus cuentas (Mercado Pago, efectivo, Cocos), tus categorías, tus dos trabajos de los sábados tus gastos fijos (alquiler, internet, gimnasio, celular), los básicos de la casa, tus platos y metas de comida. Si ya existen, no los duplica.</p>

@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { eliminar, modificar } from '../../core/db';
 import { fechaCorta, relativo } from '../../core/format';
 import { Campo, Estado, Icono, Modal, Tarjeta, Vacio } from '../../ui/ui';
+import { ElegirPersona } from './Personas';
 import {
-  ajustar, LUGARES, nuevoProducto, PERSONAS, personaDe, porVencer, TS, UNIDADES, useProductos,
+  ajustar, LUGARES, nuevoProducto, personaDe, usePersonas, porVencer, TS, UNIDADES, useProductos,
   type Persona,
   type Lugar, type Producto, type Unidad,
 } from './modelo';
@@ -52,9 +53,7 @@ function FormProducto({ inicial, onListo }: { inicial?: Producto; onListo: () =>
         <Campo etiqueta="Vence"><input type="date" value={vence} onChange={(e) => setVence(e.target.value)} /></Campo>
       </div>
       <Campo etiqueta="De quién">
-        <select value={persona} onChange={(e) => setPersona(e.target.value as Persona)}>
-          {Object.entries(PERSONAS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
+        <ElegirPersona valor={persona} onCambio={setPersona} etiqueta="De quién" />
       </Campo>
       <label className="lista-item"><input type="checkbox" checked={basico} onChange={(e) => setBasico(e.target.checked)} style={{ width: 'auto', minHeight: 0 }} /> Básico: tiene que estar siempre en casa</label>
       <button className="btn btn-primario">Guardar</button>
@@ -71,12 +70,13 @@ function FormProducto({ inicial, onListo }: { inicial?: Producto; onListo: () =>
 const paso = (p: Producto) => (p.unidad === 'g' || p.unidad === 'ml' ? 100 : p.unidad === 'kg' || p.unidad === 'l' ? 0.5 : 1);
 
 function FilaProducto({ p, onEditar }: { p: Producto; onEditar: () => void }) {
+  const { nombre } = usePersonas();
   const falta = Number(p.cantidad) < Number(p.minimo) || (p.basico && Number(p.cantidad) <= 0);
   return (
     <li className="lista-item">
       <button className="boton-fila crece" onClick={onEditar}>
         <div className="crece">
-          <strong>{p.nombre}{p.basico ? ' ★' : ''}{personaDe(p) !== 'yo' ? ` · ${PERSONAS[personaDe(p)]}` : ''}</strong>
+          <strong>{p.nombre}{p.basico ? ' ★' : ''}{personaDe(p) !== 'yo' ? ` · ${nombre(personaDe(p))}` : ''}</strong>
           <small className="nota">{p.vence ? `Vence ${fechaCorta(p.vence)} (${relativo(p.vence)})` : `Mínimo ${p.minimo} ${p.unidad}`}</small>
         </div>
       </button>
@@ -94,7 +94,9 @@ export function PantallaStock() {
   const { filas: productos, cargado } = useProductos();
   const [editando, setEditando] = useState<Producto | 'nuevo' | null>(null);
   const [quien, setQuien] = useState<Persona | 'todos'>('todos');
-  const hayUlises = productos.some((p) => personaDe(p) !== 'yo');
+  const ps = usePersonas();
+  const hayOtros = productos.some((p) => personaDe(p) !== 'yo');
+  const filtros = [...new Set([...ps.quienes, ...productos.map(personaDe)])];
   const visibles = quien === 'todos' ? productos : productos.filter((p) => personaDe(p) === quien);
   const vencen = porVencer(productos);
   const grupos = Object.entries(LUGARES).map(([k, v]) => ({ k, v, lista: visibles.filter((p) => p.lugar === k).sort((a, b) => a.nombre.localeCompare(b.nombre)) }));
@@ -104,10 +106,10 @@ export function PantallaStock() {
         <p className="nota">Todo lo que hay en casa, por lugar. Usá + y − cuando agregás o sacás algo.</p>
         <button className="btn btn-primario" onClick={() => setEditando('nuevo')}>{Icono.mas} Producto</button>
       </div>
-      {hayUlises && (
+      {hayOtros && (
         <div className="segmentado" role="tablist" aria-label="De quién">
-          {(['todos', ...Object.keys(PERSONAS)] as Array<Persona | 'todos'>).map((k) => (
-            <button key={k} className={quien === k ? 'activo' : ''} onClick={() => setQuien(k)}>{k === 'todos' ? 'Todo' : PERSONAS[k]}</button>
+          {['todos', ...filtros].map((k) => (
+            <button key={k} className={quien === k ? 'activo' : ''} onClick={() => setQuien(k)}>{k === 'todos' ? 'Todo' : ps.nombre(k)}</button>
           ))}
         </div>
       )}

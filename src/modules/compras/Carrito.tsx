@@ -5,27 +5,15 @@ import { ir } from '../../core/router';
 import { Campo, Icono, Modal, Tarjeta } from '../../ui/ui';
 import { useCategorias, useCuentas } from '../economia/modelo';
 import { faltantes, useProductos } from '../stock/modelo';
+import { ElegirPersona } from '../stock/Personas';
 import { Escaner } from './Escaner';
 import {
-  type Carrito, cerrarCarrito, faltaAgarrar, guardarCarrito, identificar, type Item, itemDeLinea, leerCarrito, leerQrTicket,
-  type LineaCarrito, numeroTicket, PERSONAS, type Persona, type PrecioReg, type TicketQR, totalesCarrito, ultimoTicket, useItems,
-  usePrecios, useSupers,
+  type Carrito, cerrarCarrito, deudas, faltaAgarrar, guardarCarrito, identificar, type Item, itemDeLinea, leerCarrito, leerQrTicket,
+  type LineaCarrito, numeroTicket, type Persona, type PrecioReg, type TicketQR, totalesCarrito, ultimoTicket, useItems,
+  usePersonas, usePrecios, useSupers,
 } from './modelo';
 
-const QUIENES = Object.keys(PERSONAS) as Persona[];
 const vacio = (super_id: string | null = null, ultimoPara: Persona = 'yo'): Carrito => ({ super_id, inicio: Date.now(), lineas: [], ultimoPara });
-
-function ElegirPara({ valor, onCambio }: { valor: Persona; onCambio: (p: Persona) => void }) {
-  return (
-    <div className="segmentado" role="radiogroup" aria-label="Para quién">
-      {QUIENES.map((p) => (
-        <button key={p} type="button" role="radio" aria-checked={valor === p} className={valor === p ? 'activo' : ''} onClick={() => onCambio(p)}>
-          {PERSONAS[p]}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /** Flecha de suba o baja contra el último ticket. */
 function Cambio({ ahora, antes }: { ahora: number; antes: number }) {
@@ -70,7 +58,7 @@ function FormLinea({ inicial, buscando, enCarro, ultimo, onListo, onBorrar }: {
           {enCarro ? <span className="texto-aviso">Ya tenés {enCarro} en el carro: se suman.</span> : null}
         </p>
       ) : null}
-      <ElegirPara valor={para} onCambio={setPara} />
+      <ElegirPersona valor={para} onCambio={setPara} />
       <div className="fila-campos" style={{ alignItems: 'end' }}>
         <Campo etiqueta="Cantidad">
           <div className="fila-derecha">
@@ -98,7 +86,9 @@ function Cerrar({ carrito, onCambio, onListo }: { carrito: Carrito; onCambio: (c
   const { filas: items } = useItems();
   const { filas: supers } = useSupers();
   const { filas: precios } = usePrecios();
-  const t = totalesCarrito(carrito.lineas);
+  const ps = usePersonas();
+  const otras = ps.otras.map((p) => p.clave);
+  const t = totalesCarrito(carrito.lineas, otras);
   const [ticket, setTicket] = useState<TicketQR | null>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [avisoQr, setAvisoQr] = useState('');
@@ -129,7 +119,7 @@ function Cerrar({ carrito, onCambio, onListo }: { carrito: Carrito; onCambio: (c
     setGuardando(true); setError('');
     try {
       await cerrarCarrito({
-        carrito, super: s, items, productos, total: totalTicket || t.total, pago: pago === 'ulises' ? 'ulises' : 'yo',
+        carrito, super: s, items, productos, total: totalTicket || t.total, pago, otras, nombre: ps.nombre,
         gasto: cuenta ? { cuenta_id: cuenta, categoria_id: cat?.id ?? null } : null, ticket,
       });
       onListo();
@@ -165,7 +155,7 @@ function Cerrar({ carrito, onCambio, onListo }: { carrito: Carrito; onCambio: (c
               <div>
                 <strong>{l.cantidad > 1 ? `${l.cantidad} × ` : ''}{l.nombre || l.ean}</strong>
                 <small className="nota" style={{ display: 'block' }}>
-                  {PERSONAS[l.para]}{ult ? ` · antes ${dinero(Number(ult.precio))} ` : ''}
+                  {ps.nombre(l.para)}{ult ? ` · antes ${dinero(Number(ult.precio))} ` : ''}
                   {ult && l.precio != null && <Cambio ahora={l.precio} antes={Number(ult.precio)} />}
                 </small>
               </div>
@@ -183,13 +173,10 @@ function Cerrar({ carrito, onCambio, onListo }: { carrito: Carrito; onCambio: (c
       </Tarjeta>
 
       <Tarjeta titulo="3. ¿Quién pagó?">
-        <div className="segmentado">
-          {(['yo', 'ulises'] as Persona[]).map((p) => (
-            <button key={p} type="button" className={pago === p ? 'activo' : ''} onClick={() => setPago(p)}>{PERSONAS[p]}</button>
-          ))}
-        </div>
-        {pago === 'yo' && t.ulises > 0 && <p className="texto-bien">Ulises te debe {dinero(t.ulises)}</p>}
-        {pago === 'ulises' && t.yo > 0 && <p className="texto-aviso">Le debés a Ulises {dinero(t.yo)}</p>}
+        <ElegirPersona valor={pago} onCambio={setPago} etiqueta="Quién pagó" sinCompartido />
+        {deudas(t.partes, pago).map((d) => (
+          <p key={d.quien} className={d.aMi ? 'texto-bien' : 'texto-aviso'}>{d.aMi ? `${ps.nombre(d.quien)} te debe ${dinero(d.monto)}` : `Le debés a ${ps.nombre(d.quien)} ${dinero(d.monto)}`}</p>
+        ))}
         {pago === 'yo' && activas.length > 0 && (
           <Campo etiqueta="Pagado con" ayuda="Se anota el gasto en Economía">
             <select value={cuenta} onChange={(e) => setCuenta(e.target.value)}>
@@ -220,8 +207,11 @@ export function PantallaEscanear() {
   const [verFalta, setVerFalta] = useState(false);
   const [cerrando, setCerrando] = useState(false);
 
+  const ps = usePersonas();
   const cambiar = (n: Carrito) => { guardarCarrito(n); setC(n); };
-  const t = totalesCarrito(c.lineas);
+  const t = totalesCarrito(c.lineas, ps.otras.map((p) => p.clave));
+  // Las de la lista y, por si quedó algo cargado a alguien que ya no está activo, también esas.
+  const grupos = [...new Set([...ps.quienes, ...c.lineas.map((l) => l.para)])];
   const unidades = c.lineas.reduce((s, l) => s + l.cantidad, 0);
   const falta = faltaAgarrar(items, faltantes(productos), c.lineas);
   const ultimoDe = (l: Pick<LineaCarrito, 'ean' | 'nombre'>) => {
@@ -305,12 +295,12 @@ export function PantallaEscanear() {
         <button className="btn" aria-label="Agregar">{Icono.mas}</button>
       </form>
 
-      {c.lineas.length > 0 && QUIENES.map((p) => {
+      {c.lineas.length > 0 && grupos.map((p) => {
         const del = c.lineas.filter((l) => l.para === p);
         if (!del.length) return null;
         const sub = del.reduce((s, l) => s + (l.precio ?? 0) * l.cantidad, 0);
         return (
-          <Tarjeta key={p} titulo={`${PERSONAS[p]} (${del.length})`} accion={<span className="num">{dinero(sub)}</span>}>
+          <Tarjeta key={p} titulo={`${ps.nombre(p)} (${del.length})`} accion={<span className="num">{dinero(sub)}</span>}>
             <ul className="lista">
               {del.map((l) => {
                 const ult = ultimoDe(l);
@@ -328,8 +318,11 @@ export function PantallaEscanear() {
           </Tarjeta>
         );
       })}
-      {c.lineas.length > 0 && (t.ulises > 0 || t.compartido > 0) && (
-        <p className="nota">Tuyo {dinero(t.yo)} · Ulises {dinero(t.ulises)}{t.compartido ? ` (lo de los dos va a medias: ${dinero(t.compartido)})` : ''}</p>
+      {c.lineas.length > 0 && Object.keys(t.partes).length > 1 && (
+        <p className="nota">
+          {Object.entries(t.partes).map(([k, v]) => `${k === 'yo' ? 'Tuyo' : ps.nombre(k)} ${dinero(v)}`).join(' · ')}
+          {t.compartido ? ` (lo de ${ps.nombre('compartido').toLowerCase()} va en partes iguales: ${dinero(t.compartido)})` : ''}
+        </p>
       )}
 
       <div className="barra-acciones">

@@ -1,6 +1,7 @@
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { uid } from '../../core/format';
 import { buscarPrecios, leerQrTicket, NUBE_LIFE, type Persona, type TicketQR } from './modelo';
+import { repartir } from '../stock/modelo';
 
 /* ---------- Tickets guardados (QR o foto) ---------- */
 
@@ -207,15 +208,10 @@ export async function imagenDe(it: Pick<ItemTicket, 'ean' | 'nombre'>): Promise<
   } catch { return ''; }
 }
 
-/** Totales del reparto: lo de los dos va a medias. */
-export function repartoTicket(items: ItemTicket[]) {
-  const t = { yo: 0, ulises: 0, compartido: 0, sinAsignar: 0, total: 0 };
-  for (const i of items) {
-    t.total += i.total;
-    if (i.para === 'yo') t.yo += i.total;
-    else if (i.para === 'ulises') t.ulises += i.total;
-    else if (i.para === 'compartido') { t.compartido += i.total; t.yo += i.total / 2; t.ulises += i.total / 2; }
-    else t.sinAsignar += i.total;
-  }
-  return t;
+/** Totales del reparto por persona (lo compartido en partes iguales); lo sin repartir cuenta como tuyo. */
+export function repartoTicket(items: ItemTicket[], otras: string[] = []) {
+  let total = 0, sinAsignar = 0;
+  for (const i of items) { total += i.total; if (!i.para) sinAsignar += i.total; }
+  const { partes, compartido } = repartir(items.map((i) => ({ para: i.para ?? 'yo', monto: i.total })), otras);
+  return { total, sinAsignar, compartido, partes, yo: partes.yo ?? 0 };
 }
