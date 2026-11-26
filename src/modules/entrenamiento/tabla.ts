@@ -174,7 +174,8 @@ NOTAS: Semana 1: encontrá el peso de los ejercicios nuevos dejando 2-3 repetici
 NOTAS: Progresión: cuando hacés todas las series en el tope de repeticiones, la próxima subís el salto de peso. Si no, sumá una repetición.
 NOTAS: Comida (plan que viene): los días de entreno la app ya sube proteína y calorías. Pierna es el día que más gasta: carbohidratos 2-3 h antes y proteína después.
 A: Espalda y tríceps
-Remo en T | 3x6-10 | 150 | 8 | 2.5 | Primero y pesado como te gusta. Codos a la cadera y pausa arriba | var: Remo en máquina con apoyo de pecho / Remo con barra
+Fondos con peso | 3x6-10 | 150 | 8 | 2.5 | Primero del día. Serie top con 25 kg de lastre; las otras dos bajando unos 5 kg (20 y 15) | var: Fondos en paralelas (o press declinado) / Press cerrado con barra
+Remo en T | 3x6-10 | 150 | 8 | 2.5 | Pesado como te gusta. Codos a la cadera y pausa arriba | var: Remo en máquina con apoyo de pecho / Remo con barra
 Jalón al pecho agarre neutro | 3x8-12 | 120 | 8 | 5 | Codos a los bolsillos, pecho alto, sin tirar el torso atrás | var: Jalón al pecho agarre abierto / Dominadas
 Pullover en polea | 2x12-15 | 75 | 9 | 2.5 | Lo pasamos acá: termina de cansar el dorsal sin bíceps | var: Pullover con mancuerna
 Pec deck invertido (posteriores) | 3x12-20 | 60 | 9 | 2.5 | Liviano y controlado: el posterior responde a muchas repeticiones | var: Face pull en polea / Pájaros (deltoides posterior)
