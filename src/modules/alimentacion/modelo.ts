@@ -1,4 +1,4 @@
-import { crear, type Fila, modificar, useTabla } from '../../core/db';
+import { crear, type Fila, modificar, recargar, supabase, useTabla } from '../../core/db';
 import { descontar, type Producto } from '../stock/modelo';
 
 export const MOMENTOS = { desayuno: 'Desayuno', almuerzo: 'Almuerzo', merienda: 'Merienda', cena: 'Cena', colacion: 'Colación' } as const;
@@ -18,6 +18,40 @@ export interface Plato extends Fila {
   grasas: number;
   kcal: number;
   minutos: number;
+  /** Descripción detallada para generar la foto con IA (en inglés, que la entienden mejor). */
+  prompt?: string;
+  /** Link de la foto guardada. Vacío = pendiente de generar. */
+  imagen?: string;
+  /** Por qué quedó pendiente la foto la última vez. */
+  imagen_error?: string;
+}
+
+/** Foto guardada del plato (la genera una sola vez la función "platos-foto"). Vacío = pendiente. */
+export function fotoDePlato(p: Pick<Plato, 'imagen'>): string {
+  return p.imagen ?? '';
+}
+
+let generando = false;
+/**
+ * "Máquina" de fotos: mientras haya platos con descripción y sin foto, le pide a la nube que genere
+ * la siguiente (de a una, para no pasarse del uso gratis). Si falla, el plato queda pendiente y se
+ * vuelve a probar la próxima vez que se abra Comida. Con id rehace la foto de ese plato.
+ */
+export async function generarFotos(id?: string) {
+  if (!supabase || generando) return;
+  generando = true;
+  try {
+    for (let vuelta = 0; vuelta < 20; vuelta++) {
+      const { data, error } = await supabase.functions.invoke('platos-foto', { body: id ? { id } : {} });
+      await recargar(TA.platos);
+      if (error || id || !data?.pendientes) break;
+      // El generador gratis deja hacer una foto cada ~45 s: esperamos y seguimos con la próxima
+      // (si falló por límite, se reintenta en la vuelta siguiente).
+      await new Promise((r) => setTimeout(r, data?.error ? 60000 : 47000));
+    }
+  } finally {
+    generando = false;
+  }
 }
 
 export interface Comida extends Fila {

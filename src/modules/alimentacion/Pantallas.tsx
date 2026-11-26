@@ -1,12 +1,12 @@
 import { confirmar } from '../../ui/Deshacer';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { crear, eliminar, modificar } from '../../core/db';
 import { hoy } from '../../core/format';
 import { Campo, Cifra, Icono, Medidor, Modal, Tarjeta, Vacio } from '../../ui/ui';
 import { entrenoHoy, useSesiones } from '../entrenamiento/modelo';
 import { useProductos } from '../stock/modelo';
 import {
-  faltaPara, guardarMetas, METAS_BASE, metasDelDia, MOMENTOS, registrarComida, TA, totalesDia,
+  faltaPara, fotoDePlato, generarFotos, guardarMetas, METAS_BASE, metasDelDia, MOMENTOS, registrarComida, TA, totalesDia,
   useComidas, useExtras, useMetas, usePlatos,
   type Extra, type Ingrediente, type Momento, type Plato,
 } from './modelo';
@@ -18,6 +18,28 @@ function momentoSugerido(): Momento {
   return h < 11 ? 'desayuno' : h < 15 ? 'almuerzo' : h < 19 ? 'merienda' : 'cena';
 }
 
+/** Foto guardada del plato. Sin foto todavía: cuadro con la inicial y "foto en camino". */
+function FotoPlato({ plato }: { plato: Plato }) {
+  const [mal, setMal] = useState(false);
+  const url = fotoDePlato(plato);
+  if (!url || mal) {
+    const espera = !url && !!plato.prompt;
+    return (
+      <span className={`plato-foto vacia ${espera ? 'en-camino' : ''}`} title={plato.imagen_error || undefined}>
+        {plato.nombre.charAt(0)}
+        {espera && <small>{plato.imagen_error ? 'foto pendiente' : 'foto en camino'}</small>}
+      </span>
+    );
+  }
+  return <img className="plato-foto" src={url} alt="" loading="lazy" onError={() => setMal(true)} />;
+}
+
+/** Si hay platos sin foto, arranca la máquina de fotos (de a una, en la nube). */
+function useFotosPendientes(platos: Plato[]) {
+  const faltan = platos.some((p) => p.prompt && !p.imagen);
+  useEffect(() => { if (faltan) void generarFotos(); }, [faltan]);
+}
+
 export function FormComida({ onListo }: { onListo: () => void }) {
   const { filas: platos } = usePlatos();
   const { filas: productos } = useProductos();
@@ -27,6 +49,7 @@ export function FormComida({ onListo }: { onListo: () => void }) {
   const [desc, setDesc] = useState('');
   const [prot, setProt] = useState('');
   const [kcal, setKcal] = useState('');
+  useFotosPendientes(platos);
   const plato = platos.find((p) => p.id === platoId) ?? null;
   const falta = plato ? faltaPara(plato, productos) : [];
 
@@ -50,12 +73,22 @@ export function FormComida({ onListo }: { onListo: () => void }) {
           {Object.entries(MOMENTOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </Campo>
-      <Campo etiqueta="Plato">
-        <select value={platoId} onChange={(e) => setPlatoId(e.target.value)}>
-          <option value="">Otra cosa (escribir)</option>
-          {platos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-        </select>
-      </Campo>
+      <p className="subtitulo">Plato</p>
+      <div className="platos-grilla" role="radiogroup" aria-label="Plato">
+        {platos.map((p) => (
+          <button type="button" key={p.id} role="radio" aria-checked={platoId === p.id}
+            className={`plato-ficha ${platoId === p.id ? 'elegido' : ''}`} onClick={() => setPlatoId(platoId === p.id ? '' : p.id)}>
+            <FotoPlato plato={p} />
+            <strong>{p.nombre}</strong>
+            <small>{Math.round(p.proteina)} g prot · {Math.round(p.kcal)} kcal</small>
+          </button>
+        ))}
+        <button type="button" role="radio" aria-checked={!platoId} className={`plato-ficha otra ${!platoId ? 'elegido' : ''}`} onClick={() => setPlatoId('')}>
+          <span className="plato-foto vacia">{Icono.mas}</span>
+          <strong>Otra cosa</strong>
+          <small>Escribirla</small>
+        </button>
+      </div>
       {plato ? (
         <>
           <Campo etiqueta="Porciones"><input inputMode="decimal" value={porciones} onChange={(e) => setPorciones(e.target.value)} /></Campo>
@@ -158,13 +191,20 @@ function FormPlato({ inicial, onListo }: { inicial?: Plato; onListo: () => void 
   const [gras, setGras] = useState(String(inicial?.grasas ?? ''));
   const [kcal, setKcal] = useState(String(inicial?.kcal ?? ''));
   const [min, setMin] = useState(String(inicial?.minutos ?? ''));
+  const [prompt, setPrompt] = useState(inicial?.prompt ?? '');
+  const [imagen, setImagen] = useState(inicial?.imagen ?? '');
 
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
     if (!nombre.trim()) return;
-    const datos = { nombre: nombre.trim(), ingredientes: ings.filter((i) => i.producto_id && i.cantidad > 0), proteina: n(prot), carbos: n(carb), grasas: n(gras), kcal: n(kcal), minutos: n(min) };
+    const datos = { nombre: nombre.trim(), ingredientes: ings.filter((i) => i.producto_id && i.cantidad > 0), proteina: n(prot), carbos: n(carb), grasas: n(gras), kcal: n(kcal), minutos: n(min),
+      // Solo si hay algo: así anda aunque la nube todavía no tenga las columnas nuevas.
+      prompt: prompt.trim(),
+      // Descripción nueva = foto nueva (salvo que pegues un link propio).
+      imagen: imagen.trim() !== (inicial?.imagen ?? '') ? imagen.trim() : prompt.trim() !== (inicial?.prompt ?? '') ? '' : imagen.trim() };
     if (inicial) await modificar<Plato>(TA.platos, inicial.id, datos);
     else await crear<Plato>(TA.platos, datos);
+    if (datos.prompt && !datos.imagen) void generarFotos();
     onListo();
   }
 
@@ -198,6 +238,19 @@ function FormPlato({ inicial, onListo }: { inicial?: Plato; onListo: () => void 
         <Campo etiqueta="Grasas (g)"><input inputMode="decimal" value={gras} onChange={(e) => setGras(e.target.value)} /></Campo>
       </div>
       <Campo etiqueta="Minutos de preparación"><input inputMode="numeric" value={min} onChange={(e) => setMin(e.target.value)} /></Campo>
+      <Campo etiqueta="Foto: descripción para la IA" ayuda="Con esto se genera la foto una sola vez y queda guardada. Si la cambiás, se hace una nueva.">
+        <textarea rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Two homemade burgers on potato buns with avocado…" />
+      </Campo>
+      <Campo etiqueta="Link de la foto" ayuda="Lo completa solo la IA. Podés pegar el link de una foto tuya.">
+        <input value={imagen} onChange={(e) => setImagen(e.target.value)} placeholder="https://…" />
+      </Campo>
+      {inicial && (
+        <div className="plato-vista">
+          <FotoPlato key={inicial.imagen} plato={inicial} />
+          {inicial.imagen_error && !inicial.imagen && <p className="nota">Pendiente: {inicial.imagen_error}</p>}
+          {inicial.prompt && <button type="button" className="btn chico" onClick={() => void generarFotos(inicial.id)}>Hacer otra foto</button>}
+        </div>
+      )}
       <button className="btn btn-primario">Guardar</button>
       {inicial && <button type="button" className="btn btn-peligro ancho" onClick={async () => { if (await confirmar('¿Borrar este plato?')) { await eliminar(TA.platos, inicial.id); onListo(); } }}>{Icono.borrar} Borrar</button>}
     </form>
@@ -208,6 +261,7 @@ export function PantallaPlatos() {
   const { filas: platos, cargado } = usePlatos();
   const { filas: productos } = useProductos();
   const [editando, setEditando] = useState<Plato | 'nuevo' | null>(null);
+  useFotosPendientes(platos);
   return (
     <div className="pila">
       <div className="barra-acciones">
@@ -223,6 +277,7 @@ export function PantallaPlatos() {
               return (
                 <li key={p.id} className="lista-item">
                   <button className="boton-fila crece" onClick={() => setEditando(p)}>
+                    <span className="plato-mini"><FotoPlato plato={p} /></span>
                     <div className="crece">
                       <strong>{p.nombre}</strong>
                       <small className="nota">{p.proteina} g prot · {p.carbos} g carb · {p.grasas} g grasa · {p.kcal} kcal{falta.length ? ` · falta ${falta.map((f) => f.nombre).join(', ')}` : ' · ✓ hay todo'}</small>
