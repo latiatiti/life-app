@@ -1,0 +1,134 @@
+/* Chequeo del día (Arranque / Cierre): pantalla en vivo + tarjetas del Inicio. Solo tokens del tema. */
+
+/* ---------- Tarjetas del Inicio ---------- */
+.cq-tarjetas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 620px) { .cq-tarjetas { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+.cq-tarjeta {
+  display: flex; align-items: center; gap: 12px; text-align: left; min-height: 64px; padding: 10px 14px;
+  border: 1px solid var(--borde-fuerte); background: var(--capa-1); color: var(--texto); border-radius: var(--radio);
+  position: relative; transition: transform var(--dur) var(--curva), border-color var(--dur);
+}
+.cq-tarjeta:active { transform: scale(0.98); }
+.cq-tarjeta strong { display: block; font-family: var(--letra-titulo); font-size: 1.05rem; letter-spacing: 0.03em; }
+.cq-tarjeta small { display: block; color: var(--texto-2); font-size: 0.82rem; }
+.cq-t-ic { font-size: 1.7rem; width: 36px; text-align: center; }
+.cq-t-estado {
+  font-family: var(--letra-dato); font-size: 0.75rem; font-weight: 700; letter-spacing: var(--etiqueta-espacio);
+  text-transform: var(--etiqueta-mayus); padding: 8px 12px; white-space: nowrap; border-radius: var(--radio-chico);
+  background: var(--acento); color: var(--sobre-acento);
+}
+.cq-tarjeta.falta { border-color: var(--acento-borde); box-shadow: var(--brillo); }
+.cq-tarjeta.falta::before { content: ''; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: var(--acento); }
+.cq-tarjeta.medias { border-color: var(--atencion); }
+.cq-tarjeta.medias .cq-t-estado { background: var(--atencion); color: var(--sobre-atencion); }
+.cq-tarjeta.hecho { background: var(--capa-2); }
+.cq-tarjeta.hecho small { color: var(--bien-texto); }
+.cq-tarjeta.hecho .cq-t-estado { background: transparent; color: var(--bien-texto); border: 1px solid var(--acento-borde); }
+.cq-tarjeta.espera { opacity: 0.8; }
+.cq-tarjeta.espera .cq-t-estado { background: var(--capa-2); color: var(--texto-3); }
+
+/* ---------- Pantalla en vivo ---------- */
+.cq-paso { display: flex; flex-direction: column; gap: 12px; }
+.cq-preg { display: grid; gap: 4px; }
+.cq-etq { font-family: var(--letra-dato); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-3); }
+.cq-preg h2 { margin: 0; font-family: var(--letra-titulo); font-size: clamp(1.5rem, 6vw, 1.9rem); line-height: 1.15; text-wrap: balance; }
+.cq-preg p { margin: 0; color: var(--texto-2); font-size: 0.92rem; }
+.cq-t-cargada { color: var(--atencion-texto); }
+.cq-t-duele { color: var(--urgente-texto); }
+.cq-ayuda { margin: 0; color: var(--texto-3); font-size: 0.85rem; }
+
+.cq-grande {
+  text-align: center; font-family: var(--letra-dato); font-weight: 700; font-size: clamp(2.8rem, 13vw, 3.6rem); line-height: 1;
+  color: var(--acento-texto); text-shadow: var(--brillo); padding: 6px 0;
+}
+.cq-grande small { display: block; margin-top: 6px; font-family: var(--letra); font-size: 0.85rem; font-weight: 500; color: var(--texto-2); text-shadow: none; }
+.cq-grande.poco { color: var(--atencion-texto); text-shadow: none; }
+.cq-grande.bien { color: var(--bien-texto); }
+
+.cq-num { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--borde); background: var(--capa-1); border-radius: var(--radio); }
+.cq-num-lbl { color: var(--texto-2); font-size: 0.95rem; }
+.cq-stepper { display: flex; align-items: center; gap: 6px; }
+.cq-stepper button { width: var(--alto-toque); height: var(--alto-toque); border: 1px solid var(--borde-fuerte); background: var(--capa-2); color: var(--texto); font: 700 1.4rem var(--letra-titulo); border-radius: var(--radio-chico); }
+.cq-stepper output { min-width: 84px; text-align: center; font: 600 1.35rem var(--letra-dato); }
+.cq-quitar { background: none; border: 0; color: var(--texto-3); text-decoration: underline; font-size: 0.8rem; padding: 0 4px; }
+
+.cq-opciones { display: grid; gap: 8px; }
+.cq-opciones.tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cq-op {
+  display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 8px 12px; text-align: left; font-weight: 600;
+  border: 1px solid var(--borde-fuerte); background: var(--capa-1); color: var(--texto); border-radius: var(--radio);
+  transition: transform 120ms, background var(--dur), border-color var(--dur);
+}
+.cq-op:active { transform: scale(0.97); }
+.cq-op small { display: block; font-weight: 400; font-size: 0.78rem; color: var(--texto-2); }
+.cq-op[aria-pressed='true'], .cq-op[aria-checked='true'] { border-color: var(--acento); background: var(--acento-suave); box-shadow: inset 0 0 0 1px var(--acento); }
+.cq-ic { font-size: 1.45rem; width: 28px; text-align: center; flex: none; }
+.cq-opciones.tres .cq-op { flex-direction: column; justify-content: center; text-align: center; gap: 2px; font-size: 0.82rem; padding: 8px 4px; }
+.cq-cinco { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.cq-cinco .cq-op { flex-direction: column; justify-content: center; text-align: center; gap: 4px; min-height: 86px; font-size: 0.8rem; padding: 8px 2px; }
+.cq-cinco .cq-ic { font-size: 1.9rem; width: auto; }
+
+.cq-lista { display: grid; gap: 6px; }
+.cq-check {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 8px 12px; text-align: left;
+  border: 1px solid var(--borde-fuerte); background: var(--capa-1); color: var(--texto); border-radius: var(--radio);
+}
+.cq-check small { display: block; color: var(--texto-3); font-size: 0.75rem; }
+.cq-check:disabled { opacity: 0.5; }
+.cq-caja { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border: 2px solid var(--borde-fuerte); font-weight: 800; border-radius: var(--radio-chico); }
+.cq-check[aria-pressed='true'] { border-color: var(--acento-borde); }
+.cq-check[aria-pressed='true'] .cq-caja { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
+.cq-fijo { padding: 8px 12px; font-family: var(--letra-dato); font-size: 0.85rem; color: var(--texto-3); border: 1px dashed var(--borde-fuerte); }
+.cq-fijo.si { color: var(--bien-texto); border-style: solid; border-color: var(--acento-borde); }
+
+.cq-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cq-chip { min-height: 40px; padding: 0 12px; border: 1px solid var(--borde-fuerte); background: var(--capa-1); color: var(--texto); font-size: 0.88rem; border-radius: var(--radio-chico); }
+.cq-chip[aria-pressed='true'] { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
+
+.cq-dato { border-left: 3px solid var(--xp); background: color-mix(in srgb, var(--xp) 8%, transparent); padding: 8px 10px; font-size: 0.88rem; color: var(--texto-2); }
+.cq-dato b { color: var(--xp); font-family: var(--letra-dato); font-weight: 600; }
+.cq-plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.cq-plan li { display: flex; gap: 10px; align-items: baseline; padding: 6px 10px; background: var(--capa-1); border: 1px solid var(--borde); }
+.cq-plan b { font-family: var(--letra-dato); font-weight: 600; color: var(--acento-texto); min-width: 52px; font-size: 0.85rem; text-transform: capitalize; }
+.cq-plan.compacto { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cq-plan.compacto li { padding: 4px 8px; font-size: 0.82rem; gap: 6px; }
+.cq-plan.compacto b { min-width: 40px; font-size: 0.78rem; }
+.cq-ancho { width: 100%; min-height: var(--alto-toque); }
+.cq-otra { display: flex; gap: 8px; }
+.cq-otra input { flex: 1; min-width: 0; min-height: var(--alto-toque); }
+.cq-nota { display: grid; gap: 4px; color: var(--texto-2); font-size: 0.88rem; }
+.cq-nota input { min-height: var(--alto-toque); }
+
+/* Agua */
+.cq-vasos { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+.cq-vasos button { width: 38px; height: 52px; font-size: 1.25rem; border: 1px solid var(--borde-fuerte); background: var(--capa-1); border-radius: var(--radio-chico); filter: grayscale(1) opacity(0.45); transition: filter var(--dur), background var(--dur); }
+.cq-vasos button.lleno { filter: none; background: color-mix(in srgb, var(--xp) 25%, transparent); border-color: var(--xp); box-shadow: var(--brillo-xp); }
+
+/* Cuerpo */
+.cq-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+@media (min-width: 640px) { .cq-cuerpo { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; } }
+.cq-figuras { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-width: 340px; margin: 0 auto; width: 100%; }
+.cq-figura { width: 100%; height: auto; max-height: 30vh; }
+.cq-zona { fill: var(--capa-2); stroke: var(--borde-fuerte); stroke-width: 1; cursor: pointer; transition: fill var(--dur); }
+.cq-zona:hover { fill: var(--capa-3); }
+.cq-zona.cargada { fill: var(--atencion); stroke: var(--atencion); }
+.cq-zona.duele { fill: var(--urgente); stroke: var(--urgente); filter: drop-shadow(0 0 4px var(--urgente)); }
+.cq-fig-tit { fill: var(--texto-3); font: 600 10px var(--letra-dato); letter-spacing: 0.08em; text-transform: uppercase; }
+.cq-cuerpo-lado { display: grid; gap: 10px; }
+.cq-marcadas { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 0.88rem; min-height: 22px; }
+.cq-marcadas .cargada { color: var(--atencion-texto); }
+.cq-marcadas .duele { color: var(--urgente-texto); font-weight: 600; }
+.cq-marcadas .nada { color: var(--texto-3); }
+
+/* Final */
+.cq-final { display: grid; gap: 10px; text-align: center; padding-top: 12px; }
+.cq-final h2 { margin: 0; font-family: var(--letra-titulo); font-size: 1.8rem; }
+.cq-trofeo { font-size: 3.4rem; animation: cq-trofeo 700ms var(--resorte); }
+@keyframes cq-trofeo { from { transform: scale(0.3) rotate(-15deg); opacity: 0; } }
+.cq-xp { margin: 0; font: 700 1.7rem var(--letra-dato); color: var(--xp); text-shadow: var(--brillo-xp); }
+.cq-resumen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; text-align: left; }
+.cq-resumen div { border: 1px solid var(--borde); background: var(--capa-1); padding: 8px 10px; }
+.cq-resumen b { display: block; font: 600 1.05rem var(--letra-dato); }
+.cq-resumen span { font-size: 0.78rem; color: var(--texto-2); }
+
+@media (prefers-reduced-motion: reduce) { .cq-trofeo { animation: none; } }

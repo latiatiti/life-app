@@ -14,6 +14,8 @@ import { guardarSesion, pesoSugerido, ultimaVez, useBiblioteca, useRutina, useSe
 import { ResumenEntreno } from './Resumen';
 import { SelectorEjercicio } from './Rutina';
 import { calentamiento, consejoRendimiento, duracion, minutosEstimados, rendimientoVivo, repsPrevistas, type HechaVivo } from './vivo';
+import { chequeosDe, dolorParaEntreno, suenoParaEntreno } from '../dia/chequeo';
+import { useDias } from '../dia/modelo';
 import './vivo.css';
 
 /*
@@ -168,7 +170,17 @@ export function Entrenando({ onSalir }: { onSalir: () => void }) {
   const [calent, setCalent] = useState(false);
   const [rpeSesion, setRpeSesion] = useState<number | null>(null);
   const [notas, setNotas] = useState('');
-  const [prep, setPrep] = useState<Preparacion>({ sueno_h: null, energia: null, agujetas: null });
+  const { filas: diasMarcados } = useDias();
+  const deManana = chequeosDe(diasMarcados, hoy()).manana;
+  // Si a la mañana hiciste el Arranque, el chequeo del gym ya viene contestado (lo podés cambiar).
+  const [prep, setPrep] = useState<Preparacion>(() => deManana
+    ? { sueno_h: suenoParaEntreno(deManana.horas), energia: deManana.energia, agujetas: dolorParaEntreno(deManana.cuerpo) }
+    : { sueno_h: null, energia: null, agujetas: null });
+  useEffect(() => {
+    if (deManana && prep.sueno_h == null && prep.energia == null && prep.agujetas == null)
+      setPrep({ sueno_h: suenoParaEntreno(deManana.horas), energia: deManana.energia, agujetas: dolorParaEntreno(deManana.cuerpo) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deManana?.hecho_at]);
   const [flash, setFlash] = useState(false);
   const [rendFinal, setRendFinal] = useState<number | null>(null);
   const ahora = useAhora(!!st);
