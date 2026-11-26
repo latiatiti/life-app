@@ -7,6 +7,7 @@ import { useRuta } from './core/router';
 import { BotonCargar } from './hub/Cargar';
 import { Hub } from './hub/Hub';
 import { CortinaPendientes, PestanaPendientes } from './modules/tablero/Cortina';
+import { ChequeoEnVivo } from './modules/dia/Chequeo';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
 import { Protegido } from './ui/Protegido';
@@ -181,6 +182,7 @@ export function App() {
       {/* Pendientes a mano desde cualquier pantalla: cursor arriba (compu) o arrastrar desde arriba / pestañita (celu) */}
       {visibles.some((m) => m.id === 'tablero') && <CortinaPendientes escribe={puedeEscribir(perfil)} ocultarPestana={idModulo === 'tablero'} />}
       <Protegido nombre="los avisos" silencioso><Avisos /></Protegido>
+      <ChequeoEnVivo />
       <Protegido nombre="la barra de actividad" silencioso><BarraActividad /></Protegido>
       <AvisoDeshacer />
       <VentanaConfirmar />

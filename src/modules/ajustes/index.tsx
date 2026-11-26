@@ -8,6 +8,7 @@ import { Campo, Icono, Tarjeta } from '../../ui/ui';
 import { usePerfil } from '../../core/auth';
 import { ConexionClaude } from './Claude';
 import { ConexionWhatsapp } from './Whatsapp';
+import { AjustesAccesos } from '../../hub/MiDia';
 import { MisInformes } from '../../ui/Informar';
 import { cargarConfiguracionInicial } from './semilla';
 
@@ -110,6 +111,7 @@ function PantallaAjustes() {
           <div className="acciones"><a className="btn btn-primario" href="#/panel">Abrir el Panel</a></div>
         </Tarjeta>
       )}
+      <AjustesAccesos />
       <ConexionClaude />
       <ConexionWhatsapp />
 
