@@ -4,3 +4,4 @@ dist-single
 .env
 .env.local
 tsconfig.tsbuildinfo
+lupita-out/
