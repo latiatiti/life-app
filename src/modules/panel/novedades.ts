@@ -18,6 +18,44 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-26', area: 'Cuentas', titulo: 'Configuración inicial para cada cuenta', pr: 35, nube: true,
+    que: [
+      'Toda cuenta nueva arranca con una encuesta corta: elige qué áreas usa (plata, día, entreno, comida, casa…) y contesta una pantalla por área. Todo se puede saltear.',
+      'Solo carga cosas genéricas (lugares de plata, fijos, semana tipo, rutina de inicio, metas por peso, básicos). Nada de datos de otra persona.',
+      'Lo que no se configuró dice "A configurar" con su botón, en la sección y en su tarjeta del Inicio.',
+      'El menú muestra solo las áreas elegidas. Se repite desde Ajustes → Configuración inicial.',
+    ],
+  },
+  {
+    fecha: '2026-11-26', area: 'Día', titulo: 'Chequeo de la mañana y de la noche', nube: true,
+    que: [
+      'Arriba del Inicio, dos tarjetas: ☀ Arranque y ☾ Cierre. Siempre se ve si lo hiciste (✓ con la hora) o si falta.',
+      'Arranque (5 pasos, ~40 s): cuánto dormiste, con cuánta pila arrancás, cómo está el cuerpo (tocás la figura: cargado o duele, síntomas y peso), si el plan de hoy se mantiene y tus 3 prioridades.',
+      'Cierre (6 pasos, ~1 min): agua por vasos, comida, qué hiciste (tilda en el Día y el Tablero), gastos sin cargar, cómo fue el día y algo para mañana.',
+      'Cada dato va a su lugar de siempre (agua a Comida, gastos a Plata, prioridades al Día, lo de mañana al Tablero). El gym ya viene con el sueño, la energía y el dolor de la mañana.',
+      'Cada chequeo suma 30 XP. Si te interrumpen, se minimiza y lo retomás con "Volver".',
+    ],
+  },
+  {
+    fecha: '2026-11-26', area: 'Diseño', titulo: 'Inicio para llevar el día', pr: 41,
+    que: [
+      'Arriba del Inicio, "Para hacer hoy": las prioridades del día, los pendientes de hoy o atrasados, lo que está en marcha o es de prioridad alta y los vencimientos, todo en una lista para ir tildando.',
+      'Una barra muestra cuánto llevás hecho del día; lo que tildás acá queda tildado en el Día y en el Tablero.',
+      'Al costado (abajo en el celu): botón directo al sistema de la sodería, Pendientes y WhatsApp, y los mensajes sin leer.',
+      'Los accesos se eligen en Ajustes → Accesos del Inicio.',
+    ],
+  },
+  {
+    fecha: '2026-11-24', area: 'Tablero', titulo: 'Pendientes a mano desde cualquier pantalla', pr: 40,
+    que: [
+      'En la compu, pasá el cursor por la pestaña ancha "Pendientes" de arriba y baja al toque, casi hasta abajo; al sacar el cursor por debajo se guarda sola.',
+      'En el celu, arrastrá desde arriba (como las notificaciones) o tocá la pestañita "Pendientes" de arriba.',
+      'Arriba de todo, "Hoy": cómo va tu día, comida, agua, entreno y plata, cada uno con su barra.',
+      'Adentro: lo que estás haciendo ahora con su paso, tus pendientes por etapa con ◀ ▶ para moverlos, y anotar al toque.',
+      'No cambia la pantalla en la que estás: cerrás la cortina y seguís donde estabas.',
+    ],
+  },
+  {
     fecha: '2026-11-19', area: 'Cuentas', titulo: 'Panel de la superadmin, botón Informar y esta línea de tiempo', nube: true,
     que: [
       'Sección Panel (solo superadmin): cómo viene cada cuenta, quién espera tu OK, roles, módulos y qué puede cada rol.',

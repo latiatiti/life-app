@@ -3,6 +3,7 @@ import { hoy, sumarDias } from '../../core/format';
 import type { ItemAgenda, Modulo, Senal, Vital } from '../../core/types';
 import { aMinutos, ahoraMinutos, armarDia, bloqueEn, FERIADOS, horaCorta, TIPOS, useDias, usePlantilla, useTareas } from './modelo';
 import { PantallaDia, PantallaSemana } from './Pantallas';
+import { chequeoEnCurso } from './Chequeo';
 
 const icono = (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -49,7 +50,10 @@ function useAgendaDia(): ItemAgenda[] {
 }
 
 function useActividadDia(): string[] {
-  return useTareas().filas.filter((t) => t.hecho && t.fecha).map((t) => t.fecha!);
+  const tareas = useTareas().filas.filter((t) => t.hecho && t.fecha).map((t) => t.fecha!);
+  // Cada chequeo hecho (mañana o noche) suma 30 XP: tres registros de 10.
+  const chequeos = useDias().filas.flatMap((d) => [d.chequeo?.manana, d.chequeo?.noche].filter(Boolean).flatMap(() => [d.fecha, d.fecha, d.fecha]));
+  return [...tareas, ...chequeos];
 }
 
 function ResumenDia() {
@@ -99,4 +103,5 @@ export const moduloDia: Modulo = {
   useSenales: useSenalesDia,
   useAgenda: useAgendaDia,
   useActividad: useActividadDia,
+  enCurso: chequeoEnCurso,
 };

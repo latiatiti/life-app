@@ -10,6 +10,7 @@ import { ConexionClaude } from './Claude';
 import { ConexionWhatsapp } from './Whatsapp';
 import { Bienvenida } from './Bienvenida';
 import { AREAS } from './inicio';
+import { AjustesAccesos } from '../../hub/MiDia';
 import { MisInformes } from '../../ui/Informar';
 
 function PantallaAjustes() {
@@ -111,6 +112,7 @@ function PantallaAjustes() {
           <div className="acciones"><a className="btn btn-primario" href="#/panel">Abrir el Panel</a></div>
         </Tarjeta>
       )}
+      <AjustesAccesos />
       <ConexionClaude />
       <ConexionWhatsapp />
 
