@@ -7,6 +7,7 @@ import { useTodasLasSenales } from '../core/senales';
 import type { ItemAgenda, NivelSenal, Senal, Vital } from '../core/types';
 import { Semana } from '../ui/Semana';
 import { MiDia } from './MiDia';
+import { TarjetasChequeo } from '../modules/dia/Chequeo';
 import { Estado, Modal } from '../ui/ui';
 
 const DIAS_AGENDA = 14;
@@ -187,6 +188,7 @@ export function Hub({ abrirMenu }: { abrirMenu?: () => void }) {
         </h1>
       </header>
 
+      <TarjetasChequeo />
       <MiDia agenda={agenda} nombreModulo={nombreModulo} />
 
       <h2 className="tablero-sub">Cómo vengo</h2>

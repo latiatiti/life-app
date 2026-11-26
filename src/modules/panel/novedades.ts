@@ -18,6 +18,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-26', area: 'Día', titulo: 'Chequeo de la mañana y de la noche', nube: true,
+    que: [
+      'Arriba del Inicio, dos tarjetas: ☀ Arranque y ☾ Cierre. Siempre se ve si lo hiciste (✓ con la hora) o si falta.',
+      'Arranque (5 pasos, ~40 s): cuánto dormiste, con cuánta pila arrancás, cómo está el cuerpo (tocás la figura: cargado o duele, síntomas y peso), si el plan de hoy se mantiene y tus 3 prioridades.',
+      'Cierre (6 pasos, ~1 min): agua por vasos, comida, qué hiciste (tilda en el Día y el Tablero), gastos sin cargar, cómo fue el día y algo para mañana.',
+      'Cada dato va a su lugar de siempre (agua a Comida, gastos a Plata, prioridades al Día, lo de mañana al Tablero). El gym ya viene con el sueño, la energía y el dolor de la mañana.',
+      'Cada chequeo suma 30 XP. Si te interrumpen, se minimiza y lo retomás con "Volver".',
+    ],
+  },
+  {
     fecha: '2026-11-26', area: 'Diseño', titulo: 'Inicio para llevar el día', pr: 41,
     que: [
       'Arriba del Inicio, "Para hacer hoy": las prioridades del día, los pendientes de hoy o atrasados, lo que está en marcha o es de prioridad alta y los vencimientos, todo en una lista para ir tildando.',
