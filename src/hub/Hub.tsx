@@ -6,6 +6,7 @@ import { usePerfil, veModulo } from '../core/auth';
 import { useTodasLasSenales } from '../core/senales';
 import type { ItemAgenda, NivelSenal, Senal, Vital } from '../core/types';
 import { Semana } from '../ui/Semana';
+import { MiDia } from './MiDia';
 import { Estado, Modal } from '../ui/ui';
 
 const DIAS_AGENDA = 14;
@@ -186,6 +187,9 @@ export function Hub({ abrirMenu }: { abrirMenu?: () => void }) {
         </h1>
       </header>
 
+      <MiDia agenda={agenda} nombreModulo={nombreModulo} />
+
+      <h2 className="tablero-sub">Cómo vengo</h2>
       <div className="tablero">
         {AREAS.filter((a) => a.modulos.some((id) => veModulo(perfil, id))).map((a) => {
           const v = vitales.get(a.modulos[0]);

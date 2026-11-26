@@ -18,6 +18,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-26', area: 'Diseño', titulo: 'Inicio para llevar el día', pr: 41,
+    que: [
+      'Arriba del Inicio, "Para hacer hoy": las prioridades del día, los pendientes de hoy o atrasados, lo que está en marcha o es de prioridad alta y los vencimientos, todo en una lista para ir tildando.',
+      'Una barra muestra cuánto llevás hecho del día; lo que tildás acá queda tildado en el Día y en el Tablero.',
+      'Al costado (abajo en el celu): botón directo al sistema de la sodería, Pendientes y WhatsApp, y los mensajes sin leer.',
+      'Los accesos se eligen en Ajustes → Accesos del Inicio.',
+    ],
+  },
+  {
     fecha: '2026-11-24', area: 'Tablero', titulo: 'Pendientes a mano desde cualquier pantalla', pr: 40,
     que: [
       'En la compu, pasá el cursor por la pestaña ancha "Pendientes" de arriba y baja al toque, casi hasta abajo; al sacar el cursor por debajo se guarda sola.',
