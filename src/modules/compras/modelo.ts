@@ -168,7 +168,10 @@ export const descuento = (p: PrecioOnline) => Math.round((1 - p.p / p.l) * 100);
 
 export function preciosViejos(items: Item[], dias = 7) {
   return items.filter((i) => {
-    const fechas = Object.values(i.precios ?? {}).map((p) => p!.f);
+    // Solo precios online bien formados ({p, f}); un número suelto (ej. precio de verdulería) se ignora.
+    const fechas = Object.values(i.precios ?? {})
+      .map((p) => (p && typeof p === 'object' && typeof p.f === 'string' ? p.f : null))
+      .filter((f): f is string => !!f);
     return fechas.length > 0 && fechas.every((f) => diasEntre(f, hoy()) > dias);
   });
 }

@@ -10,6 +10,7 @@ import { CortinaPendientes, PestanaPendientes } from './modules/tablero/Cortina'
 import { ChequeoEnVivo } from './modules/dia/Chequeo';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
+import { Protegido } from './ui/Protegido';
 import { AvisoDeshacer, VentanaConfirmar } from './ui/Deshacer';
 import { BotonInformar, Tropiezo, VentanaInformar } from './ui/Informar';
 import { Icono, Modal } from './ui/ui';
@@ -173,16 +174,16 @@ export function App() {
               <Tropiezo key={ruta}><Componente /></Tropiezo>
             </>
           ) : (
-            <Hub abrirMenu={menu.abrir} />
+            <Protegido nombre="el Inicio" clave={ruta}><Hub abrirMenu={menu.abrir} /></Protegido>
           )}
         </div>
       </main>
 
       {/* Pendientes a mano desde cualquier pantalla: cursor arriba (compu) o arrastrar desde arriba / pestañita (celu) */}
       {visibles.some((m) => m.id === 'tablero') && <CortinaPendientes escribe={puedeEscribir(perfil)} ocultarPestana={idModulo === 'tablero'} />}
-      <Avisos />
+      <Protegido nombre="los avisos" silencioso><Avisos /></Protegido>
       <ChequeoEnVivo />
-      <BarraActividad />
+      <Protegido nombre="la barra de actividad" silencioso><BarraActividad /></Protegido>
       <AvisoDeshacer />
       <VentanaConfirmar />
       <VentanaInformar />

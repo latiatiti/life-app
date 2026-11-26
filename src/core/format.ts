@@ -23,7 +23,9 @@ export function hoy(): string {
 }
 
 export function desdeISO(s: string): Date {
-  const [y, m, d] = s.split('-').map(Number);
+  // Defensivo: una fecha faltante o rara (dato cargado a mano o por el conector) no debe tumbar la app.
+  if (typeof s !== 'string' || !s) return new Date(NaN);
+  const [y, m, d] = s.slice(0, 10).split('-').map(Number);
   return new Date(y, m - 1, d);
 }
 
