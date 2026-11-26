@@ -141,6 +141,12 @@ Después: salud, hábitos, tareas programadas, auto, calendario con carga rápid
 - **Reglas de seguridad para todos los hilos: `docs/seguridad.md`** (checklist antes de cerrar una entrega + pendientes). Ojo: el repo de GitHub es público (2026-10-29): nada de claves ni datos personales reales en commits.
 - `public/_headers`: encabezados de seguridad + CSP en modo solo avisar (Report-Only); todo dominio externo nuevo se suma ahí. `supabase/seguridad.sql`: aplicado en la nube (2026-10-30); sin perfil no se escribe.
 
+## Lupita y el mapa de agentes (2026-11-26)
+- Lupita = la agente de usabilidad (habilidad `lupita`): revisa pantallas como ella (vacía, poco práctica, poco intuitiva, lo importante a la vista, un solo lugar, se siente LIFE). Método, libro de gustos (sus pedidos con su para qué) y primera pasada en `docs/agentes/lupita.md`; memoria `lupita.md` (memoria del proyecto). Nada se cambia sin su OK.
+- Medidor: `npm run build:single` y `node scripts/lupita.mjs --con-datos` (o `--solo dia,economia`): capturas en celu 390 × 844, compu 1440 × 900 y 1920 × 1080 + `lupita-out/informe.md` con banderas (vacía, scroll, botón principal, toques < 44 px, avisos sin botón, vacíos sin botón, textos largos, desborde, % sin escala, errores). Usa el Playwright del entorno; `lupita-out/` no se sube.
+- Sapires (2026-11-26) = agente de estructura y diseño de información (habilidad `sapires`, `docs/agentes/sapires.md`): pantallas planas → categorías, colores con significado, gráficos; propone 2–3 direcciones en boceto. Cada agente tiene su biblioteca de experto: `docs/agentes/zonka.md`, `gonzalito.md`, `sapires.md` y la sección 7 de `lupita.md`.
+- `docs/agentes/mapa-agentes.md`: quién es quién (coordinador, hilos, Zonka, Gonzalito, Lupita, El profe, quién-es-quién, AquaFlow), lugares comunes (memoria, Tablero "Ideas de desarrollo", ! Informar, reglas del repo) y 3 formas de trabajar en simultáneo (ronda de revisión, cadena por entrega, de la idea a la pantalla). Boceto: `diseno/mapa-agentes.html` en los archivos del proyecto.
+
 ## Reglas
 - Antes de dar algo por terminado: `npm run build` sin errores.
 - Trabajar en entregas chicas y cerradas (pedido de la usuaria, para no quedar a medias si se cortan los créditos).
