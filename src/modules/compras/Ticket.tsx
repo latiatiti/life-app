@@ -63,7 +63,7 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
     else onListo();
   }
 
-  /** Parte un renglón en dos: `mias` para Yo y el resto para Ulises (ej. 6 latas tuyas y 2 de él). */
+  /** Parte un renglón en dos: `mias` para Yo y el resto para con quien compartís (ej. 6 latas tuyas y 2 de la otra persona). */
   function dividir(mias: number) {
     const cant = it.cantidad;
     const totalYo = Math.round((it.total * mias / cant) * 100) / 100;
@@ -123,9 +123,9 @@ function UnoAUno({ t, onCambio, onListo }: { t: Ticket; onCambio: (items: ItemTi
                 <button type="button" className="btn-icono" aria-label="Más para mí" disabled={partir >= it.cantidad - 1} onClick={() => setPartir(partir + 1)}>{Icono.mas}</button>
               </div>
             </Campo>
-            <Campo etiqueta="Para Ulises"><span className="num">{it.cantidad - partir}</span></Campo>
+            <Campo etiqueta={`Para ${PERSONAS.ulises}`}><span className="num">{it.cantidad - partir}</span></Campo>
           </div>
-          <p className="nota">Vos {dinero(Math.round(it.total * partir / it.cantidad))} · Ulises {dinero(it.total - Math.round(it.total * partir / it.cantidad))}</p>
+          <p className="nota">Vos {dinero(Math.round(it.total * partir / it.cantidad))} · {PERSONAS.ulises} {dinero(it.total - Math.round(it.total * partir / it.cantidad))}</p>
           <div className="barra-acciones">
             <button className="btn-link" onClick={() => setPartir(null)}>Cancelar</button>
             <button className="btn btn-primario" onClick={() => dividir(partir)}>Listo</button>
@@ -182,7 +182,7 @@ function Cuenta({ t, onCerrado }: { t: Ticket; onCerrado: () => void }) {
     <div className="pila">
       <div className="grilla-cifras compacta">
         <div className="cifra"><span className="cifra-etq">Tuyo</span><strong className="cifra-val">{dinero(r.yo)}</strong></div>
-        <div className="cifra"><span className="cifra-etq">Ulises</span><strong className="cifra-val">{dinero(r.ulises)}</strong></div>
+        <div className="cifra"><span className="cifra-etq">{PERSONAS.ulises}</span><strong className="cifra-val">{dinero(r.ulises)}</strong></div>
       </div>
       <p className="nota">
         Lo de los dos ({dinero(r.compartido)}) va a medias. Suma de productos {dinero(r.total)}
@@ -208,7 +208,7 @@ function Cuenta({ t, onCerrado }: { t: Ticket; onCerrado: () => void }) {
           {(['yo', 'ulises'] as Persona[]).map((p) => <button key={p} type="button" className={pago === p ? 'activo' : ''} onClick={() => setPago(p)}>{PERSONAS[p]}</button>)}
         </div>
       </Campo>
-      {debe > 0 && <p className={pago === 'yo' ? 'texto-bien' : 'texto-aviso'}>{pago === 'yo' ? `Ulises te debe ${dinero(debe)}` : `Le debés a Ulises ${dinero(debe)}`}</p>}
+      {debe > 0 && <p className={pago === 'yo' ? 'texto-bien' : 'texto-aviso'}>{pago === 'yo' ? `${PERSONAS.ulises} te debe ${dinero(debe)}` : `Le debés a ${PERSONAS.ulises} ${dinero(debe)}`}</p>}
       {pago === 'yo' && activas.length > 0 && (
         <Campo etiqueta="Pagado con" ayuda="Se anota el gasto en Economía">
           <select value={cuenta} onChange={(e) => setCuenta(e.target.value)}>
@@ -371,7 +371,7 @@ export function PantallaTicket() {
               return (
                 <li key={x.id} className="lista-item">
                   <button className="boton-fila crece" onClick={() => setAbierto(x.id)}>
-                    <div className="crece"><strong>{fechaCorta(x.fecha)}</strong><small className="nota">Tuyo {dinero(r.yo)} · Ulises {dinero(r.ulises)}</small></div>
+                    <div className="crece"><strong>{fechaCorta(x.fecha)}</strong><small className="nota">Tuyo {dinero(r.yo)} · {PERSONAS.ulises} {dinero(r.ulises)}</small></div>
                   </button>
                   <span className="num">{dinero(Number(x.total ?? r.total))}</span>
                 </li>

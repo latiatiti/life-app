@@ -42,8 +42,8 @@ export function PantallaHistorial() {
             </div>
             {c.reparto && (
               <p className={c.reparto.debe > 0 ? 'texto-aviso' : 'nota'} style={{ marginTop: 8 }}>
-                Yo {dinero(c.reparto.yo)} · Ulises {dinero(c.reparto.ulises)}
-                {c.reparto.debe > 0 ? (c.reparto.pago === 'yo' ? ` · Ulises te debe ${dinero(c.reparto.debe)}` : ` · le debés a Ulises ${dinero(c.reparto.debe)}`) : ''}
+                Yo {dinero(c.reparto.yo)} · {PERSONAS.ulises} {dinero(c.reparto.ulises)}
+                {c.reparto.debe > 0 ? (c.reparto.pago === 'yo' ? ` · ${PERSONAS.ulises} te debe ${dinero(c.reparto.debe)}` : ` · le debés a ${PERSONAS.ulises} ${dinero(c.reparto.debe)}`) : ''}
               </p>
             )}
             <ul className="lista" style={{ marginTop: 8 }}>

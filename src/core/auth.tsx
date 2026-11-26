@@ -19,10 +19,41 @@ export interface Perfil {
   pedido_at?: string | null;
   via?: string | null;
   email?: string;
+  /** Respuestas de la configuración inicial (supabase/bienvenida.sql). undefined = la base todavía no tiene la columna. */
+  bienvenida?: Bienvenida | null;
+  /** Cuándo la hizo. null = cuenta nueva que todavía no la vio (se le muestra sola). */
+  bienvenida_at?: string | null;
 }
 
+/** Lo mínimo de la configuración inicial que lee el resto de la app (el detalle está en ajustes/inicio.ts). */
+export interface Bienvenida { areas?: string[]; comparte?: string; [k: string]: unknown }
+
+/* Sin la columna en la nube (o en modo local) las respuestas quedan en este navegador. */
+const CLAVE_LOCAL = (id: string) => `life.bienvenida.${id}`;
+function bienvenidaLocal(id: string): Bienvenida | null {
+  try { return JSON.parse(localStorage.getItem(CLAVE_LOCAL(id)) ?? 'null'); } catch { return null; }
+}
+
+/** Guarda la configuración inicial en el perfil (o en el navegador si la base todavía no la conoce). */
+export async function guardarBienvenida(respuestas: Bienvenida, nombre?: string) {
+  const p = perfil ?? PERFIL_LOCAL;
+  let enNube = false;
+  if (supabase && p.user_id !== 'local') {
+    const { error } = await supabase.rpc('life_guardar_bienvenida', { respuestas, nombre_nuevo: nombre ?? null });
+    enNube = !error;
+  }
+  if (!enNube) { try { localStorage.setItem(CLAVE_LOCAL(p.user_id), JSON.stringify(respuestas)); } catch { /* sin almacenamiento */ } }
+  fijarPerfil({ ...p, nombre: nombre || p.nombre, bienvenida: respuestas, bienvenida_at: new Date().toISOString() });
+}
+
+/** Con quién reparte compras (Compras: "Yo / <nombre> / Los dos"). Lo eligió en la configuración inicial. */
+export const nombreCompartido = () => (perfil?.bienvenida?.comparte ?? '').trim() || 'La otra persona';
+
+/** Cuenta nueva que todavía no hizo la configuración inicial: se le muestra sola al entrar. */
+export const debeHacerBienvenida = (p: Perfil) => p.bienvenida_at === null && puedeEscribir(p);
+
 /** Sin nube (modo local) la persona es dueña de todo. */
-const PERFIL_LOCAL: Perfil = { user_id: 'local', usuario: null, nombre: '', rol: 'usuario', modulos: null, activo: true };
+const PERFIL_LOCAL: Perfil = { user_id: 'local', usuario: null, nombre: '', rol: 'usuario', modulos: null, activo: true, bienvenida: bienvenidaLocal('local') };
 
 let perfil: Perfil | null = supabase ? null : PERFIL_LOCAL;
 const oyentes = new Set<() => void>();
@@ -36,9 +67,11 @@ export function usePerfil(): Perfil {
 }
 
 export const puedeEscribir = (p: Perfil) => p.activo && p.rol !== 'lector';
-/** Ajustes lo ve todo el mundo; el Panel, solo la superadmin; el resto, según los módulos de la cuenta. */
+/** Ajustes lo ve todo el mundo; el Panel, solo la superadmin; el resto, según el plan (modulos) y las áreas que eligió en la configuración inicial. */
 export const veModulo = (p: Perfil, id: string) =>
-  id === 'panel' ? p.rol === 'superadmin' && p.activo : !p.modulos || p.modulos.includes(id) || id === 'ajustes';
+  id === 'ajustes' ? true
+  : id === 'panel' ? p.rol === 'superadmin' && p.activo
+  : (!p.modulos || p.modulos.includes(id)) && (!p.bienvenida?.areas?.length || p.bienvenida.areas.includes(id));
 
 async function cargarPerfil(s: Session) {
   if (!supabase) return;
@@ -47,7 +80,10 @@ async function cargarPerfil(s: Session) {
   // Si la tabla existe pero esta cuenta no tiene perfil, no entra (no es una cuenta aprobada).
   const base: Perfil = { ...PERFIL_LOCAL, user_id: s.user.id, usuario: s.user.email?.split('@')[0] ?? null };
   const sinPerfil = !error && !data ? { activo: false } : {};
-  fijarPerfil({ ...base, ...sinPerfil, ...(error || !data ? {} : (data as Perfil)), email: s.user.email });
+  const leido: Perfil = { ...base, ...sinPerfil, ...(error || !data ? {} : (data as Perfil)), email: s.user.email };
+  // Sin la columna en la base: lo que haya quedado en este navegador.
+  if (leido.bienvenida === undefined) leido.bienvenida = bienvenidaLocal(leido.user_id);
+  fijarPerfil(leido);
 }
 
 /** El usuario corto entra con el dominio de la app: "mauro" → mauro@life.com. */

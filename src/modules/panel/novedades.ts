@@ -18,6 +18,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-26', area: 'Cuentas', titulo: 'Configuración inicial para cada cuenta', pr: 35, nube: true,
+    que: [
+      'Toda cuenta nueva arranca con una encuesta corta: elige qué áreas usa (plata, día, entreno, comida, casa…) y contesta una pantalla por área. Todo se puede saltear.',
+      'Solo carga cosas genéricas (lugares de plata, fijos, semana tipo, rutina de inicio, metas por peso, básicos). Nada de datos de otra persona.',
+      'Lo que no se configuró dice "A configurar" con su botón, en la sección y en su tarjeta del Inicio.',
+      'El menú muestra solo las áreas elegidas. Se repite desde Ajustes → Configuración inicial.',
+    ],
+  },
+  {
     fecha: '2026-11-26', area: 'Día', titulo: 'Chequeo de la mañana y de la noche', nube: true,
     que: [
       'Arriba del Inicio, dos tarjetas: ☀ Arranque y ☾ Cierre. Siempre se ve si lo hiciste (✓ con la hora) o si falta.',

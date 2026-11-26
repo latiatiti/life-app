@@ -1,3 +1,4 @@
+import { nombreCompartido } from '../../core/auth';
 import { crear, type Fila, modificar, useTabla } from '../../core/db';
 import { diasEntre, hoy } from '../../core/format';
 
@@ -27,11 +28,12 @@ export interface Producto extends Fila {
   vence: string | null;
   /** Básico: tiene que estar siempre en casa. */
   basico: boolean;
-  /** De quién es: la usuaria, Ulises (con quien comparte compras) o de los dos. Sin dato = 'yo'. */
+  /** De quién es: la persona, con quien comparte compras (clave 'ulises') o de los dos. Sin dato = 'yo'. */
   persona?: Persona;
 }
 
-export const PERSONAS = { yo: 'Yo', ulises: 'Ulises', compartido: 'Los dos' } as const;
+/** 'ulises' quedó como clave interna (así están guardados los datos); el nombre que se ve sale de la configuración inicial. */
+export const PERSONAS = { yo: 'Yo', get ulises(): string { return nombreCompartido(); }, compartido: 'Los dos' };
 export type Persona = keyof typeof PERSONAS;
 export const personaDe = (p: Pick<Producto, 'persona'>): Persona => p.persona ?? 'yo';
 

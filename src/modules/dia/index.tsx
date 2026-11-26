@@ -77,6 +77,10 @@ function useVitalDia(): Vital {
   const actual = bloqueEn(v.bloques, min);
   const siguiente = v.bloques.find((x) => aMinutos(x.inicio) > min);
   const pend = v.tareas.filter((t) => !t.hecho).length;
+  const { filas: plantilla, cargado } = usePlantilla();
+  if (cargado && !plantilla.length && !v.bloques.length) {
+    return { cifra: 'A configurar', sub: pend ? `Tu semana sin cargar · ${pend} tarea${pend > 1 ? 's' : ''}` : 'Cargá tu semana tipo', accion: { texto: 'Configurar', ruta: '#/dia/semana' } };
+  }
   return {
     cifra: siguiente ? horaCorta(siguiente.inicio) : actual ? actual.titulo : 'Libre',
     sub: [siguiente ? `Después: ${siguiente.titulo}` : actual ? `Ahora: ${actual.titulo}` : '', pend ? `${pend} tarea${pend > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || undefined,

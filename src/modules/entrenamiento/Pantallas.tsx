@@ -11,6 +11,7 @@ import {
   baseDe, pesoSugerido, progresoEjercicio, proximoDia, TE, tendencia, useBiblioteca, useRutina, useSeries, useSesiones, type Serie, type Sesion,
 } from './modelo';
 import { Delta, ResumenEntreno } from './Resumen';
+import { AConfigurar } from '../../ui/AConfigurar';
 import './entreno.css';
 import { zonasDe, type Zona } from './biblioteca';
 import { MapaMuscular, textoZonas } from './MapaMuscular';
@@ -83,7 +84,7 @@ export function PantallaHoy() {
   useBiblioteca();
   const { filas: sesiones } = useSesiones();
   const { filas: series } = useSeries();
-  const { dias, perfil, semana, fila } = useRutina();
+  const { dias, perfil, semana, fila, cargado } = useRutina();
   useCambios();
   const curso = leerEnCurso();
   const [elegido, setElegido] = useState<string | null>(null);
@@ -106,6 +107,10 @@ export function PantallaHoy() {
         <p className="nota">{ult ? `Último entreno: ${fechaCorta(ult.fecha)} (${relativo(ult.fecha)})` : 'Todavía no registraste entrenos.'}</p>
         <button className="btn" onClick={() => setOtro(true)}>{Icono.mas} Otro deporte</button>
       </div>
+      {cargado && !fila && (
+        <AConfigurar titulo="Tu entreno está sin configurar" texto="Elegí una rutina según los días que vas y tu experiencia, o pegá la que te arme Claude. Mientras tanto se muestra una de ejemplo."
+          boton="Elegir mi rutina" ruta="#/entrenamiento/entrenador" />
+      )}
       <BarraCiclo />
       {descarga && !semana?.seriesPct && <Tarjeta><Estado nivel="aviso" texto="Fatiga acumulada" /><p className="nota" style={{ margin: '6px 0 0' }}>{descarga}</p></Tarjeta>}
       <div className="segmentado" style={{ flexWrap: 'wrap' }}>

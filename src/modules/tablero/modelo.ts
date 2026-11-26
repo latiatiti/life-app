@@ -111,7 +111,7 @@ export const ETAPAS_BASE: Etapa[] = [
   { id: 'proceso', nombre: 'En proceso' },
   { id: 'hecho', nombre: 'Hecho' },
 ];
-export const CATEGORIAS_BASE = ['Reparto', 'Pagos', 'Casa', 'Compras', 'Ideas de desarrollo'];
+export const CATEGORIAS_BASE = ['Trabajo', 'Casa', 'Plata', 'Trámites', 'Ideas'];
 
 export const PRIORIDADES: Array<{ id: NivelPrioridad; nombre: string; icono: string }> = [
   { id: 'alta', nombre: 'Alta', icono: '▲' },
@@ -126,11 +126,14 @@ export const useTarjetas = () => useTabla<Tarjeta>(TD.tareas);
 
 export function useConfigTablero() {
   const { filas } = useTabla<ConfigTablero>(TABLA_TABLERO);
+  const { filas: tarjetas } = useTarjetas();
   const fila = filas[0];
+  // Sin configuración guardada: las de fábrica más las que ya usan sus tarjetas (para no perder ninguna).
+  const usadas = tarjetas.map((t) => t.categoria).filter((c): c is string => !!c);
   return {
     fila,
     etapas: fila?.etapas?.length ? fila.etapas : ETAPAS_BASE,
-    categorias: fila?.categorias?.length ? fila.categorias : CATEGORIAS_BASE,
+    categorias: fila?.categorias?.length ? fila.categorias : [...new Set([...CATEGORIAS_BASE, ...usadas])],
   };
 }
 
