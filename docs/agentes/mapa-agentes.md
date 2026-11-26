@@ -10,9 +10,10 @@ los archivos del proyecto. Armado el 2026-11-26.
 |---|---|---|---|---|
 | **Coordinador** | Habla con ella en el chat del proyecto, abre un hilo por tarea y le resume | Escribirle en el chat del proyecto | Memoria del proyecto (`MEMORY.md`) | Andando |
 | **Hilos constructores** | Hacen el trabajo: código, PR con vista previa, nube con su OK | Los abre el coordinador | `CLAUDE.md`, `RESUMEN.md`, memoria por tema | Andando |
-| **Zonka** | Mejoras: qué no se mide y por qué, novedades de IA y tecnología; también coach de entreno y comida | "Llamá a Zonka" | Memoria `zonka.md` | Andando (habilidad sin guardar en su cuenta) |
-| **Gonzalito** | Seguridad: claves, filtraciones, permisos, disponibilidad | "Llamá a Gonzalito" | Memoria `gonza.md`, `docs/seguridad.md` | Andando (habilidad sin guardar en su cuenta) |
+| **Zonka** | Mejoras: qué no se mide y por qué, novedades de IA y tecnología; también coach de entreno y comida | "Llamá a Zonka" | `docs/agentes/zonka.md`, memoria `zonka.md` | Andando (habilidad sin guardar en su cuenta) |
+| **Gonzalito** | Seguridad: claves, filtraciones, permisos, disponibilidad | "Llamá a Gonzalito" | `docs/agentes/gonzalito.md`, memoria `gonza.md`, `docs/seguridad.md` | Andando (habilidad sin guardar en su cuenta) |
 | **Lupita** (nueva) | Usabilidad: vacía, poco práctica, poco intuitiva, lo importante a la vista | "Llamá a Lupita" / "pasale la lupa a…" | `docs/agentes/lupita.md`, memoria `lupita.md`, `scripts/lupita.mjs` | Nueva |
+| **Sapires** (nuevo) | Estructura y diseño: convierte pantallas planas en información ordenada (categorías, colores, gráficos) y propone rediseños | "Llamá a Sapires" | `docs/agentes/sapires.md`, memoria `sapires.md` | Nuevo |
 | **El profe** | Dentro de la app: propone mejoras de rutina con Aplicar / Ahora no | Entreno → Rutina | `entrenamiento/profe.ts` | Andando (no es un Claude, son reglas) |
 | **Quién es quién** | Define de quién es cada conector (ella o Ulises) y cómo cargar gastos compartidos | Sola, al cargar por conector | Habilidad `life-quien-es-quien` | Guardada |
 | **Diseño y UX de AquaFlow** | Las mismas ideas de diseño, para la sodería | En los proyectos de la sodería | Habilidades `diseno-aquaflow`, `ux-movil-aquaflow` | Guardadas (otro sistema) |
@@ -49,6 +50,9 @@ Hilo constructor hace el PR → **Lupita** mide la vista previa contra antes (`s
 **Gonzalito** pasa la checklist de `docs/seguridad.md` → ella ve el link y dice "va". Lupita y
 Gonzalito corren a la vez porque no tocan lo mismo.
 
+### D · Del problema al rediseño
+**Lupita** detecta una pantalla plana o confusa → **Sapires** trae 2–3 direcciones en boceto → ella elige → hilo constructor → Lupita mide antes y después.
+
 ### C · De la idea a la pantalla
 **Zonka** detecta algo que no se mide → **Lupita** propone cómo se ve y cómo se carga sin ensuciar
 la pantalla → ella aprueba → **tarjeta en el Tablero** → hilo constructor.
@@ -68,3 +72,6 @@ la pantalla → ella aprueba → **tarjeta en el Tablero** → hilo constructor.
    habilidad guardada).
 2. Elegir si quiere la **ronda programada** (A) y cada cuánto.
 3. Que "Ideas de desarrollo" del Tablero sea la bandeja oficial de propuestas aprobadas.
+
+## 6. Nivel experto
+Cada agente tiene su biblioteca de marcos y estudios de su disciplina (sección 2 de `zonka.md`, `gonzalito.md`, `sapires.md` y sección 7 de `lupita.md`) y nombra el marco en cada propuesta, así se ve de dónde sale cada recomendación.

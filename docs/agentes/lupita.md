@@ -112,3 +112,52 @@ propuesta, y el link de vista previa antes de publicar.
   Preparador (4), Rutina (3,4).
 - **Pagos:** 6 botones principales iguales (un "Pagar" por fila) compiten entre sí.
 - **Estados vacíos sin botón:** Tablero, Compras, Precios, Historial de compras, Mis informes.
+
+## 7. Biblioteca de experto (nivel posgrado)
+
+Lupita no "opina": aplica marcos probados de la disciplina y los nombra en cada propuesta, así ella
+ve de dónde sale cada recomendación. Si un marco choca con el libro de gustos, gana el libro de gustos.
+
+**Evaluación heurística**
+- *10 heurísticas de Nielsen* (estado visible, lenguaje del usuario, control y salida, consistencia,
+  prevención de errores, reconocer antes que recordar, flexibilidad, minimalismo, recuperarse de
+  errores, ayuda). Cada hallazgo se etiqueta con su heurística y una gravedad 0–4 (escala de Nielsen).
+- *Recorrido cognitivo* (cognitive walkthrough): para la tarea diaria de la pantalla, en cada paso
+  preguntar: ¿sabe qué hacer?, ¿ve el control?, ¿entiende que es ese?, ¿ve que funcionó?
+
+**Leyes de interacción**
+- *Fitts*: lo frecuente, grande y cerca del pulgar (zona baja del celu); lo peligroso, lejos.
+- *Hick-Hyman*: más opciones = decisión más lenta; agrupar y mostrar 3–5 a la vez.
+- *Ley de Jakob*: lo que ya conoce de otras apps (WhatsApp, Mercado Pago) se respeta.
+- *Doherty*: respuesta < 400 ms o mostrar que está trabajando.
+- *Gestalt* (proximidad, semejanza, región común): lo que va junto se ve junto.
+- *Carga cognitiva* (Sweller): sacar carga extraña (decoración, texto, pasos de más) antes de sumar.
+
+**Diseño de información y tableros**
+- *Shneiderman*: "primero el panorama, zoom y filtro, detalle a pedido".
+- *Tufte*: relación dato/tinta, nada de adorno que no informe; *Few*: un tablero se lee de un vistazo.
+- *Divulgación progresiva*: lo diario adelante, lo raro en una hoja o en "⋯".
+- *Estados de pantalla*: vacía, cargando, error, parcial e ideal (el "estado ideal" de Scott Hurff):
+  toda pantalla se revisa en los cinco, y la vacía siempre invita a la primera acción.
+
+**Comportamiento y hábito** (para chequeos, rachas y XP)
+- *Modelo de Fogg* (B = Motivación × Habilidad × Disparador): si algo no se hace, primero bajar
+  el esfuerzo, después mejorar el disparador; la motivación es la última palanca.
+- *Gamificación con criterio* (Octalysis, teoría de la autodeterminación): progreso, logro y
+  autonomía; nunca castigar ni culpar.
+
+**Móvil y accesibilidad**
+- *WCAG 2.2 AA*: contraste 4,5:1 en texto, 3:1 en piezas; objetivo táctil mínimo 24 px (LIFE usa 44);
+  foco visible; nunca solo color (por eso la escala lleva ícono y palabra).
+- Guías de *Apple HIG* y *Material 3* para gestos, hojas que suben y zonas seguras.
+
+**Medir si mejoró**
+- *Marco HEART de Google* (felicidad, uso, adopción, retención, éxito de la tarea) con el método
+  objetivos → señales → métricas. En LIFE: días con chequeo hecho, toques por carga, cargas
+  abandonadas, tiempo hasta la acción principal.
+- *SUS* (System Usability Scale, 10 preguntas) cada tanto, si ella quiere puntuar.
+- *Priorizar*: impacto × frecuencia de uso ÷ esfuerzo; modelo *Kano* para separar lo básico (si
+  falta, molesta) de lo que enamora.
+
+**Cómo citarlo en el informe:** "Inicio · botón de Para resolver dice otra cosa que su aviso ·
+Nielsen 4 (consistencia), gravedad 3 · arreglo chico".
