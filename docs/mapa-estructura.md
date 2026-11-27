@@ -73,14 +73,14 @@ Reglas que se siguen: primero Inicio, después lo diario, al final lo que se ana
 
 | Sección | Compu | Celu | Pestañas | Objetos |
 |---|---|---|---|---|
-| **Inicio** | 1.º del menú | barra | Tablero de 8 tarjetas (Día, Plata, Entreno, Comida, Compras, En casa, Mi partida, Para resolver) + agenda de 14 días | todos |
+| **Inicio** | 1.º del menú | barra | Tablero de 8 tarjetas (Día, Plata, Entreno, Comida, Compras, En casa, Mi partida, Para resolver) + agenda de 14 días; en la compu, columna izquierda "Tu equipo" (agentes, solo superadmin) + Accesos y Mensajes; en el celu, tira de agentes arriba | todos |
 | **Día** | menú | barra | Hoy · Semana · Semana tipo | `dia_*` |
 | **Tablero** (2026-11-08) | menú | Más | Tablero (Por hacer · En proceso · Hecho, editables) | `dia_tareas` (la tarjeta ES la tarea: con fecha se ve también en Día), `dia_tablero` (etapas y categorías); recordatorio por WhatsApp de cada tarjeta: número y clave en Ajustes (`avi_whatsapp`). **Cortina de pendientes** (2026-11-24): el mismo tablero en versión corta baja desde arriba en cualquier pantalla (cursor arriba en la compu; arrastrar o pestañita en el celu) |
 | **WhatsApp** (2026-11-11) | menú | Más | Chats · Conexión | `wa_sesion` (estado y QR), `wa_chats`, `wa_mensajes` (texto, 30 días), `wa_salida` (cola para mandar: app o Claude, con DESHACER). Su número vinculado por QR a un puente (`whatsapp-puente/`). No es lo mismo que los recordatorios a su propio número (Ajustes, `avi_whatsapp`). |
 | **Plata** (Economía + Pagos) | menú | barra | Resumen · Pagos · Ingresos · Movimientos · ⋯ Proyección | `eco_*`, `pag_pagos` |
 | **Entreno** | menú | Más (o barra, ver pregunta) | Hoy · Progreso · Rutina · ⋯ Historial, Preparador | `ent_*` |
 | **Casa** (Stock + Compras + Comida) | menú | Más | En casa · Lista · Comprar · ⋯ Comida, Precios, Tickets, Historial | `stk_*`, `com_*`, `ali_*` |
-| **Panel** (2026-11-19, solo superadmin) | menú | Más | Cuentas · Informes · LIFE | `perfiles` + función `cuentas`, `life_informes` (lo que manda el botón "! Informar" de la barra de arriba y los errores automáticos), `life_panel_cuentas()`, `life_panel_base()`; línea de tiempo en `panel/novedades.ts`. Cuentas y roles salen de Ajustes y viven acá. |
+| **Panel** (2026-11-19, solo superadmin) | menú | Más | Cuentas · Informes · Agentes · LIFE | `perfiles` + función `cuentas`, `life_informes` (lo que manda el botón "! Informar" de la barra de arriba y los errores automáticos), `life_panel_cuentas()`, `life_panel_base()`; línea de tiempo en `panel/novedades.ts`. Cuentas y roles salen de Ajustes y viven acá. Agentes (2026-11-27): `age_trabajos` + `age_propuestas`, lo que anotan los agentes con el conector; una propuesta aprobada pasa a ser tarjeta del Tablero (no se duplica). |
 | **Ajustes** | ⚙ al final | Más | Mi cuenta · Plata (cuentas y categorías) · Claude · Respaldo · Datos de prueba | `perfiles`, `api_claves`, `eco_cuentas`, `eco_categorias` |
 
 Cambios que implica (cada uno sería una tanda chica):

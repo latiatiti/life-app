@@ -18,6 +18,24 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-27', area: 'Base', titulo: 'Tu equipo en el Inicio', nube: true,
+    que: [
+      'En la compu, el Inicio tiene una columna a la izquierda con Zonka, Gonzalito, Sapires y Lupita, y debajo Accesos y Mensajes. En el celu, una tira arriba que se desliza.',
+      'Cada agente tiene su marca, que se mueve solo cuando te trajo algo nuevo, con el número de propuestas.',
+      'Al tocarlo: lo nuevo con Sí / No / Cambiar (con Sí te pregunta prioridad y fecha antes de ir al Tablero), pedirle algo ahí mismo y qué está haciendo.',
+      'Lo que le pedís lo hace Claude la próxima vez que le hables.',
+    ],
+  },
+  {
+    fecha: '2026-11-27', area: 'Base', titulo: 'Panel de agentes', nube: true,
+    que: [
+      'Panel → Agentes: tu equipo (Zonka, Lupita, Sapires, Gonzalito y los hilos que programan) y qué está haciendo cada uno ahora.',
+      'Tareas en relevo: cada tarea pasa por estaciones (planifica, hace, controla, seguridad y tu OK). Si el control la devuelve, se ve cuántas vueltas lleva.',
+      'Para vos: las propuestas de los agentes con Sí, No o Cambiar. Con Sí quedan en el Tablero, en Ideas de desarrollo.',
+      'Cuando algo espera tu OK te aparece en Para resolver del Inicio. Los agentes anotan su avance solos con el conector.',
+    ],
+  },
+  {
     fecha: '2026-11-26', area: 'Día', titulo: 'Chequeo de la mañana y de la noche', nube: true,
     que: [
       'Arriba del Inicio, dos tarjetas: ☀ Arranque y ☾ Cierre. Siempre se ve si lo hiciste (✓ con la hora) o si falta.',
