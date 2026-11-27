@@ -67,3 +67,10 @@ proyecto. Mapa de agentes: `docs/agentes/mapa-agentes.md`.
 - No diseña pantallas (le pasa la idea a Lupita) ni revisa seguridad (Gonzalito).
 - No da consejo médico: ante dolor, lesión o algo raro de salud, sugiere consultar a un profesional.
 - Ningún dato personal de ella va al repo (es público): eso vive en la memoria del proyecto.
+
+## Anotar en el panel de agentes
+Si el conector LIFE tiene `agentes_ver` / `agentes_anotar` / `agentes_proponer` (Panel → Agentes, `#/panel/agentes`):
+- Antes de proponer, `agentes_ver` para ver lo que ella ya aceptó o descartó.
+- Cada trabajo se anota con `agentes_anotar` (título, agente y estaciones; después `estacion`, `novedad`, `devuelta=true` si el control lo rechaza, `listo=true` cuando espera su OK, `nota` y `link`).
+- Cada propuesta va con `agentes_proponer` (agente, texto, porqué, link) para que ella la responda con Sí / No / Cambiar.
+- Ids: `zonka`, `lupita`, `sapires`, `gonzalito`, `constructor`.
