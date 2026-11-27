@@ -7,6 +7,7 @@ import { useRuta } from './core/router';
 import { BotonCargar } from './hub/Cargar';
 import { Hub } from './hub/Hub';
 import { CortinaPendientes, PestanaPendientes } from './modules/tablero/Cortina';
+import { BurbujaPendientes } from './modules/tablero/Burbuja';
 import { ChequeoEnVivo } from './modules/dia/Chequeo';
 import { BarraActividad, useHayBarra } from './ui/Actividad';
 import { Avisos } from './ui/Avisos';
@@ -179,6 +180,8 @@ export function App() {
       </main>
 
       {/* Pendientes a mano desde cualquier pantalla: cursor arriba (compu) o arrastrar desde arriba / pestañita (celu) */}
+      {/* Burbuja flotante: se arrastra, se agranda al pasar el cursor y despliega el Tablero */}
+      {visibles.some((m) => m.id === 'tablero') && <BurbujaPendientes ocultar={idModulo === 'tablero'} />}
       {visibles.some((m) => m.id === 'tablero') && <CortinaPendientes escribe={puedeEscribir(perfil)} ocultarPestana={idModulo === 'tablero'} />}
       <Avisos />
       <ChequeoEnVivo />
