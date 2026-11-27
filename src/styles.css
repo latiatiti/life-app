@@ -924,3 +924,67 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .tropiezo { border-color: var(--atencion); display: flex; flex-direction: column; gap: 10px; }
 .tropiezo h2 { color: var(--atencion-texto); }
 .tropiezo p { margin: 0; color: var(--texto-2); }
+
+/* ============ Inicio · Mi día (2026-11-26): para hacer hoy + mensajes + accesos ============ */
+.midia { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .midia { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+.midia > .tarjeta { position: relative; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--borde-fuerte); }
+.midia-hoy { border-color: var(--acento-borde) !important; box-shadow: 0 0 18px color-mix(in srgb, var(--acento) 14%, transparent); }
+.midia-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.midia-cab h2 { margin: 0; font-family: var(--letra-titulo); font-size: 0.95rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.midia-cab h2::before { content: '['; color: var(--acento); margin-right: 3px; }
+.midia-cab h2::after { content: ']'; color: var(--acento); margin-left: 3px; }
+.midia-cuenta { font-family: var(--letra-dato); font-size: 0.85rem; color: var(--texto-2); }
+.midia-cuenta.listo { color: var(--n-epico); text-shadow: 0 0 10px color-mix(in srgb, var(--n-epico) 60%, transparent); }
+.midia-barra { height: 10px; border: 1px solid var(--borde-fuerte); background: var(--capa-2); }
+.midia-barra b { display: block; height: 100%; background: var(--acento); transition: width 400ms var(--resorte); -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); }
+.midia-vacio { margin: 4px 0; }
+.midia-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.midia-item { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--borde); min-height: var(--alto-toque); }
+.midia-item:last-child { border-bottom: 0; }
+.midia-item .tilde {
+  width: 32px; height: 32px; flex: none; border: 2px solid var(--borde-fuerte); background: var(--capa-2); cursor: pointer; color: var(--texto-2);
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 800; text-decoration: none; transition: transform 0.15s, background 0.15s, border-color 0.15s;
+}
+.midia-item .tilde:hover { border-color: var(--acento); }
+.midia-item .tilde:active { transform: scale(0.88); }
+.midia-item .tilde.si { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); box-shadow: var(--brillo); }
+.midia-item .tilde.ir { border-style: dashed; font-size: 1.2rem; }
+.midia-item .tilde:disabled { cursor: default; opacity: 0.6; }
+.midia-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; color: var(--texto); text-decoration: none; }
+.midia-txt > span { overflow-wrap: anywhere; }
+.midia-txt small { font-size: 0.75rem; color: var(--texto-3); font-family: var(--letra-dato); }
+.midia-txt .etq { display: block; font-size: 0.62rem; letter-spacing: 0.08em; color: var(--atencion-texto); }
+.midia-item.hecho .midia-txt > span { text-decoration: line-through; color: var(--texto-3); }
+.midia-item.atrasada .midia-txt small { color: var(--urgente-texto); }
+.midia-item.atrasada .tilde:not(.si) { border-color: var(--urgente); }
+.midia-pie { display: flex; flex-wrap: wrap; gap: 8px; }
+.midia-lado { gap: 8px !important; }
+.midia-msj { display: flex; flex-direction: column; gap: 4px; }
+.midia-msj-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--capa-2); border-left: 3px solid var(--borde-fuerte); color: var(--texto); text-decoration: none; }
+.midia-msj-cab > span { font-family: var(--letra-dato); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-2); }
+.midia-msj-cab b { font-size: 0.85rem; text-align: right; }
+.midia-msj-cab.hay { border-left-color: var(--xp); } .midia-msj-cab.hay b { color: var(--xp); }
+.midia-msj-cab.caido { border-left-color: var(--atencion); } .midia-msj-cab.caido b { color: var(--atencion-texto); }
+.midia-chat { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 10px; color: var(--texto); text-decoration: none; font-size: 0.85rem; }
+.midia-chat:hover { background: var(--capa-2); }
+.midia-chat strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 12ch; }
+.midia-chat span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--texto-3); }
+.midia-chat i { font-style: normal; font-family: var(--letra-dato); font-size: 0.72rem; min-width: 20px; text-align: center; padding: 1px 5px; background: var(--xp); color: var(--sobre-xp); }
+.midia-config { color: var(--texto-3); text-decoration: none; font-size: 1rem; }
+.midia-accesos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.acceso {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: var(--alto-toque); padding: 8px 12px;
+  background: var(--capa-2); border: 1px solid var(--borde-fuerte); color: var(--texto); text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; text-align: left;
+  transition: border-color var(--dur) var(--curva), box-shadow var(--dur) var(--curva);
+}
+.acceso:hover { border-color: var(--acento); box-shadow: var(--brillo); }
+.acceso b { font-family: var(--letra-dato); color: var(--acento-texto); }
+.acceso i { font-style: normal; color: var(--acento); }
+.acceso.externo { grid-column: 1 / -1; border-color: var(--acento-borde); background: var(--acento-suave); }
+.accesos-ajustes { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.accesos-ajustes li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--capa-2); }
+.accesos-ajustes li .crece { display: flex; flex-direction: column; min-width: 0; }
+.accesos-ajustes small { color: var(--texto-3); overflow-wrap: anywhere; }
+.accesos-form { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: end; }
+@media (max-width: 760px) { .accesos-form { grid-template-columns: 1fr; } }

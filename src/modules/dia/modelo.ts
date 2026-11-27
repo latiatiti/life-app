@@ -63,6 +63,8 @@ export interface DiaMarcado extends Fila {
   prioridades: Prioridad[];
   /** Horario propio de ese día. null = usa la semana tipo. */
   bloques: Bloque[] | null;
+  /** Chequeos de la mañana y la noche (chequeo.ts). Columna jsonb de supabase/chequeo.sql. */
+  chequeo?: import('./chequeo').ChequeosDia | null;
 }
 
 export type NivelPrioridad = 'alta' | 'media' | 'baja';
