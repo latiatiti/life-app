@@ -46,6 +46,8 @@ const DESCRIPCION: Record<string, string> = {
   dia_plantilla: 'Semana tipo: un bloque por fila (dia_semana 0=domingo, inicio/fin HH:MM, 24:00 = fin del día, tipo, opcional, come_alla). Vacía = usa la de fábrica de la app.',
   dia_dias: 'Una fila por fecha marcada: estado normal/libre/feriado/especial, prioridades [{texto,hecho}], nota, bloques = horario propio (null = semana tipo).',
   dia_tareas: 'Tareas y tarjetas del Tablero (pendientes e ideas): titulo, nota, prioridad alta/media/baja, categoria, etapa (id de dia_tablero), pasos [{texto,hecho}], fecha (YYYY-MM-DD, opcional: con fecha aparece en el Día), hora HH:MM, hecho (= está en la última etapa), movida (último cambio de etapa); origen "claude" si las carga Claude. Mejor usar tablero_anotar / tablero_mover / tablero_ver.',
+  age_trabajos: 'Tareas de sus agentes (Panel → Agentes): estaciones, vueltas, novedades. Usar agentes_anotar / agentes_ver.',
+  age_propuestas: 'Propuestas de sus agentes con su respuesta (pendiente/si/no/cambiar). Usar agentes_proponer / agentes_ver.',
   dia_tablero: 'Etapas [{id,nombre}] (la última = hecho) y categorías del Tablero (una fila). Vacía = Por hacer (hacer), En proceso (proceso), Hecho (hecho) y Reparto, Pagos, Casa, Compras, Ideas de desarrollo.',
   dia_rutinas: 'Cosas de todos los días que ocupan tiempo (bañarse, lavar platos, ordenar): minutos cada vez, veces por día, dias (lista 0=domingo…6=sábado; null = todos), momento manana/tarde/noche/cualquiera. Se descuentan del tiempo libre.',
   dia_tiempo: 'En qué usó un rato (sobre todo del tiempo libre): fecha, que, minutos, clase productivo/rutina/ocio/descanso. Mejor usar anotar_tiempo.',
@@ -276,6 +278,58 @@ const HERRAMIENTAS = [
         novedad: { type: 'string', description: 'Cómo va: se suma con fecha a sus novedades (ej. "Llamé, contestan el lunes").' },
         recordar: { type: 'string', description: 'Cuándo mandarle un recordatorio a su WhatsApp, "YYYY-MM-DDTHH:MM" hora de Mendoza (ej. "mañana tengo que ir a la feria" → mañana 09:00 si no dice hora). "" lo saca.' },
       },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'agentes_ver',
+    description: 'Panel de agentes de LIFE (Panel → Agentes): las tareas de agentes abiertas (estaciones, vueltas, novedades) y las propuestas con lo que ella respondió (sí / no / cambiar + su texto). Usalo al empezar, para saber qué dejó cada agente y para aprender de lo que ella aceptó o descartó.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        agente: { type: 'string', description: 'Solo de este agente (zonka, lupita, sapires, gonzalito, constructor…).' },
+        incluir_cerradas: { type: 'boolean', description: 'Sumar las tareas hechas o frenadas (las 20 más nuevas).' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'agentes_anotar',
+    description: 'Cada agente de LIFE (Zonka, Lupita, Sapires, Gonzalito, el hilo constructor) anota acá lo que va haciendo, y ella lo ve en vivo en Panel → Agentes. Sin id ni coincidencia de título crea la tarea (mandá estaciones, ej. [{nombre:"Planifica",agente:"sapires"},{nombre:"Hace",agente:"constructor"},{nombre:"Controla",agente:"lupita"},{nombre:"Seguridad",agente:"gonzalito"}]). Con id o titulo la actualiza: estacion pasa esa estación a "ahora" (las anteriores quedan hechas), devuelta=true suma una vuelta (el control la rechazó) y vuelve a la estación anterior, listo=true la deja esperando el OK de ella. El que controla nunca es el mismo que hizo. Siempre sumá una novedad corta de qué hiciste.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        titulo: { type: 'string', description: 'Título de la tarea (para crearla, o parte del título para encontrarla).' },
+        agente: { type: 'string', description: 'Quién anota (zonka, lupita, sapires, gonzalito, constructor…).' },
+        receta: { type: 'string', description: 'Tipo de tarea, ej. "pantalla nueva", "revisión", "investigación".' },
+        estaciones: { type: 'array', maxItems: 10, items: { type: 'object', properties: { nombre: { type: 'string' }, agente: { type: 'string' } }, required: ['nombre'] }, description: 'Solo al crear (o para reemplazarlas).' },
+        estacion: { type: 'string', description: 'Nombre de la estación en la que está ahora.' },
+        novedad: { type: 'string', description: 'Qué hiciste, en una línea simple.' },
+        devuelta: { type: 'boolean', description: 'El control la rechazó: vuelve a la estación anterior y suma una vuelta (máx. 3, después decide ella).' },
+        listo: { type: 'boolean', description: 'Terminaron las estaciones: queda esperando el OK de ella.' },
+        nota: { type: 'number', description: 'Cómo salió, % contra lo esperado (100 = justo).' },
+        link: { type: 'string', description: 'PR, vista previa, boceto o informe.' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  },
+  {
+    name: 'agentes_proponer',
+    description: 'Un agente deja una propuesta para ella en Panel → Agentes → Para vos (Sí / No / Cambiar). Sirve para mejoras de LIFE y también para mejorar cómo trabaja el propio agente (automejora): nada se aplica hasta que diga Sí. Con Sí se vuelve tarjeta del Tablero en "Ideas de desarrollo". Mirá antes agentes_ver para no repetir lo que ya dijo que no.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        agente: { type: 'string' },
+        texto: { type: 'string', description: 'La propuesta, simple y concreta.' },
+        porque: { type: 'string', description: 'En qué se basa (el marco, el dato o lo que viste).' },
+        link: { type: 'string' },
+        trabajo_id: { type: 'string', description: 'Tarea de agentes de la que sale, si hay.' },
+      },
+      required: ['agente', 'texto'],
       additionalProperties: false,
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
@@ -784,8 +838,101 @@ async function anotar(db: SupabaseClient, q: Quien, accion: string, tabla: strin
   return (data as { id: string } | null)?.id;
 }
 
+/* ---------- Agentes (Panel → Agentes) ---------- */
+
+type EstacionA = { nombre: string; agente?: string; estado: 'hecho' | 'ahora' | 'falta' };
+const agenteId = (x: unknown) => sinTildes(String(x ?? '')).replace(/\s+/g, '-') || 'agente';
+const ahoraIso = () => new Date().toISOString();
+
+async function agentesVer(db: SupabaseClient, q: Quien, args: Json) {
+  let tq = db.from('age_trabajos').select('*').eq('user_id', q.userId).order('updated_at', { ascending: false }).limit(40);
+  let pq = db.from('age_propuestas').select('*').eq('user_id', q.userId).order('created_at', { ascending: false }).limit(40);
+  if (args.agente) { tq = tq.eq('agente', agenteId(args.agente)); pq = pq.eq('agente', agenteId(args.agente)); }
+  const [{ data: ts, error: e1 }, { data: ps, error: e2 }] = await Promise.all([tq, pq]);
+  if (e1 || e2) throw new ErrorUso('El panel de agentes todavía no está activado en la nube (supabase/agentes.sql).');
+  const trabajos = (ts as Json[]).filter((t) => args.incluir_cerradas || t.estado === 'en_curso' || t.estado === 'espera_ok').slice(0, 20)
+    .map((t) => ({ id: t.id, titulo: t.titulo, agente: t.agente, receta: t.receta, estado: t.estado, estaciones: t.estaciones, vueltas: t.vueltas, nota: t.nota, link: t.link, ultimas: ((t.novedades as Json[]) ?? []).slice(-5) }));
+  const propuestas = (ps as Json[]).map((p) => ({ id: p.id, agente: p.agente, texto: p.texto, estado: p.estado, respuesta: p.respuesta, respondida_at: p.respondida_at }));
+  return { trabajos, propuestas_pendientes: propuestas.filter((p) => p.estado === 'pendiente'), respondidas: propuestas.filter((p) => p.estado !== 'pendiente').slice(0, 15) };
+}
+
+async function agentesAnotar(db: SupabaseClient, q: Quien, args: Json) {
+  const agente = agenteId(args.agente);
+  let t: Json | undefined;
+  if (args.id) {
+    const { data } = await db.from('age_trabajos').select('*').eq('id', String(args.id)).eq('user_id', q.userId).maybeSingle();
+    t = (data as Json) ?? undefined;
+    if (!t) throw new ErrorUso('No encontré esa tarea. Mirá agentes_ver.');
+  } else if (args.titulo) {
+    const v = sinTildes(String(args.titulo));
+    const { data, error } = await db.from('age_trabajos').select('*').eq('user_id', q.userId).in('estado', ['en_curso', 'espera_ok']);
+    if (error) throw new ErrorUso('El panel de agentes todavía no está activado en la nube (supabase/agentes.sql).');
+    const c = (data as Json[]).filter((x) => sinTildes(String(x.titulo)).includes(v));
+    if (c.length > 1) return { ok: false, aviso: 'Hay varias que coinciden: decime cuál (por id).', opciones: c.map((x) => ({ id: x.id, titulo: x.titulo })) };
+    t = c[0];
+  } else throw new ErrorUso('Mandá el titulo (para crear o encontrar la tarea) o el id.');
+
+  const novedad = args.novedad ? { fecha: ahoraIso(), agente, texto: String(args.novedad).slice(0, 400) } : null;
+  const armar = (lista: unknown): EstacionA[] => ((lista as Json[]) ?? []).slice(0, 10)
+    .map((e) => ({ nombre: String(e.nombre ?? '').trim(), agente: e.agente ? agenteId(e.agente) : undefined, estado: 'falta' as const })).filter((e) => e.nombre);
+  let estaciones: EstacionA[] = args.estaciones ? armar(args.estaciones) : ((t?.estaciones as EstacionA[]) ?? []);
+  let vueltas = Number(t?.vueltas ?? 0);
+  let estado = String(t?.estado ?? 'en_curso');
+
+  const fijarAhora = (i: number) => { estaciones = estaciones.map((e, j) => ({ ...e, estado: j < i ? 'hecho' : j === i ? 'ahora' : 'falta' })); };
+  if (!t && estaciones.length && !args.estacion) fijarAhora(0);
+  if (args.estacion) {
+    const v = sinTildes(String(args.estacion));
+    let i = estaciones.findIndex((e) => sinTildes(e.nombre) === v);
+    if (i < 0) i = estaciones.findIndex((e) => sinTildes(e.nombre).includes(v));
+    if (i < 0) { estaciones.push({ nombre: String(args.estacion), agente, estado: 'falta' }); i = estaciones.length - 1; }
+    fijarAhora(i);
+    estado = 'en_curso';
+  }
+  if (args.devuelta) {
+    vueltas += 1;
+    const i = estaciones.findIndex((e) => e.estado === 'ahora');
+    if (i > 0) fijarAhora(i - 1);
+    estado = 'en_curso';
+  }
+  if (args.listo) { estaciones = estaciones.map((e) => ({ ...e, estado: 'hecho' as const })); estado = 'espera_ok'; }
+
+  const cambios: Json = { estaciones, vueltas, estado, updated_at: ahoraIso() };
+  const actual = estaciones.find((e) => e.estado === 'ahora');
+  cambios.agente = actual?.agente ?? agente;
+  if (args.receta) cambios.receta = String(args.receta);
+  if (args.link) cambios.link = String(args.link);
+  if (args.nota !== undefined) cambios.nota = Math.round(Number(args.nota));
+  if (novedad) cambios.novedades = [...((t?.novedades as Json[]) ?? []), novedad].slice(-60);
+
+  if (!t) {
+    const { data, error } = await db.from('age_trabajos').insert({ user_id: q.userId, titulo: String(args.titulo).slice(0, 160), ...cambios, novedades: novedad ? [novedad] : [] }).select().single();
+    if (error) throw new ErrorUso(/age_trabajos/.test(error.message) ? 'El panel de agentes todavía no está activado en la nube (supabase/agentes.sql).' : error.message);
+    const registro = await anotar(db, q, 'crear', 'age_trabajos', (data as Json).id as string, null, data);
+    return { ok: true, registro_id: registro, id: (data as Json).id, creada: true, estado, estacion: actual?.nombre };
+  }
+  const { data, error } = await db.from('age_trabajos').update(cambios).eq('id', t.id as string).eq('user_id', q.userId).select().single();
+  if (error) throw new ErrorUso(error.message);
+  const registro = await anotar(db, q, 'modificar', 'age_trabajos', t.id as string, t, data);
+  const aviso = vueltas >= 3 && args.devuelta ? 'Ya van 3 vueltas: no la sigas corrigiendo solo, dejala con listo=true y una novedad para que decida ella.' : undefined;
+  return { ok: true, registro_id: registro, id: t.id, estado, estacion: actual?.nombre, vueltas, aviso };
+}
+
+async function agentesProponer(db: SupabaseClient, q: Quien, args: Json) {
+  const texto = String(args.texto ?? '').trim();
+  if (!texto) throw new ErrorUso('Falta el texto de la propuesta.');
+  const { data, error } = await db.from('age_propuestas').insert({
+    user_id: q.userId, agente: agenteId(args.agente), texto: texto.slice(0, 1200),
+    porque: args.porque ? String(args.porque).slice(0, 600) : null, link: args.link ? String(args.link) : null,
+    trabajo_id: args.trabajo_id ? String(args.trabajo_id) : null,
+  }).select().single();
+  if (error) throw new ErrorUso(/age_propuestas/.test(error.message) ? 'El panel de agentes todavía no está activado en la nube (supabase/agentes.sql).' : error.message);
+  const registro = await anotar(db, q, 'crear', 'age_propuestas', (data as Json).id as string, null, data);
+  return { ok: true, registro_id: registro, id: (data as Json).id, aviso: 'Le aparece en Panel → Agentes → Para vos y en Para resolver del Inicio.' };
+}
+
 async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json): Promise<unknown> {
-  const escribe = ['crear', 'modificar', 'borrar', 'deshacer', 'cargar_semana_tipo', 'cambiar_dia', 'anotar_tiempo', 'tablero_anotar', 'tablero_mover', 'whatsapp_enviar'].includes(nombre);
+  const escribe = ['crear', 'modificar', 'borrar', 'deshacer', 'cargar_semana_tipo', 'cambiar_dia', 'anotar_tiempo', 'tablero_anotar', 'tablero_mover', 'whatsapp_enviar', 'agentes_anotar', 'agentes_proponer'].includes(nombre);
   if (escribe && q.permiso !== 'escribir') throw new ErrorUso('Esta clave es solo de lectura.');
 
   if (nombre === 'historial') {
@@ -803,6 +950,9 @@ async function ejecutar(db: SupabaseClient, q: Quien, nombre: string, args: Json
   if (nombre === 'tablero_ver') return tableroVer(db, q, args);
   if (nombre === 'tablero_anotar') return tableroAnotar(db, q, args);
   if (nombre === 'tablero_mover') return tableroMover(db, q, args);
+  if (nombre === 'agentes_ver') return agentesVer(db, q, args);
+  if (nombre === 'agentes_anotar') return agentesAnotar(db, q, args);
+  if (nombre === 'agentes_proponer') return agentesProponer(db, q, args);
   if (nombre === 'whatsapp_chats') return whatsappChats(db, q, args);
   if (nombre === 'whatsapp_leer') return whatsappLeer(db, q, args);
   if (nombre === 'whatsapp_enviar') return whatsappEnviar(db, q, args);
@@ -961,7 +1111,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
       return ok({
         protocolVersion: typeof params.protocolVersion === 'string' ? params.protocolVersion : '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'LIFE', version: '1.4.0' },
+        serverInfo: { name: 'LIFE', version: '1.5.0' },
         instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras, día). ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
           'Para su semana y su tiempo: ver_semana muestra cada día con sueño, fijo, cosas de todos los días y tiempo libre; ' +
@@ -971,6 +1121,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
           'Pendientes, tareas e ideas van al Tablero: tablero_anotar ("dejá pendiente X con prioridad alta"), tablero_mover ("pasá X a hecho") y tablero_ver ("¿qué tengo pendiente?"). ' +
           'Si dice "mañana tengo que ir a la feria" o "recordame…", anotalo con recordar (hora de Mendoza) y le llega un WhatsApp a su número. ' +
           'WhatsApp: su propio número está conectado a LIFE. whatsapp_chats ("¿quién me escribió?"), whatsapp_leer ("¿qué me dijo Ulises?") y whatsapp_enviar ("mandale a Ulises que…"): antes de mandar mostrale a quién va y el texto exacto y esperá su sí. ' +
+          'Si sos uno de sus agentes (Zonka, Lupita, Sapires, Gonzalito o un hilo constructor), anotá lo que vas haciendo con agentes_anotar y dejá tus propuestas con agentes_proponer: ella lo ve en vivo en Panel → Agentes. ' +
           'Antes de cargar algo que ella te contó, confirmá los datos clave (monto, fecha, cuenta) si no están claros. ' +
           'Fechas en YYYY-MM-DD, montos en pesos argentinos sin separadores. Todo cambio queda en historial y se puede deshacer.',
       });
