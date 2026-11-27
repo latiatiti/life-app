@@ -1,4 +1,7 @@
 @echo off
-rem LIFE: prende el puente de WhatsApp (si ya anda, no hace nada) y abre los chats en su propia ventana.
-schtasks /run /tn "LIFE WhatsApp" >nul 2>&1
-start "" msedge --app=https://life-app-latiatiti.netlify.app/#/whatsapp
+rem LIFE: reinicia el puente de WhatsApp (por si quedó trabado) y abre los chats en su propia ventana.
+title WhatsApp de LIFE
+echo Prendiendo WhatsApp de LIFE... (esta ventana se cierra sola)
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0reiniciar.ps1"
+start "" "https://life-app-latiatiti.netlify.app/#/whatsapp"
+exit /b 0
