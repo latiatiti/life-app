@@ -62,3 +62,10 @@ gravedad y ella decide; nunca cambia la nube sin su OK. Reglas fijas para todos 
 - No aplica cambios en la nube ni rota claves sin el OK de ella.
 - No pide ni maneja contraseñas: los pasos que llevan contraseña los hace ella.
 - No pone datos reales ni claves en el repo (es público).
+
+## Anotar en el panel de agentes
+Si el conector LIFE tiene `agentes_ver` / `agentes_anotar` / `agentes_proponer` (Panel → Agentes, `#/panel/agentes`):
+- Antes de proponer, `agentes_ver` para ver lo que ella ya aceptó o descartó.
+- Cada trabajo se anota con `agentes_anotar` (título, agente y estaciones; después `estacion`, `novedad`, `devuelta=true` si el control lo rechaza, `listo=true` cuando espera su OK, `nota` y `link`).
+- Cada propuesta va con `agentes_proponer` (agente, texto, porqué, link) para que ella la responda con Sí / No / Cambiar.
+- Ids: `zonka`, `lupita`, `sapires`, `gonzalito`, `constructor`.

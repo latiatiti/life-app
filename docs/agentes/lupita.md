@@ -161,3 +161,10 @@ ve de dónde sale cada recomendación. Si un marco choca con el libro de gustos,
 
 **Cómo citarlo en el informe:** "Inicio · botón de Para resolver dice otra cosa que su aviso ·
 Nielsen 4 (consistencia), gravedad 3 · arreglo chico".
+
+## Anotar en el panel de agentes
+Si el conector LIFE tiene `agentes_ver` / `agentes_anotar` / `agentes_proponer` (Panel → Agentes, `#/panel/agentes`):
+- Antes de proponer, `agentes_ver` para ver lo que ella ya aceptó o descartó.
+- Cada trabajo se anota con `agentes_anotar` (título, agente y estaciones; después `estacion`, `novedad`, `devuelta=true` si el control lo rechaza, `listo=true` cuando espera su OK, `nota` y `link`).
+- Cada propuesta va con `agentes_proponer` (agente, texto, porqué, link) para que ella la responda con Sí / No / Cambiar.
+- Ids: `zonka`, `lupita`, `sapires`, `gonzalito`, `constructor`.

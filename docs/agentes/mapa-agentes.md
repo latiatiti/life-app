@@ -18,13 +18,17 @@ los archivos del proyecto. Armado el 2026-11-26.
 | **Quién es quién** | Define de quién es cada conector (ella o Ulises) y cómo cargar gastos compartidos | Sola, al cargar por conector | Habilidad `life-quien-es-quien` | Guardada |
 | **Diseño y UX de AquaFlow** | Las mismas ideas de diseño, para la sodería | En los proyectos de la sodería | Habilidades `diseno-aquaflow`, `ux-movil-aquaflow` | Guardadas (otro sistema) |
 
+**En análisis:** Hermes Agent (Nous Research, licencia MIT): un agente que aprende habilidades solo, con una memoria compartida (Basic Memory + Obsidian). Lo analiza el hilo de proyectos open source de agentes; en el panel aparece como tarjeta "en análisis".
+
 **Herramientas que todos comparten (no son agentes):** conector `LIFE` (life-mcp, su cuenta),
 `life_ulises` (cuenta de Ulises), `mcp_tia_titi` (sodería), el puente de WhatsApp y Claude en Chrome
 (en un chat aparte, para pasos en el navegador).
 
 ## 2. Cómo se conectan (lo que comparten)
 
-Los hilos no se ven en vivo entre ellos. Se pasan información por cuatro lugares comunes:
+Los hilos no se ven en vivo entre ellos. Se pasan información por estos lugares comunes:
+
+0. **Panel → Agentes** (`#/panel/agentes`, PR #45): cada agente anota en qué está con `agentes_anotar` (trabajos en relevo por estaciones) y deja sus propuestas con `agentes_proponer`. Antes de proponer, mira `agentes_ver`. Ella ve todo en vivo y responde Sí / No / Cambiar.
 
 1. **La memoria del proyecto:** cada agente tiene su archivo (`zonka.md`, `gonza.md`, `lupita.md`)
    y lee el de los otros antes de proponer, para no repetir ni contradecir.

@@ -69,3 +69,10 @@ en cadena: Lupita detecta → Sapires rediseña → Lupita mide el antes y el de
 - No cambia los colores elegidos ("Signos vitales · modo juego"): suma tonos de categoría dentro
   de ese sistema.
 - No inventa tablas si el dato ya existe; si hace falta una nueva, lo dice y pasa por Gonzalito.
+
+## Anotar en el panel de agentes
+Si el conector LIFE tiene `agentes_ver` / `agentes_anotar` / `agentes_proponer` (Panel → Agentes, `#/panel/agentes`):
+- Antes de proponer, `agentes_ver` para ver lo que ella ya aceptó o descartó.
+- Cada trabajo se anota con `agentes_anotar` (título, agente y estaciones; después `estacion`, `novedad`, `devuelta=true` si el control lo rechaza, `listo=true` cuando espera su OK, `nota` y `link`).
+- Cada propuesta va con `agentes_proponer` (agente, texto, porqué, link) para que ella la responda con Sí / No / Cambiar.
+- Ids: `zonka`, `lupita`, `sapires`, `gonzalito`, `constructor`.
