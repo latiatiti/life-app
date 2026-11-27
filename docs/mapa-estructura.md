@@ -32,6 +32,8 @@ Estado: relevamiento 2026-10-25. **Plata, Casa y el botón + aprobados y hechos 
 
 ### Piezas compartidas que ya existen
 
+> Catálogo al día de las piezas de `src/ui/` y las familias que se repiten: `docs/piezas.md` (2026-11-27).
+
 | Pieza del pilar | En LIFE hoy |
 |---|---|
 | Bandeja única "Para resolver" | Señales del Inicio (`useTodasLasSenales`) + avisos flotantes. ✔ una sola fuente |
