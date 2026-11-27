@@ -5,6 +5,7 @@ import { crear, eliminar } from '../../core/db';
 import { dinero, hoy, sumarDias, uid } from '../../core/format';
 import { ir, useRuta } from '../../core/router';
 import { ModoActividad, icoConfirmar, useCambios } from '../../ui/Actividad';
+import { AhoraDia, RielDia } from '../../ui/LineaDia';
 import { Modal } from '../../ui/ui';
 import { FormComida } from '../alimentacion/Pantallas';
 import { metasDelDia, TA, useComidas, useExtras, useMetas, type Extra } from '../alimentacion/modelo';
@@ -17,7 +18,7 @@ import {
   MOMENTOS, SINTOMAS, sumarMinutos, ultimoManana, ZONAS_CUERPO,
   type ChequeoManana, type ChequeoNoche, type Cuerpo, type EnCursoChequeo, type Momento, type NivelZona, type ZonaCuerpo,
 } from './chequeo';
-import { armarDia, guardarDia, horaCorta, TD, TIPOS, useDias, usePlantilla, useTareas, type Prioridad } from './modelo';
+import { armarDia, guardarDia, TD, useDias, usePlantilla, useTareas, type Prioridad } from './modelo';
 import './chequeo.css';
 
 /* ===================================================================================
@@ -218,11 +219,12 @@ function PasoPlan({ r, set }: PasoProps) {
     <>
       <Pregunta etq="Plan" titulo={`Tu ${nombreDia}`} ayuda="¿Se mantiene lo de siempre?" />
       {fijos.length ? (
-        <ul className="cq-plan compacto">
-          {fijos.slice(0, 8).map((b, i) => <li key={i}><b>{horaCorta(b.inicio)}</b><span>{TIPOS[b.tipo].emoji} {b.titulo}</span></li>)}
-        </ul>
+        <div className="cq-linea">
+          <AhoraDia bloques={fijos} />
+          <RielDia bloques={fijos} />
+        </div>
       ) : <DatoApp>{v.estado === 'libre' || v.feriado ? 'Hoy figura como día libre.' : 'No hay nada fijo cargado para hoy.'}</DatoApp>}
-      <div className="cq-opciones">
+      <div className={`cq-opciones${fijos.length ? " tres plan" : ""}`}>
         {([['si', '✓', 'Sí, como siempre', ''], ['cambio', '✎', 'Cambió algo', 'Al terminar te llevo al Día para editarlo'], ['libre', '🏖', 'Hoy es libre', 'Lo marca libre en el Día']] as const).map(([val, ic, t, sub]) => (
           <button key={val} type="button" className="cq-op" aria-pressed={r.plan === val} onClick={() => set({ plan: val, _auto: true })}>
             <span className="cq-ic" aria-hidden="true">{ic}</span><span>{t}{sub && <small>{sub}</small>}</span>

@@ -18,6 +18,22 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-27', area: 'Diseño', titulo: 'Listas nuevas: empieza por Movimientos',
+    que: [
+      'Pieza nueva para todas las listas: una sola superficie, ícono con el color de la categoría y el monto alineado a la derecha.',
+      'Los ingresos se ven en verde con "+"; cada día muestra su total arriba.',
+      'Lista vacía que invita: muestra cómo se va a ver y trae el botón para cargar lo primero.',
+    ],
+  },
+  {
+    fecha: '2026-11-27', area: 'Diseño', titulo: 'Línea del día en el Arranque',
+    que: [
+      'En el paso Plan del Arranque, tu día como línea de tiempo: arriba "Ahora" con lo que falta en grande, la barra de avance y qué sigue.',
+      'Cada bloque con su ícono y su color de tipo, la hora a la izquierda y lo que dura alineado a la derecha; lo que ya pasó se apaga.',
+      'Es una pieza nueva para toda la app (src/ui/LineaDia.tsx): después la usan el Día, Mi día y la Cortina.',
+    ],
+  },
+  {
     fecha: '2026-11-26', area: 'Día', titulo: 'Chequeo de la mañana y de la noche', nube: true,
     que: [
       'Arriba del Inicio, dos tarjetas: ☀ Arranque y ☾ Cierre. Siempre se ve si lo hiciste (✓ con la hora) o si falta.',
