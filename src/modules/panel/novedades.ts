@@ -18,6 +18,14 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-27', area: 'WhatsApp', titulo: 'El puente de WhatsApp ya no se queda trabado',
+    que: [
+      'Después de un corte de internet el puente podía quedar "conectando" para siempre: ahora a los 90 s tira ese intento y prueba de nuevo solo.',
+      'Tocar Conectar en LIFE arranca un intento nuevo aunque el anterior siga dando vueltas.',
+      'Al reiniciar la compu vuelve a conectar sin pedir QR, y corre en segundo plano con un punto verde en la bandeja.',
+    ],
+  },
+  {
     fecha: '2026-11-26', area: 'Día', titulo: 'Chequeo de la mañana y de la noche', nube: true,
     que: [
       'Arriba del Inicio, dos tarjetas: ☀ Arranque y ☾ Cierre. Siempre se ve si lo hiciste (✓ con la hora) o si falta.',
