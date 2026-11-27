@@ -1,6 +1,8 @@
 import { usePerfil } from '../../core/auth';
 import { abierto, useInformes } from '../../core/informes';
 import type { Modulo, Senal } from '../../core/types';
+import { PantallaAgentes } from './Agentes';
+import { abierto as trabajoAbierto, nombreAgente, usePropuestas, useTrabajos } from './agentes';
 import { PantallaCuentas } from './Cuentas';
 import { PantallaInformes } from './Informes';
 import { PantallaLife } from './Life';
@@ -19,6 +21,8 @@ const icono = (
 function useSenalesPanel(): Senal[] {
   const yo = usePerfil();
   const { filas } = useInformes();
+  const { filas: trabajos } = useTrabajos();
+  const { filas: propuestas } = usePropuestas();
   if (yo.rol !== 'superadmin') {
     const respondidos = filas.filter((i) => i.user_id === yo.user_id && i.respuesta && abierto(i));
     return respondidos.length ? [{
@@ -43,17 +47,29 @@ function useSenalesPanel(): Senal[] {
     detalle: errores[0].texto.split('\n')[0].slice(0, 80),
     ruta: '#/panel/informes', accion: { texto: 'Mirar', ruta: '#/panel/informes' },
   });
+  // Agentes: propuestas que esperan su Sí / No / Cambiar y tareas que esperan su OK final.
+  const props = propuestas.filter((p) => p.estado === 'pendiente');
+  const esperan = trabajos.filter((t) => trabajoAbierto(t) && t.estado === 'espera_ok');
+  if (props.length || esperan.length) senales.push({
+    id: 'panel-agentes', modulo: 'panel', nivel: 'info',
+    titulo: props.length && esperan.length ? `Tus agentes esperan tu OK en ${props.length + esperan.length} cosas`
+      : props.length ? (props.length === 1 ? `${nombreAgente(props[0].agente)} te propone algo` : `Tus agentes te dejaron ${props.length} propuestas`)
+      : esperan.length === 1 ? `"${esperan[0].titulo}" espera tu OK` : `${esperan.length} tareas de agentes esperan tu OK`,
+    detalle: props[0]?.texto.split('\n')[0].slice(0, 80) ?? esperan[0]?.titulo,
+    ruta: '#/panel/agentes', accion: { texto: 'Ver', ruta: '#/panel/agentes' },
+  });
   return senales;
 }
 
 export const moduloPanel: Modulo = {
   id: 'panel',
   nombre: 'Panel',
-  descripcion: 'Solo superadmin: cuentas, informes y cómo viene LIFE',
+  descripcion: 'Solo superadmin: cuentas, informes, agentes y cómo viene LIFE',
   icono,
   pantallas: [
     { ruta: '', titulo: 'Cuentas', componente: PantallaCuentas },
     { ruta: 'informes', titulo: 'Informes', componente: PantallaInformes },
+    { ruta: 'agentes', titulo: 'Agentes', componente: PantallaAgentes },
     { ruta: 'life', titulo: 'LIFE', componente: PantallaLife },
   ],
   useSenales: useSenalesPanel,
