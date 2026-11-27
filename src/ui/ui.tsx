@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { NivelSenal } from '../core/types';
+import './fila.css';
 
 /* ---------- Íconos (trazo simple, heredan el color del texto) ---------- */
 
@@ -60,11 +61,24 @@ export function Cifra({ etiqueta, valor, nota, tono }: {
   );
 }
 
-export function Vacio({ titulo, children }: { titulo: string; children?: ReactNode }) {
+/**
+ * Lista vacía que invita (Sapires, tanda "Listas", V2 elegida 2026-11-27): título, y opcionalmente un
+ * fantasma de cómo se va a ver (`fantasma` = el dato de la derecha de cada fila de ejemplo) y el botón
+ * para cargar lo primero (`accion`). Ver docs/piezas.md.
+ */
+export function Vacio({ titulo, children, fantasma, accion }: {
+  titulo: string; children?: ReactNode; fantasma?: string[]; accion?: { texto: string; onClick: () => void };
+}) {
   return (
     <div className="vacio">
       <p className="vacio-tit">{titulo}</p>
+      {fantasma && (
+        <ul className="vacio-fantasma" aria-hidden="true">
+          {fantasma.map((f, i) => <li key={i}><i className="cuad" /><i style={{ width: `${70 - i * 9}%` }} /><span>{f}</span></li>)}
+        </ul>
+      )}
       {children}
+      {accion && <button type="button" className="btn btn-primario" onClick={accion.onClick}>{Icono.mas} {accion.texto}</button>}
     </div>
   );
 }

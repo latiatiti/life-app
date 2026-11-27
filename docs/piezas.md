@@ -20,6 +20,8 @@ Lo mantiene Sapires (diseño); Lupita mide las pantallas antes y después. Cada 
 | `Medidor`, `Pct`, `nivelDe`, `useSalto` | `ui/nivel.tsx` | Escala de rendimiento ⚠▼●✓◆★ | Plata, Comida, Entreno, Día |
 | `Semana` | `ui/Semana.tsx` | Tira de días | Inicio, Día |
 | `confirmar`, `AvisoDeshacer` | `ui/Deshacer.tsx` | Confirmar y DESHACER | Toda la app |
+| `Lista`, `Fila`, `IcoFila` + `.fl-cab` | `ui/Fila.tsx` | Fila de toda lista (dirección A "Columnas", elegida 2026-11-27): ícono con color de categoría, título, detalle, dato en columna fija (tono `ingreso` verde, `atencion`, `urgente`), flecha o acción | Plata → Movimientos (sigue: Pagos, Stock, Rutina…) |
+| `Vacio` con `fantasma` y `accion` | `ui/ui.tsx` | Lista vacía que invita (V2, 2026-11-27): cómo se va a ver + botón para cargar lo primero | Movimientos (sigue: Tablero, Compras, Precios, Historial, Mis informes) |
 | `AhoraDia`, `RielDia`, `IcoTipo` | `ui/LineaDia.tsx` | Línea del día: lo que falta en grande + riel con estado | Arranque → Plan (sigue: Día, Mi día, Cortina) |
 
 ## 2. Familias que se repiten y todavía no son pieza
@@ -35,10 +37,10 @@ Hoy hay **18 pantallas** que arman sus listas a mano con las clases `lista` / `l
 
 | Familia | Ejemplos de hoy | Pieza propuesta | Plan 2 |
 | --- | --- | --- | --- |
-| **Fila de lista** | ejercicio de la rutina, pago, movimiento, producto del stock, plato, ítem de compra | `Fila` (ícono/foto, título, detalle, dato derecho en columna fija, estado, acción, deslizar) | base de todo |
+| **Fila de lista** | ejercicio de la rutina, pago, movimiento, producto del stock, plato, ítem de compra | `Fila` ✔ (Movimientos ya la usa) | paso 3 ✔ |
 | **Lista con grupos** | pagos por categoría, ejercicios por músculo, compras por pasillo, movimientos por categoría | `ListaGrupos` (cabecera con color de categoría, subtotal y barra; usa `Fila`) | paso 3 (Pagos) |
 | **Línea de tiempo** | plan del día, agenda, historial de entrenos, novedades de una tarjeta | `RielDia` ✔ y luego `Riel` genérico (cualquier cosa con fecha u hora) | paso 1 ✔, paso 6 |
-| **Vacío que invita** | Tablero, Compras, Precios, Historial, Mis informes | `Vacio` con dibujo + botón de cargar | paso 4 |
+| **Vacío que invita** | Tablero, Compras, Precios, Historial, Mis informes | `Vacio` con `fantasma` + `accion` ✔ | paso 3 ✔ |
 | **Lista + detalle (compu)** | WhatsApp, Precios, Historial, Movimientos, Tablero | `ListaDetalle` (lista a la izquierda, detalle o gráfico a la derecha; en el celu, hoja) | paso 5 |
 | **Tarjeta vital** | 8 tarjetas del Inicio, cifras de cada sección | `TarjetaVital` (cifra, estado, barra, botón) | más adelante |
 

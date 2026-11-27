@@ -2,7 +2,8 @@ import { confirmar } from '../../ui/Deshacer';
 import { useState } from 'react';
 import { eliminar } from '../../core/db';
 import { dinero, fechaCorta, mesActual } from '../../core/format';
-import { Icono, Modal, Tarjeta } from '../../ui/ui';
+import { Fila, Lista } from '../../ui/Fila';
+import { Icono, Modal, Vacio } from '../../ui/ui';
 import { FormMovimiento } from './FormMovimiento';
 import { SelectorMes } from './Resumen';
 import { T, useCategorias, useCuentas, useMovimientos, usePagos, type Movimiento, type TipoMovimiento } from './modelo';
@@ -62,41 +63,36 @@ export function PantallaMovimientos() {
         <input type="search" placeholder="Buscar…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
       </div>
 
-      {lista.length === 0 ? (
-        <Tarjeta><p className="nota">No hay movimientos con estos filtros.</p></Tarjeta>
+      {movs.length === 0 ? (
+        <Vacio titulo="Así se van a ver tus movimientos" fantasma={['+ $ 120.000', '− $ 14.000', '− $ 5.700']}
+          accion={{ texto: 'Cargar el primer movimiento', onClick: () => setNuevo(true) }} />
+      ) : lista.length === 0 ? (
+        <Vacio titulo="No hay movimientos con estos filtros"><p>Probá con otro mes, otra cuenta o sacá la búsqueda.</p></Vacio>
       ) : (
-        [...dias.entries()].map(([dia, ms]) => (
-          <Tarjeta key={dia} titulo={fechaCorta(dia)}>
-            <ul className="lista">
-              {ms.map((m) => {
-                const cuenta = cuentaDe.get(m.cuenta_id);
-                const cat = catDe.get(m.categoria_id ?? '');
-                const signo = m.tipo === 'ingreso' ? '+' : m.tipo === 'gasto' ? '−' : '';
-                const titulo = m.descripcion || cat?.nombre || (m.tipo === 'transferencia' ? 'Transferencia' : 'Sin descripción');
-                const sub = m.tipo === 'transferencia'
-                  ? `${cuenta?.nombre ?? '?'} → ${cuentaDe.get(m.cuenta_destino_id ?? '')?.nombre ?? '?'}`
-                  : `${cat?.nombre ?? 'Sin categoría'} · ${cuenta?.nombre ?? '?'}`;
-                return (
-                  <li key={m.id}>
-                    <button className="lista-item boton-fila" onClick={() => setEditando(m)}>
-                      <span className="punto" style={{ background: cat?.color ?? 'var(--muted)' }} />
-                      <div className="crece">
-                        <strong>{titulo}</strong>
-                        <small className="nota">
-                          {sub}
-                          {m.pago_id && ` · pago: ${pagoDe.get(m.pago_id)?.nombre ?? 'recurrente'}`}
-                        </small>
-                      </div>
-                      <span className={`num ${m.tipo === 'ingreso' ? 'texto-bien' : ''}`}>
-                        {signo}{dinero(Number(m.monto), cuenta?.moneda)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </Tarjeta>
-        ))
+        [...dias.entries()].map(([dia, ms]) => {
+          const neto = ms.reduce((t, m) => t + (m.tipo === 'ingreso' ? 1 : m.tipo === 'gasto' ? -1 : 0) * Number(m.monto), 0);
+          return (
+            <section key={dia}>
+              <div className="fl-cab"><span>{fechaCorta(dia)}</span>{neto !== 0 && <b className={neto > 0 ? 'texto-bien' : ''}>{neto > 0 ? '+' : '−'}{dinero(Math.abs(neto))}</b>}</div>
+              <Lista>
+                {ms.map((m) => {
+                  const cuenta = cuentaDe.get(m.cuenta_id);
+                  const cat = catDe.get(m.categoria_id ?? '');
+                  const signo = m.tipo === 'ingreso' ? '+' : m.tipo === 'gasto' ? '−' : '';
+                  const titulo = m.descripcion || cat?.nombre || (m.tipo === 'transferencia' ? 'Transferencia' : 'Sin descripción');
+                  const sub = m.tipo === 'transferencia'
+                    ? `${cuenta?.nombre ?? '?'} → ${cuentaDe.get(m.cuenta_destino_id ?? '')?.nombre ?? '?'}`
+                    : `${cat?.nombre ?? 'Sin categoría'} · ${cuenta?.nombre ?? '?'}${m.pago_id ? ` · pago: ${pagoDe.get(m.pago_id)?.nombre ?? 'recurrente'}` : ''}`;
+                  return (
+                    <Fila key={m.id} icono={m.tipo} color={cat?.color} titulo={titulo} detalle={sub}
+                      dato={`${signo}${dinero(Number(m.monto), cuenta?.moneda)}`} tono={m.tipo === 'ingreso' ? 'ingreso' : undefined}
+                      onClick={() => setEditando(m)} />
+                  );
+                })}
+              </Lista>
+            </section>
+          );
+        })
       )}
 
       <Modal titulo="Nuevo movimiento" abierto={nuevo} onCerrar={() => setNuevo(false)}>

@@ -18,6 +18,14 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-27', area: 'Diseño', titulo: 'Listas nuevas: empieza por Movimientos',
+    que: [
+      'Pieza nueva para todas las listas: una sola superficie, ícono con el color de la categoría y el monto alineado a la derecha.',
+      'Los ingresos se ven en verde con "+"; cada día muestra su total arriba.',
+      'Lista vacía que invita: muestra cómo se va a ver y trae el botón para cargar lo primero.',
+    ],
+  },
+  {
     fecha: '2026-11-27', area: 'Diseño', titulo: 'Línea del día en el Arranque',
     que: [
       'En el paso Plan del Arranque, tu día como línea de tiempo: arriba "Ahora" con lo que falta en grande, la barra de avance y qué sigue.',
