@@ -988,3 +988,73 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .accesos-ajustes small { color: var(--texto-3); overflow-wrap: anywhere; }
 .accesos-form { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: end; }
 @media (max-width: 760px) { .accesos-form { grid-template-columns: 1fr; } }
+
+/* ---------- Tu equipo en el Inicio (2026-11-27, diseno/agentes-inicio-boceto.html) ----------
+   Compu: columna fija a la izquierda (Tu equipo + Accesos + Mensajes). Celu: tira arriba, el resto abajo.
+   Cada agente tiene un solo detalle de color (misma luz y croma, distinto tono); el verde de LIFE queda para lo vivo. */
+.eq-c-zonka { --eq: oklch(78% 0.12 150); }
+.eq-c-gonzalito { --eq: oklch(78% 0.12 240); }
+.eq-c-sapires { --eq: oklch(78% 0.12 300); }
+.eq-c-lupita { --eq: oklch(78% 0.12 70); }
+.inicio-cuerpo.con-equipo { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.inicio-lado { position: sticky; top: 64px; display: flex; flex-direction: column; gap: 12px; min-width: 0; max-height: calc(100vh - 80px); overflow-y: auto; scrollbar-width: thin; }
+.inicio-lado .midia-lado { display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--borde-fuerte); }
+.inicio-principal { min-width: 0; }
+.midia.sin-lado { grid-template-columns: minmax(0, 1fr); }
+.eq { display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--borde-fuerte); }
+.eq-lista { display: flex; flex-direction: column; gap: 6px; }
+.eq-agente { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; text-align: left; padding: 8px 10px; min-height: var(--alto-toque);
+  background: var(--capa-2); border: 1px solid var(--borde); border-radius: var(--radio-chico); color: var(--texto); cursor: pointer; font: inherit; transition: border-color 160ms; }
+.eq-agente:hover, .eq-agente.elegido { border-color: color-mix(in srgb, var(--eq) 55%, var(--borde)); }
+.eq-agente:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+.eq-nom { font-family: var(--letra-titulo); font-weight: 600; font-size: 0.92rem; display: flex; flex-direction: column; min-width: 0; }
+.eq-nom small { font-family: var(--letra-texto, inherit); font-weight: 400; font-size: 0.72rem; color: var(--texto-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eq-cuenta { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: var(--radio-chico); background: var(--eq); color: var(--fondo); font: 700 0.75rem var(--letra-dato); }
+.eq-est { grid-column: 2 / 4; font: 0.72rem var(--letra-dato); color: var(--texto-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eq-est.nuevo { color: var(--eq); }
+.eq-marca { width: 36px; height: 36px; display: block; }
+.eq-marca * { fill: none; stroke: var(--eq); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.eq-marca .tenue { stroke: var(--borde-fuerte); }
+.eq-marca .lleno { fill: var(--eq); stroke: none; }
+.vivo .eq-marca .z-pulso { stroke-dasharray: 60; animation: eq-pulso 2.4s linear infinite; }
+.vivo .eq-marca .g-barrido { transform-origin: 20px 20px; animation: eq-giro 3.2s linear infinite; }
+.vivo .eq-marca .s-a { animation: eq-mover-a 3s ease-in-out infinite; }
+.vivo .eq-marca .s-b { animation: eq-mover-b 3s ease-in-out infinite; }
+.vivo .eq-marca .l-foco { transform-origin: 17px 17px; animation: eq-foco 2.6s ease-in-out infinite; }
+@keyframes eq-pulso { from { stroke-dashoffset: 60; } to { stroke-dashoffset: -60; } }
+@keyframes eq-giro { to { transform: rotate(360deg); } }
+@keyframes eq-mover-a { 0%, 40% { transform: translate(0, 0); } 50%, 90% { transform: translate(12px, 12px); } 100% { transform: translate(0, 0); } }
+@keyframes eq-mover-b { 0%, 40% { transform: translate(0, 0); } 50%, 90% { transform: translate(-12px, -12px); } 100% { transform: translate(0, 0); } }
+@keyframes eq-foco { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.72); } }
+@media (prefers-reduced-motion: reduce) { .eq-marca * { animation: none !important; } }
+.eq-detalle { display: flex; flex-direction: column; border-top: 1px solid var(--borde); }
+.eq-bloque { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.eq-bloque:last-child { border-bottom: 0; }
+.eq-prop { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: var(--capa-2); border-radius: var(--radio-chico); }
+.eq-prop p { margin: 0; overflow-wrap: anywhere; }
+.eq-si { display: flex; flex-direction: column; gap: 6px; }
+.eq-si textarea, .eq-si input[type=date], .eq-pedir input { background: var(--capa-1); border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); color: var(--texto); font: inherit; padding: 7px 9px; min-width: 0; }
+.eq-opciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.eq-chip { font: 0.8rem inherit; padding: 6px 11px; min-height: 34px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-chico); background: none; color: var(--texto-2); cursor: pointer; }
+.eq-chip:hover { color: var(--texto); }
+.eq-chip.activo { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
+.eq-pedir { display: flex; gap: 6px; }
+.eq-pedir input { flex: 1; }
+.eq-trabajos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.eq-trabajos li { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+.eq-pt { width: 8px; height: 8px; border-radius: 2px; background: var(--texto-3); flex: none; }
+.eq-t-en_curso .eq-pt { background: var(--eq); }
+.eq-t-espera_ok .eq-pt { background: var(--acento); }
+@media (max-width: 900px) {
+  .inicio-cuerpo.con-equipo { display: flex; flex-direction: column; gap: 14px; }
+  .inicio-lado { display: contents; }
+  .inicio-lado > .eq { order: 0; padding: 10px; }
+  .inicio-principal { order: 1; }
+  .inicio-lado-resto { order: 2; }
+  .eq-lista { flex-direction: row; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .eq-agente { grid-template-columns: 30px auto; min-width: 150px; flex: none; position: relative; }
+  .eq-agente .eq-marca { width: 30px; height: 30px; }
+  .eq-nom small { display: none; }
+  .eq-cuenta { position: absolute; top: 4px; right: 6px; }
+  .eq-est { grid-column: 1 / 3; }
+}

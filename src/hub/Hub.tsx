@@ -6,7 +6,8 @@ import { usePerfil, veModulo } from '../core/auth';
 import { useTodasLasSenales } from '../core/senales';
 import type { ItemAgenda, NivelSenal, Senal, Vital } from '../core/types';
 import { Semana } from '../ui/Semana';
-import { MiDia } from './MiDia';
+import { Lado, MiDia } from './MiDia';
+import { Equipo } from './Equipo';
 import { TarjetasChequeo } from '../modules/dia/Chequeo';
 import { Estado, Modal } from '../ui/ui';
 
@@ -179,6 +180,8 @@ export function Hub({ abrirMenu }: { abrirMenu?: () => void }) {
   const mirar = senales.filter((x) => x.nivel === 'aviso').length;
   const conBoton = senales.find((x) => IMPORTA.includes(x.nivel) && x.accion);
 
+  const conEquipo = veModulo(perfil, 'panel');
+
   return (
     <div className="pila">
       <header className="tablero-cab">
@@ -188,8 +191,16 @@ export function Hub({ abrirMenu }: { abrirMenu?: () => void }) {
         </h1>
       </header>
 
+      <div className={`inicio-cuerpo ${conEquipo ? 'con-equipo' : ''}`}>
+      {conEquipo && (
+        <aside className="inicio-lado" aria-label="Tu equipo, accesos y mensajes">
+          <Equipo />
+          <div className="inicio-lado-resto"><Lado /></div>
+        </aside>
+      )}
+      <div className="pila inicio-principal">
       <TarjetasChequeo />
-      <MiDia agenda={agenda} nombreModulo={nombreModulo} />
+      <MiDia agenda={agenda} nombreModulo={nombreModulo} conLado={!conEquipo} />
 
       <h2 className="tablero-sub">Cómo vengo</h2>
       <div className="tablero">
@@ -219,6 +230,8 @@ export function Hub({ abrirMenu }: { abrirMenu?: () => void }) {
       <h2 className="tablero-sub">Próximos días</h2>
       <Semana desde={h} cantidad={DIAS_AGENDA} elegido={elegido} onElegir={setElegido} conAlgo={conAlgo} />
       <Dia dia={elegido} items={delDia} atrasados={atrasados} nombreModulo={nombreModulo} />
+      </div>
+      </div>
 
       <Modal titulo="Para resolver" abierto={ventana === 'resolver'} onCerrar={() => setVentana(null)}>
         <ListaSenales senales={senales} />

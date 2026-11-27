@@ -9,7 +9,7 @@ create table if not exists public.age_trabajos (
   titulo      text not null,
   agente      text not null,                       -- quién la tiene ahora (zonka, gonzalito, lupita, sapires, constructor…)
   receta      text,                                -- tipo de tarea, ej. "pantalla nueva", "revisión"
-  estado      text not null default 'en_curso' check (estado in ('en_curso', 'espera_ok', 'hecho', 'frenado')),
+  estado      text not null default 'en_curso' check (estado in ('pedido', 'en_curso', 'espera_ok', 'hecho', 'frenado')),
   estaciones  jsonb not null default '[]',         -- [{nombre, agente, estado: hecho|ahora|falta}]
   vueltas     integer not null default 0,          -- veces que el control la devolvió
   novedades   jsonb not null default '[]',         -- [{fecha (timestamptz), agente, texto}] la más nueva al final
@@ -49,3 +49,9 @@ create policy "propio_delete" on public.age_propuestas for delete to authenticat
 
 create index if not exists age_trabajos_user on public.age_trabajos (user_id, updated_at desc);
 create index if not exists age_propuestas_user on public.age_propuestas (user_id, estado);
+
+-- 2026-11-27 (Tu equipo en el Inicio): "pedido" = ella se lo pidió desde la app y ningún Claude lo tomó todavía.
+-- Por si la tabla ya existía con el control viejo.
+alter table public.age_trabajos drop constraint if exists age_trabajos_estado_check;
+alter table public.age_trabajos add constraint age_trabajos_estado_check
+  check (estado in ('pedido', 'en_curso', 'espera_ok', 'hecho', 'frenado'));

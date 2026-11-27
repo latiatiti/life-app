@@ -284,7 +284,7 @@ const HERRAMIENTAS = [
   },
   {
     name: 'agentes_ver',
-    description: 'Panel de agentes de LIFE (Panel → Agentes): las tareas de agentes abiertas (estaciones, vueltas, novedades) y las propuestas con lo que ella respondió (sí / no / cambiar + su texto). Usalo al empezar, para saber qué dejó cada agente y para aprender de lo que ella aceptó o descartó.',
+    description: 'Panel de agentes de LIFE (Panel → Agentes): las tareas de agentes abiertas (estaciones, vueltas, novedades) y las propuestas con lo que ella respondió (sí / no / cambiar + su texto). Usalo al empezar, para saber qué dejó cada agente y para aprender de lo que ella aceptó o descartó. Trae también los pedidos que ella les hizo desde el Inicio ("pedidos"): hacelos con la habilidad de ese agente y anotá el avance con agentes_anotar (id del pedido); el resultado dejalo con agentes_proponer.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -850,10 +850,11 @@ async function agentesVer(db: SupabaseClient, q: Quien, args: Json) {
   if (args.agente) { tq = tq.eq('agente', agenteId(args.agente)); pq = pq.eq('agente', agenteId(args.agente)); }
   const [{ data: ts, error: e1 }, { data: ps, error: e2 }] = await Promise.all([tq, pq]);
   if (e1 || e2) throw new ErrorUso('El panel de agentes todavía no está activado en la nube (supabase/agentes.sql).');
-  const trabajos = (ts as Json[]).filter((t) => args.incluir_cerradas || t.estado === 'en_curso' || t.estado === 'espera_ok').slice(0, 20)
+  const trabajos = (ts as Json[]).filter((t) => args.incluir_cerradas || t.estado === 'pedido' || t.estado === 'en_curso' || t.estado === 'espera_ok').slice(0, 20)
     .map((t) => ({ id: t.id, titulo: t.titulo, agente: t.agente, receta: t.receta, estado: t.estado, estaciones: t.estaciones, vueltas: t.vueltas, nota: t.nota, link: t.link, ultimas: ((t.novedades as Json[]) ?? []).slice(-5) }));
   const propuestas = (ps as Json[]).map((p) => ({ id: p.id, agente: p.agente, texto: p.texto, estado: p.estado, respuesta: p.respuesta, respondida_at: p.respondida_at }));
-  return { trabajos, propuestas_pendientes: propuestas.filter((p) => p.estado === 'pendiente'), respondidas: propuestas.filter((p) => p.estado !== 'pendiente').slice(0, 15) };
+  const pedidos = trabajos.filter((t) => t.estado === 'pedido');
+  return { pedidos, trabajos: trabajos.filter((t) => t.estado !== 'pedido'), propuestas_pendientes: propuestas.filter((p) => p.estado === 'pendiente'), respondidas: propuestas.filter((p) => p.estado !== 'pendiente').slice(0, 15) };
 }
 
 async function agentesAnotar(db: SupabaseClient, q: Quien, args: Json) {
@@ -865,7 +866,7 @@ async function agentesAnotar(db: SupabaseClient, q: Quien, args: Json) {
     if (!t) throw new ErrorUso('No encontré esa tarea. Mirá agentes_ver.');
   } else if (args.titulo) {
     const v = sinTildes(String(args.titulo));
-    const { data, error } = await db.from('age_trabajos').select('*').eq('user_id', q.userId).in('estado', ['en_curso', 'espera_ok']);
+    const { data, error } = await db.from('age_trabajos').select('*').eq('user_id', q.userId).in('estado', ['pedido', 'en_curso', 'espera_ok']);
     if (error) throw new ErrorUso('El panel de agentes todavía no está activado en la nube (supabase/agentes.sql).');
     const c = (data as Json[]).filter((x) => sinTildes(String(x.titulo)).includes(v));
     if (c.length > 1) return { ok: false, aviso: 'Hay varias que coinciden: decime cuál (por id).', opciones: c.map((x) => ({ id: x.id, titulo: x.titulo })) };
@@ -895,6 +896,7 @@ async function agentesAnotar(db: SupabaseClient, q: Quien, args: Json) {
     if (i > 0) fijarAhora(i - 1);
     estado = 'en_curso';
   }
+  if (estado === 'pedido') estado = 'en_curso'; // un Claude lo tomó
   if (args.listo) { estaciones = estaciones.map((e) => ({ ...e, estado: 'hecho' as const })); estado = 'espera_ok'; }
 
   const cambios: Json = { estaciones, vueltas, estado, updated_at: ahoraIso() };
@@ -1111,7 +1113,7 @@ async function atender(db: SupabaseClient, q: Quien, m: Json): Promise<Json | nu
       return ok({
         protocolVersion: typeof params.protocolVersion === 'string' ? params.protocolVersion : '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'LIFE', version: '1.5.0' },
+        serverInfo: { name: 'LIFE', version: '1.6.0' },
         instructions: 'LIFE es la app personal de la usuaria (economía, pagos, entreno, stock, comida, compras, día). ' +
           'Hablale en español rioplatense. Llamá primero a que_hay para ver tablas y columnas. ' +
           'Para su semana y su tiempo: ver_semana muestra cada día con sueño, fijo, cosas de todos los días y tiempo libre; ' +

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pct } from '../../ui/nivel';
 import { Modal, Pestanas, Vacio } from '../../ui/ui';
+import { PreguntaSi } from '../../hub/Equipo';
 import {
   AGENTES, abierto, darOk, devolver, estacionActual, feed, frenar, haceCuanto, nombreAgente, recientes, responder, situacion,
   usePropuestas, useTrabajos, type Propuesta, type Trabajo,
@@ -22,6 +23,7 @@ export function PantallaAgentes() {
   const [elegido, setElegido] = useState<string | null>(null);
   const [devolviendo, setDevolviendo] = useState<Trabajo | null>(null);
   const [cambiando, setCambiando] = useState<Propuesta | null>(null);
+  const [diciendoSi, setDiciendoSi] = useState<Propuesta | null>(null);
   const [texto, setTexto] = useState('');
 
   if (error && !trabajos.length) return (
@@ -156,7 +158,7 @@ export function PantallaAgentes() {
             <p>{p.texto}</p>
             {p.porque && <p className="nota">Se basa en: {p.porque}</p>}
             <div className="ag-botones">
-              <button className="btn btn-primario" onClick={() => void responder(p, 'si')}>Sí</button>
+              <button className="btn btn-primario" onClick={() => setDiciendoSi(p)}>Sí</button>
               <button className="btn" onClick={() => void responder(p, 'no')}>No</button>
               <button className="btn" onClick={() => { setTexto(''); setCambiando(p); }}>Cambiar</button>
               {p.link && <a className="btn" href={p.link} target="_blank" rel="noreferrer">Ver</a>}
@@ -182,6 +184,10 @@ export function PantallaAgentes() {
         <div className="ag-botones">
           <button className="btn btn-primario" onClick={() => { if (devolviendo) void devolver(devolviendo, texto.trim()); setDevolviendo(null); }}>Devolver</button>
         </div>
+      </Modal>
+      <Modal titulo="Al Tablero" abierto={!!diciendoSi} onCerrar={() => setDiciendoSi(null)}>
+        <p className="nota">{diciendoSi?.texto}</p>
+        <PreguntaSi onVolver={() => setDiciendoSi(null)} onListo={(t) => { if (diciendoSi) void responder(diciendoSi, 'si', '', t); setDiciendoSi(null); }} />
       </Modal>
       <Modal titulo="¿Qué le cambiarías?" abierto={!!cambiando} onCerrar={() => setCambiando(null)}>
         <p className="nota">{cambiando?.texto}</p>

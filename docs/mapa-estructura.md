@@ -73,7 +73,7 @@ Reglas que se siguen: primero Inicio, después lo diario, al final lo que se ana
 
 | Sección | Compu | Celu | Pestañas | Objetos |
 |---|---|---|---|---|
-| **Inicio** | 1.º del menú | barra | Tablero de 8 tarjetas (Día, Plata, Entreno, Comida, Compras, En casa, Mi partida, Para resolver) + agenda de 14 días | todos |
+| **Inicio** | 1.º del menú | barra | Tablero de 8 tarjetas (Día, Plata, Entreno, Comida, Compras, En casa, Mi partida, Para resolver) + agenda de 14 días; en la compu, columna izquierda "Tu equipo" (agentes, solo superadmin) + Accesos y Mensajes; en el celu, tira de agentes arriba | todos |
 | **Día** | menú | barra | Hoy · Semana · Semana tipo | `dia_*` |
 | **Tablero** (2026-11-08) | menú | Más | Tablero (Por hacer · En proceso · Hecho, editables) | `dia_tareas` (la tarjeta ES la tarea: con fecha se ve también en Día), `dia_tablero` (etapas y categorías); recordatorio por WhatsApp de cada tarjeta: número y clave en Ajustes (`avi_whatsapp`). **Cortina de pendientes** (2026-11-24): el mismo tablero en versión corta baja desde arriba en cualquier pantalla (cursor arriba en la compu; arrastrar o pestañita en el celu) |
 | **WhatsApp** (2026-11-11) | menú | Más | Chats · Conexión | `wa_sesion` (estado y QR), `wa_chats`, `wa_mensajes` (texto, 30 días), `wa_salida` (cola para mandar: app o Claude, con DESHACER). Su número vinculado por QR a un puente (`whatsapp-puente/`). No es lo mismo que los recordatorios a su propio número (Ajustes, `avi_whatsapp`). |

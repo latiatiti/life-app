@@ -250,7 +250,8 @@ function MensajesWhatsapp() {
   );
 }
 
-function Lado() {
+/** Accesos + Mensajes. En el Inicio van en la columna de la izquierda, debajo de Tu equipo (2026-11-27). */
+export function Lado() {
   const perfil = usePerfil();
   const accesos = useAccesos();
   const senales = useTodasLasSenales();
@@ -285,13 +286,13 @@ function Lado() {
 }
 
 /** Franja de arriba del Inicio: para hacer hoy (grande) + mensajes y accesos (al costado en la compu, abajo en el celu). */
-export function MiDia({ agenda, nombreModulo }: { agenda: ItemAgenda[]; nombreModulo: Map<string, string> }) {
+export function MiDia({ agenda, nombreModulo, conLado = true }: { agenda: ItemAgenda[]; nombreModulo: Map<string, string>; conLado?: boolean }) {
   const perfil = usePerfil();
   const escribe = puedeEscribir(perfil);
   return (
-    <div className="midia">
+    <div className={`midia ${conLado ? '' : 'sin-lado'}`}>
       <ParaHoy agenda={agenda} escribe={escribe} nombreModulo={nombreModulo} />
-      <Lado />
+      {conLado && <Lado />}
     </div>
   );
 }

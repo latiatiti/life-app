@@ -13,7 +13,8 @@ import { TD, type Tarea } from '../dia/modelo';
 export const TABLA_TRABAJOS = 'age_trabajos';
 export const TABLA_PROPUESTAS = 'age_propuestas';
 
-export type EstadoTrabajo = 'en_curso' | 'espera_ok' | 'hecho' | 'frenado';
+/** pedido = ella se lo pidió desde el Inicio y todavía ningún Claude lo tomó. */
+export type EstadoTrabajo = 'pedido' | 'en_curso' | 'espera_ok' | 'hecho' | 'frenado';
 export type EstadoEstacion = 'hecho' | 'ahora' | 'falta';
 export interface Estacion { nombre: string; agente?: string; estado: EstadoEstacion }
 export interface NovedadAgente { fecha: string; agente?: string; texto: string }
@@ -75,7 +76,7 @@ export const nombreAgente = (id?: string | null) => agenteDe(id)?.nombre ?? (id 
 export const useTrabajos = () => useTabla<Trabajo>(TABLA_TRABAJOS);
 export const usePropuestas = () => useTabla<Propuesta>(TABLA_PROPUESTAS);
 
-export const abierto = (t: Trabajo) => t.estado === 'en_curso' || t.estado === 'espera_ok';
+export const abierto = (t: Trabajo) => t.estado === 'pedido' || t.estado === 'en_curso' || t.estado === 'espera_ok';
 const instante = (t: Trabajo) => t.updated_at ?? t.created_at ?? '';
 export const recientes = (ts: Trabajo[]) => [...ts].sort((a, b) => instante(b).localeCompare(instante(a)));
 
@@ -93,6 +94,8 @@ export function situacion(a: Agente, trabajos: Trabajo[], propuestas: Propuesta[
   const mios = recientes(trabajos.filter((t) => t.agente === a.id && abierto(t)));
   const enCurso = mios.find((t) => t.estado === 'en_curso');
   const pend = propuestas.filter((p) => p.agente === a.id && p.estado === 'pendiente').length;
+  const pedido = mios.find((t) => t.estado === 'pedido');
+  if (!enCurso && pedido && !pend) return { estado: 'espera', texto: `Pedido: ${pedido.titulo}`, trabajo: pedido };
   if (enCurso) return { estado: 'trabaja', texto: enCurso.titulo + (estacionActual(enCurso) ? ` · ${estacionActual(enCurso)!.nombre}` : ''), trabajo: enCurso };
   if (mios.length || pend) {
     const partes = [mios.length ? `${mios[0].titulo} espera tu OK` : '', pend ? `${pend} ${pend === 1 ? 'propuesta' : 'propuestas'} para vos` : ''].filter(Boolean);
@@ -131,12 +134,25 @@ export async function frenar(t: Trabajo) {
   await modificar<Trabajo>(TABLA_TRABAJOS, t.id, { estado: 'frenado', novedades: conNovedad(t, 'La frenaste'), updated_at: ahora() });
 }
 
-/** Responde una propuesta. Con Sí queda como tarjeta del Tablero en "Ideas de desarrollo" (una cosa, un solo lugar). */
-export async function responder(p: Propuesta, estado: Exclude<EstadoPropuesta, 'pendiente'>, respuesta = '') {
+/** Ella le pide algo a un agente desde la app (Inicio → Tu equipo). Queda "pedido" hasta que Claude lo toma (agentes_ver). */
+export async function pedir(agente: string, texto: string) {
+  const t = texto.trim().slice(0, 200);
+  if (!t) return;
+  await crear<Trabajo>(TABLA_TRABAJOS, {
+    titulo: t, agente, receta: 'pedido desde el Inicio', estado: 'pedido', estaciones: [], vueltas: 0,
+    novedades: [{ fecha: ahora(), agente: 'vos', texto: 'Se lo pediste desde el Inicio' }], updated_at: ahora(),
+  });
+}
+
+export interface AlTablero { prioridad?: 'alta' | 'media' | 'baja'; fecha?: string | null }
+
+/** Responde una propuesta. Con Sí queda como tarjeta del Tablero en "Ideas de desarrollo" (una cosa, un solo lugar),
+ * con la prioridad y la fecha que ella eligió (pedido 2026-11-27: "que me pregunte antes la prioridad y la fecha"). */
+export async function responder(p: Propuesta, estado: Exclude<EstadoPropuesta, 'pendiente'>, respuesta = '', tablero: AlTablero = {}) {
   await modificar<Propuesta>(TABLA_PROPUESTAS, p.id, { estado, respuesta: respuesta || null, respondida_at: ahora() });
   if (estado === 'si') {
     await crear<Tarea & { categoria: string; etapa: null }>(TD.tareas, {
-      fecha: null, titulo: p.texto.split('\n')[0].slice(0, 80), hecho: false, prioridad: 'media',
+      fecha: tablero.fecha || null, titulo: p.texto.split('\n')[0].slice(0, 80), hecho: false, prioridad: tablero.prioridad ?? 'media',
       nota: `Propuesta de ${nombreAgente(p.agente)} (${p.created_at?.slice(0, 10) ?? hoy()}): ${p.texto}${p.porque ? `\nSe basa en: ${p.porque}` : ''}${p.link ? `\n${p.link}` : ''}`,
       origen: 'app', categoria: 'Ideas de desarrollo', etapa: null,
     });
