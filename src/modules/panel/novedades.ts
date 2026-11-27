@@ -18,6 +18,13 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-27', area: 'Tablero', titulo: 'Burbuja flotante de pendientes',
+    que: [
+      'Una viñetita con tus pendientes flota en todas las pantallas. La agarrás y la llevás a donde quieras: queda pegada al costado y se acuerda dónde la dejaste.',
+      'En la compu, al pasar el cursor se agranda y muestra lo primero que tenés. Con un clic (o un toque en el celu) se despliega el Tablero completo encima de lo que estás viendo.',
+    ],
+  },
+  {
     fecha: '2026-11-26', area: 'Día', titulo: 'Chequeo de la mañana y de la noche', nube: true,
     que: [
       'Arriba del Inicio, dos tarjetas: ☀ Arranque y ☾ Cierre. Siempre se ve si lo hiciste (✓ con la hora) o si falta.',
