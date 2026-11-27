@@ -80,3 +80,8 @@ Modelo: el modo entrenando (`docs/pilares-entreno.md`). Para toda actividad nuev
 - Tira de progreso arriba que se toca para ver la lista.
 - Un medidor con la escala de rendimiento para "cómo venís".
 - DESHACER a mano del último paso; minimizar a la barra de actividad; cancelar pide confirmar.
+
+## Línea del día (2026-11-27, Sapires · Plan 2 "Piezas", paso 1)
+- Pieza `src/ui/LineaDia.tsx` (+ `linea-dia.css`): `AhoraDia` (lo que falta en grande, avance, qué sigue) y `RielDia` (hora a la izquierda, nodo rombo con estado, columna derecha de ancho fijo: dura / falta / ✓; huecos de 30 min o más = "Libre"). Primera en usarla: Arranque → Plan.
+- Colores de tipo de bloque: tokens `--t-*` de `tema.css` en OKLCH con la misma luz y saturación; van **solo en el ícono**. El acento verde, solo para lo de ahora. Íconos de línea fina, nada de emojis ni brillos (ella pidió que no se vea "tan IA").
+- Biblioteca de reglas y fuentes de Sapires: `sapires/biblioteca.md` en los archivos del proyecto.

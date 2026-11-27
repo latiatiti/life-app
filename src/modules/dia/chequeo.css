@@ -90,6 +90,11 @@
 .cq-plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .cq-plan li { display: flex; gap: 10px; align-items: baseline; padding: 6px 10px; background: var(--capa-1); border: 1px solid var(--borde); }
 .cq-plan b { font-family: var(--letra-dato); font-weight: 600; color: var(--acento-texto); min-width: 52px; font-size: 0.85rem; text-transform: capitalize; }
+/* Línea del día en el paso Plan (src/ui/LineaDia.tsx): una columna en el celu, Ahora | riel en la compu. */
+.cq-linea { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+/* En el celu entra todo sin bajar: filas más bajas y sin el "hasta" (la hora de la fila siguiente ya lo dice). */
+@media (max-width: 639px) { .cq-linea .ld-tj { min-height: 34px; padding-block: 3px; } .cq-linea .ld-t > span { display: none; } .cq-linea .ld-h { padding-top: 8px; } .cq-linea .ld-eje i { margin-top: 11px; } }
+@media (min-width: 640px) { .cq-linea { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 18px; align-items: start; } }
 .cq-plan.compacto { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cq-plan.compacto li { padding: 4px 8px; font-size: 0.82rem; gap: 6px; }
 .cq-plan.compacto b { min-width: 40px; font-size: 0.78rem; }
@@ -132,3 +137,4 @@
 .cq-resumen span { font-size: 0.78rem; color: var(--texto-2); }
 
 @media (prefers-reduced-motion: reduce) { .cq-trofeo { animation: none; } }
+@media (max-width: 639px) { .cq-opciones.plan .cq-op small { display: none; } }
