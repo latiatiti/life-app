@@ -233,6 +233,8 @@ let actual = null;
 let conectado = false;
 let pidioQr = false;   // solo se muestra QR si la app lo pidió
 let reintentos = 0;
+let conectandoDesde = 0;   // cuándo empezó el intento actual (para el vigía)
+let ultimoQr = 0;
 
 async function estado(e) {
   try {
@@ -247,7 +249,11 @@ async function estado(e) {
 async function conectar() {
   if (actual) return;
   if (!sesion) sesion = (await cargarSesion()) ?? { creds: initAuthCreds(), keys: {} };
-  const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: undefined }));
+  // Si no hay internet esto podía quedarse colgado: a los 15 s sigue con la versión de fábrica.
+  const { version } = await Promise.race([
+    fetchLatestBaileysVersion(),
+    esperar(15_000).then(() => ({ version: undefined })),
+  ]).catch(() => ({ version: undefined }));
   const sock = makeWASocket({
     version, auth: estadoAuth(), logger, browser: Browsers.ubuntu('LIFE'),
     markOnlineOnConnect: false,          // que el celular le siga avisando
@@ -255,6 +261,7 @@ async function conectar() {
     getMessage: async () => undefined,
   });
   actual = sock;
+  conectandoDesde = Date.now();
   await estado({ estado: 'conectando' });
 
   sock.ev.on('creds.update', () => guardarLuego());
@@ -263,12 +270,13 @@ async function conectar() {
     if (sock !== actual) return;
     if (u.qr) {
       if (!pidioQr) { log('Hace falta escanear el QR: esperando que lo pidan desde LIFE.'); cerrar(sock); return; }
+      ultimoQr = Date.now();
       const qr = await QRCode.toDataURL(u.qr, { margin: 1, width: 320 });
       await estado({ estado: 'esperando_qr', qr });
       log('QR nuevo listo en LIFE.');
     }
     if (u.connection === 'open') {
-      conectado = true; reintentos = 0; pidioQr = false;
+      conectado = true; reintentos = 0; pidioQr = false; conectandoDesde = 0;
       await guardarYa();
       const numero = (sock.user?.id ?? '').split(':')[0].split('@')[0];
       await estado({ estado: 'conectado', numero, nombre: sock.user?.name ?? null });
@@ -336,6 +344,23 @@ function cerrar(sock) {
   try { sock.end(undefined); } catch { /* ya estaba cerrado */ }
 }
 
+/** Tira el intento trabado y arranca uno nuevo (sin borrar la sesión: no hace falta otro QR). */
+async function reintentarDeCero(motivo) {
+  const s = actual;
+  actual = null; conectado = false; conectandoDesde = 0;
+  if (s) cerrar(s);   // su 'close' ya no cuenta: sock !== actual
+  log(`${motivo} Pruebo de nuevo desde cero.`);
+  await conectar().catch((e) => log('Error al reconectar:', e.message));
+}
+
+/** Vigía: un intento de conexión que no termina nunca (pasó el 22/11 tras un corte de internet). */
+function trabado() {
+  if (!actual || conectado || !conectandoDesde) return false;
+  const ahora = Date.now();
+  if (pidioQr) return ahora - Math.max(conectandoDesde, ultimoQr) > 3 * 60_000;   // el QR se renueva solo; si no llega más, está trabado
+  return ahora - conectandoDesde > 90_000;
+}
+
 /* ---------- Latido: cada 30 s avisa que está vivo y mira qué pidió la app ---------- */
 
 async function latido() {
@@ -346,7 +371,11 @@ async function latido() {
     log('Piden conectar desde LIFE.');
     await conectar().catch((err) => log('Error al conectar:', err.message));
   } else if (pedido === 'conectar' && !conectado && actual && !pidioQr) {
+    // Tocó Conectar mientras un intento viejo seguía dando vueltas: arrancar uno nuevo ya.
     pidioQr = true;
+    await reintentarDeCero('Piden conectar desde LIFE y había un intento colgado.');
+  } else if (pedido !== 'desconectar' && !conectado && trabado()) {
+    await reintentarDeCero('El intento de conexión quedó trabado.');
   } else if (pedido === 'conectar' && conectado) {
     await life('pedido_cumplido').catch(() => {});
   } else if (pedido === 'desconectar') {

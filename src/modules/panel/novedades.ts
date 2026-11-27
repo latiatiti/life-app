@@ -18,6 +18,14 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    fecha: '2026-11-27', area: 'WhatsApp', titulo: 'El puente de WhatsApp ya no se queda trabado',
+    que: [
+      'Después de un corte de internet el puente podía quedar "conectando" para siempre: ahora a los 90 s tira ese intento y prueba de nuevo solo.',
+      'Tocar Conectar en LIFE arranca un intento nuevo aunque el anterior siga dando vueltas.',
+      'Al reiniciar la compu vuelve a conectar sin pedir QR, y corre en segundo plano con un punto verde en la bandeja.',
+    ],
+  },
+  {
     fecha: '2026-11-19', area: 'Cuentas', titulo: 'Panel de la superadmin, botón Informar y esta línea de tiempo', nube: true,
     que: [
       'Sección Panel (solo superadmin): cómo viene cada cuenta, quién espera tu OK, roles, módulos y qué puede cada rol.',
